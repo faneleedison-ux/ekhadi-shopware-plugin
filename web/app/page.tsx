@@ -89,12 +89,12 @@ export default function LandingPage() {
       <section className="bg-background py-9">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <h2 className="text-2xl font-bold text-text-primary">How It Works</h2>
-          <div className="mt-4 grid sm:grid-cols-3 gap-4">
+          <div className="mt-4 grid sm:grid-cols-3 gap-4 sm:auto-rows-fr">
             {steps.map((step, idx) => (
-              <div key={step.title} className="bg-white rounded-xl p-5 border border-border">
+              <div key={step.title} className="bg-white rounded-xl p-5 border border-border h-full min-h-[140px] flex flex-col">
                 <p className="text-xs font-semibold text-primary">STEP {idx + 1}</p>
                 <p className="text-base font-bold text-text-primary mt-1">{step.title}</p>
-                <p className="text-sm text-text-secondary mt-2">{step.text}</p>
+                <p className="text-sm text-text-secondary mt-2 flex-1">{step.text}</p>
               </div>
             ))}
           </div>

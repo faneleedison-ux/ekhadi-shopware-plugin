@@ -15,6 +15,7 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || ''
   const errorParam = searchParams.get('error')
+  const registered = searchParams.get('registered') === 'true'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -23,6 +24,18 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(
     errorParam === 'unauthorized' ? 'You do not have permission to access that page.' : null
   )
+
+  const demoUsers = [
+    { label: 'Admin', email: 'admin@ekhadi.co.za', password: 'Admin123!' },
+    { label: 'Member', email: 'member@ekhadi.co.za', password: 'Member123!' },
+    { label: 'Shop', email: 'shop@ekhadi.co.za', password: 'Shop123!' },
+  ]
+
+  function useDemoAccount(emailValue: string, passwordValue: string) {
+    setEmail(emailValue)
+    setPassword(passwordValue)
+    setError(null)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,21 +78,35 @@ function LoginForm() {
     <Card className="shadow-lg border-0 sm:border">
       <CardHeader className="text-center pb-4">
         <CardTitle className="text-2xl font-bold text-text-primary">Welcome back</CardTitle>
-        <CardDescription>Sign in to your e-Khadi account</CardDescription>
+        <CardDescription>Sign in to continue to your dashboard</CardDescription>
       </CardHeader>
       <CardContent>
+        {registered && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-success">
+            Account created successfully. You can sign in now.
+          </div>
+        )}
+
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-danger">
             {error}
           </div>
         )}
 
-        {/* Demo credentials hint */}
-        <div className="mb-4 p-3 bg-primary-light rounded-lg text-xs text-primary">
-          <p className="font-semibold mb-1">Demo Credentials:</p>
-          <p>Admin: admin@ekhadi.co.za / Admin123!</p>
-          <p>Member: member@ekhadi.co.za / Member123!</p>
-          <p>Shop: shop@ekhadi.co.za / Shop123!</p>
+        <div className="mb-4 p-3 bg-primary-light rounded-lg">
+          <p className="text-xs font-semibold text-primary mb-2">Quick Demo Login</p>
+          <div className="grid grid-cols-3 gap-2">
+            {demoUsers.map((demo) => (
+              <button
+                key={demo.label}
+                type="button"
+                onClick={() => useDemoAccount(demo.email, demo.password)}
+                className="rounded-md border border-primary/20 bg-white px-2 py-1.5 text-xs font-semibold text-primary hover:bg-primary hover:text-white transition-colors"
+              >
+                Use {demo.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -121,6 +148,7 @@ function LoginForm() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
