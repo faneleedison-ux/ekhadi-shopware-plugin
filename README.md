@@ -6,6 +6,12 @@ e-Khadi is a Shopware 6 plugin that enables community-based rotating savings gro
 
 ---
 
+## Architecture
+
+![e-Khadi Architecture](./mermaid-diagram-2026-03-16-143931.png)
+
+---
+
 ## The Problem
 
 Many South Africans who receive SASSA grants (SRD R350, Old Age R1890, Disability R1890, Child Support R480) run out of funds mid-month. Their primary shopping outlets are local spaza shops. e-Khadi addresses this by:
