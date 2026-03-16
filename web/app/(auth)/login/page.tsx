@@ -31,7 +31,7 @@ function LoginForm() {
     { label: 'Shop', email: 'shop@ekhadi.co.za', password: 'Shop123!' },
   ]
 
-  function useDemoAccount(emailValue: string, passwordValue: string) {
+  function fillDemoAccount(emailValue: string, passwordValue: string) {
     setEmail(emailValue)
     setPassword(passwordValue)
     setError(null)
@@ -100,7 +100,7 @@ function LoginForm() {
               <button
                 key={demo.label}
                 type="button"
-                onClick={() => useDemoAccount(demo.email, demo.password)}
+                onClick={() => fillDemoAccount(demo.email, demo.password)}
                 className="rounded-md border border-primary/20 bg-white px-2 py-1.5 text-xs font-semibold text-primary hover:bg-primary hover:text-white transition-colors"
               >
                 Use {demo.label}
