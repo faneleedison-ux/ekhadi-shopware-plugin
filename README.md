@@ -13,7 +13,7 @@ This repository now contains two implementations:
 
 ## Huawei Cloud Architecture
 
-![e-Khadi Huawei Architecture](./assets/images/architecture/system-architecture.png)
+![e-Khadi Huawei Architecture](./assets/images/architecture/system-architecture-huawei.png)
 
 The current web app is live on Vercel for demo access, while the target competition architecture is designed for Huawei Cloud production.
 

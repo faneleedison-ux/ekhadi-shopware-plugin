@@ -1,0 +1,63 @@
+flowchart LR
+  %% e-Khadi Huawei-target architecture with CI/CD and IaC
+
+  DEV["Developer Team"] --> GH["GitHub Repository"]
+  GH --> GHA["GitHub Actions CI/CD"]
+  GHA --> TF["Terraform IaC"]
+
+  subgraph StateMgmt[Terraform State Management]
+    OBSSTATE["Huawei OBS Bucket\nTerraform State"]
+    LOCK["State Locking\n(Managed lock table)"]
+  end
+
+  TF --> OBSSTATE
+  TF --> LOCK
+
+  subgraph Huawei[Huawei Cloud Production]
+    VPC["VPC + Security Groups"]
+    APIG["API Gateway (APIG)"]
+    FG["FunctionGraph"]
+    RDS["RDS for PostgreSQL"]
+    OBS["Object Storage Service (OBS)"]
+    SMN["Simple Message Notification (SMN)"]
+    IAM["IAM"]
+
+    APIG --> FG
+    FG --> RDS
+    FG --> OBS
+    FG --> SMN
+
+    IAM -. Access Control .-> APIG
+    IAM -. Access Control .-> FG
+    IAM -. Access Control .-> RDS
+    IAM -. Access Control .-> OBS
+    VPC -. Private Network .-> APIG
+    VPC -. Private Network .-> FG
+    VPC -. Private Network .-> RDS
+  end
+
+  TF --> VPC
+  TF --> APIG
+  TF --> FG
+  TF --> RDS
+  TF --> OBS
+  TF --> SMN
+  TF --> IAM
+
+  USERS["Web Users\n(Member / Shop / Admin)"] --> APIG
+
+  classDef github fill:#24292f,stroke:#111,color:#fff,stroke-width:1px;
+  classDef ci fill:#0b5fff,stroke:#003087,color:#fff,stroke-width:1px;
+  classDef terraform fill:#7b42bc,stroke:#4f2b7a,color:#fff,stroke-width:1px;
+  classDef huawei fill:#d94f00,stroke:#8c2f00,color:#fff,stroke-width:1px;
+  classDef data fill:#0c5db3,stroke:#083b70,color:#fff,stroke-width:1px;
+  classDef net fill:#0f766e,stroke:#115e59,color:#fff,stroke-width:1px;
+  classDef user fill:#374151,stroke:#1f2937,color:#fff,stroke-width:1px;
+
+  class GH github;
+  class GHA ci;
+  class TF terraform;
+  class APIG,FG,OBS,SMN,IAM huawei;
+  class RDS,OBSSTATE,LOCK data;
+  class VPC net;
+  class DEV,USERS user;
