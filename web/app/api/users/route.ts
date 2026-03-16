@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { name, email, password, role, phone, sassaId, shopName } = body
+    const { name, email, password, role, phone, sassaId, shopName, areaId } = body
 
     if (!name || !email || !password || !role) {
       return NextResponse.json(
@@ -79,8 +79,9 @@ export async function POST(req: NextRequest) {
           throw new Error('SASSA ID is required for members')
         }
 
-        // Get first area as default
-        const defaultArea = await tx.area.findFirst()
+        const defaultArea = areaId
+          ? await tx.area.findUnique({ where: { id: areaId } })
+          : await tx.area.findFirst()
 
         if (defaultArea) {
           await tx.customerProfile.create({
@@ -109,19 +110,22 @@ export async function POST(req: NextRequest) {
           throw new Error('Shop name is required for shop owners')
         }
 
-        // Get first area as default
-        const defaultArea = await tx.area.findFirst()
+        const defaultArea = areaId
+          ? await tx.area.findUnique({ where: { id: areaId } })
+          : await tx.area.findFirst()
 
-        if (defaultArea) {
-          await tx.shop.create({
-            data: {
-              name: shopName.trim(),
-              userId: newUser.id,
-              areaId: defaultArea.id,
-              isActive: true,
-            },
-          })
+        if (!defaultArea) {
+          throw new Error('A valid area is required for shop owners')
         }
+
+        await tx.shop.create({
+          data: {
+            name: shopName.trim(),
+            userId: newUser.id,
+            areaId: defaultArea.id,
+            isActive: true,
+          },
+        })
       }
 
       return newUser
