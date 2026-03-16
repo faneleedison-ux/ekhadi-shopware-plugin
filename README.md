@@ -11,9 +11,37 @@ This repository now contains two implementations:
 
 ---
 
-## Architecture
+## Huawei Cloud Architecture
 
-![e-Khadi Architecture](./assets/images/architecture/system-architecture.png)
+![e-Khadi Huawei Architecture](./assets/images/architecture/system-architecture.png)
+
+The current web app is live on Vercel for demo access, while the target competition architecture is designed for Huawei Cloud production.
+
+### Target Architecture (Huawei)
+
+- **Frontend:** Next.js web client (member, shop, admin portals)
+- **Ingress Layer:** **API Gateway (APIG)** for secured API entry, throttling, and routing
+- **Application Layer:** **FunctionGraph** for serverless business logic (credit scoring, approvals, repayments)
+- **Data Layer:** **RDS for PostgreSQL** for transactional records (members, groups, credit, repayments)
+- **File/Asset Storage:** **Object Storage Service (OBS)** for exports, proof documents, and media assets
+- **Notifications:** **Simple Message Notification (SMN)** for repayment reminders, approvals, and alerts
+- **Network & Security:** **VPC + Security Groups + IAM** for private networking and role-based access
+
+### Core Request Flow
+
+1. User logs in and performs an action in the web app.
+2. Request enters Huawei **APIG**.
+3. **FunctionGraph** validates rules and executes business logic.
+4. Function reads/writes data in **RDS PostgreSQL**.
+5. Supporting files are stored/retrieved from **OBS**.
+6. Events (approval, due repayment, status changes) trigger **SMN** notifications.
+
+### Why This Architecture
+
+- Scales with low operational overhead using serverless compute
+- Keeps sensitive financial data in managed relational storage
+- Supports strong auditability for compliance and judging criteria
+- Aligns directly with Huawei developer competition cloud service expectations
 
 ## App Screenshots
 
