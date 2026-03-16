@@ -16,12 +16,23 @@ export default function MemberVirtualCard({ cardHolder, cardNumber, expiry, cvv,
 
       <div className="relative z-10 space-y-5">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-slate-300">e-Khadi virtual</p>
-            <p className="mt-1 text-xs font-semibold text-emerald-300">{tierLabel}</p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-400/20 text-sm font-bold text-cyan-200 ring-1 ring-cyan-300/40">
+              eK
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">e-Khadi</p>
+              <p className="text-[10px] uppercase tracking-[0.22em] text-slate-300">Virtual Card</p>
+            </div>
           </div>
-          <div className="rounded-xl border border-white/20 bg-white/10 p-2">
-            <Wifi className="h-4 w-4 rotate-90" />
+
+          <div className="flex items-center gap-2">
+            <span className="rounded-full border border-emerald-300/40 bg-emerald-400/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200">
+              {tierLabel}
+            </span>
+            <div className="rounded-xl border border-white/20 bg-white/10 p-2">
+              <Wifi className="h-4 w-4 rotate-90" />
+            </div>
           </div>
         </div>
 

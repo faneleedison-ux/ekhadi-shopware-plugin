@@ -111,6 +111,14 @@ export default async function MemberDashboard() {
 
   return (
     <div className="space-y-5 animate-fade-in">
+      <MemberVirtualCard
+        cardHolder={user.name.toUpperCase()}
+        cardNumber={cardNumber}
+        expiry={expiry}
+        cvv={cvv}
+        tierLabel={tierLabel}
+      />
+
       <div>
         <h1 className="text-xl font-bold text-text-primary">
           Hello, {user.name.split(' ')[0]} 👋
@@ -125,14 +133,6 @@ export default async function MemberDashboard() {
         balance={creditBalance}
         memberName={user.name}
         sassaId={user.customerProfile?.sassaId}
-      />
-
-      <MemberVirtualCard
-        cardHolder={user.name.toUpperCase()}
-        cardNumber={cardNumber}
-        expiry={expiry}
-        cvv={cvv}
-        tierLabel={tierLabel}
       />
 
       {/* Quick actions */}
