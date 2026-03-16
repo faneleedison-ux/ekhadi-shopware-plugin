@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { ArrowRight, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { prisma } from '@/lib/db'
+import SouthAfricaLiveMap, { MapMarker } from '@/components/landing/SouthAfricaLiveMap'
 
 const quickPoints = [
   {
@@ -32,7 +34,258 @@ const steps = [
   },
 ]
 
-export default function LandingPage() {
+const areaCoordinateFallbacks: Record<string, { lat: number; lng: number }> = {
+  Soweto: { lat: -26.2485, lng: 27.854 },
+  Alexandra: { lat: -26.1036, lng: 28.0978 },
+  Tembisa: { lat: -25.9973, lng: 28.2268 },
+  Mamelodi: { lat: -25.707, lng: 28.3526 },
+  Soshanguve: { lat: -25.5156, lng: 28.1003 },
+  Katlehong: { lat: -26.3394, lng: 28.1581 },
+  Khayelitsha: { lat: -34.0379, lng: 18.6776 },
+  Gugulethu: { lat: -33.9834, lng: 18.5701 },
+  "Mitchell's Plain": { lat: -34.0446, lng: 18.6171 },
+  Delft: { lat: -33.9686, lng: 18.643 },
+  Umlazi: { lat: -29.9684, lng: 30.8845 },
+  KwaMashu: { lat: -29.7461, lng: 30.9683 },
+  Inanda: { lat: -29.694, lng: 30.9456 },
+  Ntuzuma: { lat: -29.7072, lng: 30.9259 },
+  Hammarsdale: { lat: -29.7996, lng: 30.6568 },
+  Mdantsane: { lat: -32.9487, lng: 27.7307 },
+  Motherwell: { lat: -33.7596, lng: 25.6056 },
+  Mthatha: { lat: -31.5899, lng: 28.7844 },
+  Seshego: { lat: -23.8649, lng: 29.389 },
+  Giyani: { lat: -23.3025, lng: 30.7181 },
+  Tzaneen: { lat: -23.8332, lng: 30.1635 },
+  Kanyamazane: { lat: -25.4713, lng: 30.9692 },
+  Matsulu: { lat: -25.4446, lng: 30.9682 },
+  KwaMhlanga: { lat: -25.4063, lng: 28.6684 },
+  Ikageng: { lat: -26.7136, lng: 27.097 },
+  Jouberton: { lat: -26.8745, lng: 26.6395 },
+  Moretele: { lat: -25.4655, lng: 28.0708 },
+  Mangaung: { lat: -29.1191, lng: 26.214 },
+  Botshabelo: { lat: -29.2334, lng: 26.7265 },
+  'Thaba Nchu': { lat: -29.2042, lng: 26.8385 },
+  Galeshewe: { lat: -28.7386, lng: 24.7624 },
+  Roodepan: { lat: -28.6838, lng: 24.7248 },
+}
+
+const provinceCenters: Record<string, { lat: number; lng: number }> = {
+  Gauteng: { lat: -26.2708, lng: 28.1123 },
+  'Western Cape': { lat: -33.8152, lng: 18.633 },
+  'KwaZulu-Natal': { lat: -29.8587, lng: 30.981 },
+  'Eastern Cape': { lat: -32.2968, lng: 26.4194 },
+  Limpopo: { lat: -23.4013, lng: 29.4179 },
+  Mpumalanga: { lat: -25.5653, lng: 30.5273 },
+  'North West': { lat: -26.6639, lng: 25.2838 },
+  'Free State': { lat: -28.4541, lng: 26.7968 },
+  'Northern Cape': { lat: -29.0467, lng: 21.8569 },
+}
+
+function parseAreaCoordinates(raw: string | null | undefined): { lat: number; lng: number } | null {
+  if (!raw) {
+    return null
+  }
+
+  try {
+    const parsed = JSON.parse(raw)
+
+    if (Array.isArray(parsed) && parsed.length >= 2) {
+      const first = Number(parsed[0])
+      const second = Number(parsed[1])
+
+      if (Number.isFinite(first) && Number.isFinite(second)) {
+        if (first >= 16 && first <= 33 && second <= -22 && second >= -35.5) {
+          return { lat: second, lng: first }
+        }
+
+        if (first <= -22 && first >= -35.5 && second >= 16 && second <= 33) {
+          return { lat: first, lng: second }
+        }
+      }
+    }
+
+    if (parsed && typeof parsed === 'object') {
+      const obj = parsed as Record<string, unknown>
+      const lat = Number(obj.lat ?? obj.latitude)
+      const lng = Number(obj.lng ?? obj.lon ?? obj.longitude)
+
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        return { lat, lng }
+      }
+    }
+  } catch {
+    return null
+  }
+
+  return null
+}
+
+function hashString(input: string) {
+  let hash = 0
+
+  for (let i = 0; i < input.length; i += 1) {
+    hash = (hash << 5) - hash + input.charCodeAt(i)
+    hash |= 0
+  }
+
+  return Math.abs(hash)
+}
+
+function spreadWithinArea(base: { lat: number; lng: number }, key: string, index: number): { lat: number; lng: number } {
+  const seed = hashString(`${key}-${index}`)
+  const angle = ((seed % 360) * Math.PI) / 180
+  const ring = Math.floor(index / 10)
+  const radius = 0.03 + ring * 0.02 + (seed % 7) * 0.003
+
+  const lat = base.lat + Math.sin(angle) * radius
+  const lng = base.lng + Math.cos(angle) * radius * 1.3
+
+  return {
+    lat: Math.max(-35.2, Math.min(-22.0, lat)),
+    lng: Math.max(16.3, Math.min(33.3, lng)),
+  }
+}
+
+async function getMapData(): Promise<{ markers: MapMarker[]; areaCount: number }> {
+  try {
+    const [areas, shops, members, groups] = await Promise.all([
+      prisma.area.findMany({
+        select: {
+          id: true,
+          name: true,
+          province: true,
+          coordinates: true,
+        },
+      }),
+      prisma.shop.findMany({
+        select: {
+          id: true,
+          name: true,
+          areaId: true,
+          area: {
+            select: {
+              name: true,
+              province: true,
+            },
+          },
+        },
+      }),
+      prisma.customerProfile.findMany({
+        select: {
+          id: true,
+          user: {
+            select: {
+              name: true,
+            },
+          },
+          areaId: true,
+          area: {
+            select: {
+              name: true,
+              province: true,
+            },
+          },
+        },
+      }),
+      prisma.group.findMany({
+        select: {
+          id: true,
+          name: true,
+          areaId: true,
+          area: {
+            select: {
+              name: true,
+              province: true,
+            },
+          },
+        },
+      }),
+    ])
+
+    const areaCenterById = new Map<string, { lat: number; lng: number }>()
+
+    areas.forEach((area) => {
+      const parsed = parseAreaCoordinates(area.coordinates)
+
+      if (parsed) {
+        areaCenterById.set(area.id, parsed)
+        return
+      }
+
+      const exact = areaCoordinateFallbacks[area.name]
+      if (exact) {
+        areaCenterById.set(area.id, exact)
+        return
+      }
+
+      const provinceCenter = provinceCenters[area.province] ?? { lat: -30.5595, lng: 22.9375 }
+      const seeded = spreadWithinArea(provinceCenter, area.name, 0)
+      areaCenterById.set(area.id, seeded)
+    })
+
+    const areaSpreadCount = new Map<string, number>()
+
+    const nextAreaPosition = (areaId: string, key: string) => {
+      const base = areaCenterById.get(areaId) ?? { lat: -30.5595, lng: 22.9375 }
+      const idx = areaSpreadCount.get(areaId) ?? 0
+      areaSpreadCount.set(areaId, idx + 1)
+      return spreadWithinArea(base, key, idx)
+    }
+
+    const shopMarkers: MapMarker[] = shops.map((shop) => {
+      const point = nextAreaPosition(shop.areaId, `shop-${shop.id}`)
+
+      return {
+        id: `shop-${shop.id}`,
+        name: shop.name,
+        type: 'shop',
+        areaName: shop.area.name,
+        province: shop.area.province,
+        lat: point.lat,
+        lng: point.lng,
+      }
+    })
+
+    const userMarkers: MapMarker[] = members.map((member) => {
+      const point = nextAreaPosition(member.areaId, `user-${member.id}`)
+
+      return {
+        id: `user-${member.id}`,
+        name: member.user.name,
+        type: 'user',
+        areaName: member.area.name,
+        province: member.area.province,
+        lat: point.lat,
+        lng: point.lng,
+      }
+    })
+
+    const groupMarkers: MapMarker[] = groups.map((group) => {
+      const point = nextAreaPosition(group.areaId, `group-${group.id}`)
+
+      return {
+        id: `group-${group.id}`,
+        name: group.name,
+        type: 'group',
+        areaName: group.area.name,
+        province: group.area.province,
+        lat: point.lat,
+        lng: point.lng,
+      }
+    })
+
+    return {
+      markers: [...shopMarkers, ...userMarkers, ...groupMarkers],
+      areaCount: areas.length,
+    }
+  } catch {
+    return { markers: [], areaCount: 0 }
+  }
+}
+
+export default async function LandingPage() {
+  const { markers, areaCount } = await getMapData()
+
   return (
     <div className="min-h-screen bg-white">
       <nav className="border-b border-border bg-white sticky top-0 z-30">
@@ -113,6 +366,16 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="bg-background py-9">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <h2 className="text-2xl font-bold text-text-primary">Community Footprint Map</h2>
+          <p className="text-sm text-text-secondary mt-1 mb-4">
+            Explore South Africa coverage for registered shops, users and stokvel groups.
+          </p>
+          <SouthAfricaLiveMap markers={markers} areaCount={areaCount} />
         </div>
       </section>
 

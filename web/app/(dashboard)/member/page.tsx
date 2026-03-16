@@ -7,9 +7,31 @@ import { prisma } from '@/lib/db'
 import { formatCurrency, formatDate, getMonthName } from '@/lib/utils'
 import CreditBalanceCard from '@/components/dashboard/CreditBalanceCard'
 import GrantProgressCard from '@/components/dashboard/GrantProgressCard'
+import MemberVirtualCard from '@/components/dashboard/MemberVirtualCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+
+function numericSeed(input: string): string {
+  const digits = input.replace(/\D/g, '')
+
+  if (digits.length >= 16) {
+    return digits.slice(0, 16)
+  }
+
+  let hash = 0
+  for (let i = 0; i < input.length; i += 1) {
+    hash = (hash << 5) - hash + input.charCodeAt(i)
+    hash |= 0
+  }
+
+  const fallback = `${Math.abs(hash)}`.padEnd(16, '7').slice(0, 16)
+  return fallback
+}
+
+function formatCardNumber(cardDigits: string) {
+  return cardDigits.match(/.{1,4}/g)?.join(' ') ?? cardDigits
+}
 
 export default async function MemberDashboard() {
   const session = await getServerSession(authOptions)
@@ -78,6 +100,14 @@ export default async function MemberDashboard() {
       }
 
   const upcomingRotation = activeGroup?.rotationCycles[0]
+  const sourceId = user.customerProfile?.sassaId || user.id
+  const cardDigits = numericSeed(sourceId)
+  const cardNumber = formatCardNumber(cardDigits)
+  const cvv = cardDigits.slice(-3)
+  const expiryMonth = String((now.getMonth() + 1 + 24) % 12 || 12).padStart(2, '0')
+  const expiryYear = String((now.getFullYear() + 2) % 100).padStart(2, '0')
+  const expiry = `${expiryMonth}/${expiryYear}`
+  const tierLabel = activeGroup ? 'Community Gold' : 'Community Standard'
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -95,6 +125,14 @@ export default async function MemberDashboard() {
         balance={creditBalance}
         memberName={user.name}
         sassaId={user.customerProfile?.sassaId}
+      />
+
+      <MemberVirtualCard
+        cardHolder={user.name.toUpperCase()}
+        cardNumber={cardNumber}
+        expiry={expiry}
+        cvv={cvv}
+        tierLabel={tierLabel}
       />
 
       {/* Quick actions */}
