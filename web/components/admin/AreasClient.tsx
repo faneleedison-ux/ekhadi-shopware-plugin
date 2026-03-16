@@ -152,7 +152,7 @@ export default function AreasClient({ areas }: Props) {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="admin-shell">
       {toast && (
         <ToastMessage
           type={toast.type}
@@ -161,10 +161,10 @@ export default function AreasClient({ areas }: Props) {
         />
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">Areas</h1>
-          <p className="text-text-secondary mt-1">{areas.length} coverage areas</p>
+          <h1 className="admin-heading">Areas</h1>
+          <p className="admin-subheading">{areas.length} coverage areas</p>
         </div>
 
         <Dialog open={addAreaOpen} onOpenChange={setAddAreaOpen}>

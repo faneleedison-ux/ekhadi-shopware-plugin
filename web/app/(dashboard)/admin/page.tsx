@@ -50,6 +50,8 @@ export default async function AdminDashboard() {
   })
 
   const totalIssued = Number(totalCreditApproved._sum.amount || 0)
+  const approvedCount = recentRequests.filter((r) => r.status === 'APPROVED').length
+  const rejectedCount = recentRequests.filter((r) => r.status === 'REJECTED').length
 
   const statusBadge = (status: string) => {
     switch (status) {
@@ -60,10 +62,26 @@ export default async function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold text-text-primary">Admin Dashboard</h1>
-        <p className="text-text-secondary mt-1">Platform overview and management</p>
+    <div className="admin-shell">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h1 className="admin-heading">Admin Dashboard</h1>
+          <p className="admin-subheading">Platform overview, approvals, and community operations.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/credit-requests">
+            <Button size="sm" className="gap-1.5">
+              <Clock className="h-4 w-4" />
+              Review Requests
+            </Button>
+          </Link>
+          <Link href="/admin/groups">
+            <Button size="sm" variant="outline" className="gap-1.5">
+              <UsersRound className="h-4 w-4" />
+              Manage Groups
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}
@@ -98,6 +116,32 @@ export default async function AdminDashboard() {
         />
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="admin-kpi-card">
+          <CardContent className="admin-kpi-content">
+            <p className="text-xs text-text-secondary">Recent Approvals</p>
+            <p className="text-xl font-bold text-success mt-1">{approvedCount}</p>
+            <p className="text-xs text-text-secondary mt-1">From latest 8 requests</p>
+          </CardContent>
+        </Card>
+        <Card className="admin-kpi-card">
+          <CardContent className="admin-kpi-content">
+            <p className="text-xs text-text-secondary">Recent Rejections</p>
+            <p className="text-xl font-bold text-danger mt-1">{rejectedCount}</p>
+            <p className="text-xs text-text-secondary mt-1">From latest 8 requests</p>
+          </CardContent>
+        </Card>
+        <Card className="admin-kpi-card">
+          <CardContent className="admin-kpi-content">
+            <p className="text-xs text-text-secondary">Conversion Trend</p>
+            <p className="text-xl font-bold text-primary mt-1">
+              {recentRequests.length > 0 ? Math.round((approvedCount / recentRequests.length) * 100) : 0}%
+            </p>
+            <p className="text-xs text-text-secondary mt-1">Approval rate (latest requests)</p>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Recent Credit Requests */}
         <div className="lg:col-span-2">
@@ -111,41 +155,43 @@ export default async function AdminDashboard() {
               </Link>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Member</TableHead>
-                    <TableHead>Group</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentRequests.length === 0 ? (
+              <div className="admin-table-wrap">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-text-secondary py-8">
-                        No credit requests yet
-                      </TableCell>
+                      <TableHead>Member</TableHead>
+                      <TableHead>Group</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
                     </TableRow>
-                  ) : (
-                    recentRequests.map((req) => (
-                      <TableRow key={req.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium text-sm">{req.requester.name}</p>
-                            <p className="text-xs text-text-secondary">{req.requester.email}</p>
-                          </div>
+                  </TableHeader>
+                  <TableBody>
+                    {recentRequests.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-text-secondary py-8">
+                          No credit requests yet
                         </TableCell>
-                        <TableCell className="text-sm">{req.group.name}</TableCell>
-                        <TableCell className="text-sm font-semibold">{formatCurrency(Number(req.amount))}</TableCell>
-                        <TableCell>{statusBadge(req.status)}</TableCell>
-                        <TableCell className="text-xs text-text-secondary">{formatDate(req.createdAt)}</TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      recentRequests.map((req) => (
+                        <TableRow key={req.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium text-sm">{req.requester.name}</p>
+                              <p className="text-xs text-text-secondary">{req.requester.email}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm">{req.group.name}</TableCell>
+                          <TableCell className="text-sm font-semibold">{formatCurrency(Number(req.amount))}</TableCell>
+                          <TableCell>{statusBadge(req.status)}</TableCell>
+                          <TableCell className="text-xs text-text-secondary">{formatDate(req.createdAt)}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </div>

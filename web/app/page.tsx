@@ -3,9 +3,18 @@ import { ArrowRight, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const quickPoints = [
-  'Community-powered loans through stokvel trust networks',
-  'R50-R300 credit with a clear flat 2% service fee',
-  'Spend only on essentials at approved local spaza shops',
+  {
+    title: 'Community-Powered',
+    text: 'Loans are based on stokvel trust networks, not collateral-heavy banking.',
+  },
+  {
+    title: 'Fair Pricing',
+    text: 'R50-R300 credit with a clear flat 2% service fee.',
+  },
+  {
+    title: 'Local Impact',
+    text: 'Spend only on essentials at approved local spaza shops.',
+  },
 ]
 
 const steps = [
@@ -27,12 +36,12 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
       <nav className="border-b border-border bg-white sticky top-0 z-30">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">eK</span>
+            <div className="w-11 h-11 bg-primary rounded-xl flex items-center justify-center shadow-sm">
+              <span className="text-white font-bold text-base">eK</span>
             </div>
-            <span className="font-bold text-lg text-primary">e-Khadi</span>
+            <span className="font-bold text-2xl tracking-tight text-primary">e-Khadi</span>
           </div>
           <div className="flex items-center gap-2">
             <Link href="/login">
@@ -56,14 +65,20 @@ export default function LandingPage() {
               A non-conventional finance model that gives underserved households fair micro-loans without traditional bank collateral.
             </p>
 
-            <ul className="mt-6 space-y-2">
+            <div className="mt-6 grid sm:grid-cols-3 gap-3 sm:auto-rows-fr">
               {quickPoints.map((point) => (
-                <li key={point} className="flex items-start gap-2 text-sm text-blue-100">
-                  <CheckCircle2 className="h-4 w-4 text-blue-200 flex-shrink-0 mt-0.5" />
-                  <span>{point}</span>
-                </li>
+                <div
+                  key={point.title}
+                  className="h-full min-h-[128px] rounded-xl border border-white/20 bg-white/10 p-4 flex flex-col"
+                >
+                  <div className="flex items-center gap-2 text-blue-100">
+                    <CheckCircle2 className="h-4 w-4 text-blue-200 flex-shrink-0" />
+                    <p className="text-sm font-semibold">{point.title}</p>
+                  </div>
+                  <p className="text-xs text-blue-100 mt-2 leading-relaxed flex-1">{point.text}</p>
+                </div>
               ))}
-            </ul>
+            </div>
 
             <div className="mt-7 flex flex-col sm:flex-row gap-3">
               <Link href="/register">
@@ -91,7 +106,7 @@ export default function LandingPage() {
           <h2 className="text-2xl font-bold text-text-primary">How It Works</h2>
           <div className="mt-4 grid sm:grid-cols-3 gap-4 sm:auto-rows-fr">
             {steps.map((step, idx) => (
-              <div key={step.title} className="bg-white rounded-xl p-5 border border-border h-full min-h-[140px] flex flex-col">
+              <div key={step.title} className="bg-white rounded-xl p-5 border border-border h-full min-h-[158px] flex flex-col">
                 <p className="text-xs font-semibold text-primary">STEP {idx + 1}</p>
                 <p className="text-base font-bold text-text-primary mt-1">{step.title}</p>
                 <p className="text-sm text-text-secondary mt-2 flex-1">{step.text}</p>

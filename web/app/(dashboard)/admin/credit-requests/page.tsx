@@ -85,6 +85,8 @@ export default function CreditRequestsPage() {
     REJECTED: requests.filter((r) => r.status === 'REJECTED').length,
   }
 
+  const totalAmount = filtered.reduce((sum, req) => sum + Number(req.amount), 0)
+
   const statusBadge = (status: string) => {
     switch (status) {
       case 'APPROVED': return <Badge variant="success">Approved</Badge>
@@ -94,22 +96,49 @@ export default function CreditRequestsPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="admin-shell">
       <div>
-        <h1 className="text-2xl font-bold text-text-primary">Credit Requests</h1>
-        <p className="text-text-secondary mt-1">Review and manage member credit requests</p>
+        <h1 className="admin-heading">Credit Requests</h1>
+        <p className="admin-subheading">Review and manage member credit requests</p>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="admin-kpi-card">
+          <CardContent className="admin-kpi-content">
+            <p className="text-xs text-text-secondary">Total Requests</p>
+            <p className="text-2xl font-bold text-text-primary mt-1">{counts.ALL}</p>
+          </CardContent>
+        </Card>
+        <Card className="admin-kpi-card">
+          <CardContent className="admin-kpi-content">
+            <p className="text-xs text-text-secondary">Pending</p>
+            <p className="text-2xl font-bold text-warning mt-1">{counts.PENDING}</p>
+          </CardContent>
+        </Card>
+        <Card className="admin-kpi-card">
+          <CardContent className="admin-kpi-content">
+            <p className="text-xs text-text-secondary">Approved</p>
+            <p className="text-2xl font-bold text-success mt-1">{counts.APPROVED}</p>
+          </CardContent>
+        </Card>
+        <Card className="admin-kpi-card">
+          <CardContent className="admin-kpi-content">
+            <p className="text-xs text-text-secondary">Visible Amount</p>
+            <p className="text-2xl font-bold text-primary mt-1">{formatCurrency(totalAmount)}</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap bg-white border border-border rounded-xl p-2">
         {(['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const).map((status) => (
           <button
             key={status}
             onClick={() => setFilter(status)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               filter === status
-                ? 'bg-primary text-white'
-                : 'bg-white border border-border text-text-secondary hover:text-text-primary'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             {status === 'ALL' ? 'All' : status.charAt(0) + status.slice(1).toLowerCase()}
@@ -127,85 +156,88 @@ export default function CreditRequestsPage() {
           {loading ? (
             <div className="text-center py-12 text-text-secondary">Loading requests...</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Member</TableHead>
-                  <TableHead>Group</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.length === 0 ? (
+            <div className="admin-table-wrap">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-text-secondary py-12">
-                      No {filter !== 'ALL' ? filter.toLowerCase() : ''} requests found
-                    </TableCell>
+                    <TableHead>Member</TableHead>
+                    <TableHead>Group</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Reason</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ) : (
-                  filtered.map((req) => (
-                    <TableRow key={req.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-semibold text-sm">{req.requester.name}</p>
-                          <p className="text-xs text-text-secondary">{req.requester.email}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm">{req.group.name}</TableCell>
-                      <TableCell>
-                        <span className="font-semibold text-sm">{formatCurrency(Number(req.amount))}</span>
-                        <p className="text-xs text-text-secondary">
-                          Fee: {formatCurrency(Number(req.amount) * 0.02)}
-                        </p>
-                      </TableCell>
-                      <TableCell className="text-sm max-w-[160px] truncate">{req.reason}</TableCell>
-                      <TableCell>{statusBadge(req.status)}</TableCell>
-                      <TableCell className="text-xs text-text-secondary">{formatDate(req.createdAt)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedRequest(req)}
-                            className="h-7 w-7 p-0"
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                          </Button>
-                          {req.status === 'PENDING' && (
-                            <>
-                              <Button
-                                variant="success"
-                                size="sm"
-                                onClick={() => handleApprove(req.id)}
-                                loading={actionLoading === req.id + '-approve'}
-                                className="h-7 px-2 text-xs"
-                              >
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Approve
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleReject(req.id)}
-                                loading={actionLoading === req.id + '-reject'}
-                                className="h-7 px-2 text-xs"
-                              >
-                                <XCircle className="h-3 w-3 mr-1" />
-                                Reject
-                              </Button>
-                            </>
-                          )}
-                        </div>
+                </TableHeader>
+                <TableBody>
+                  {filtered.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-text-secondary py-12">
+                        No {filter !== 'ALL' ? filter.toLowerCase() : ''} requests found
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    filtered.map((req) => (
+                      <TableRow key={req.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-semibold text-sm">{req.requester.name}</p>
+                            <p className="text-xs text-text-secondary">{req.requester.email}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">{req.group.name}</TableCell>
+                        <TableCell>
+                          <span className="font-semibold text-sm">{formatCurrency(Number(req.amount))}</span>
+                          <p className="text-xs text-text-secondary">
+                            Fee: {formatCurrency(Number(req.amount) * 0.02)}
+                          </p>
+                        </TableCell>
+                        <TableCell className="text-sm max-w-[160px] truncate">{req.reason}</TableCell>
+                        <TableCell>{statusBadge(req.status)}</TableCell>
+                        <TableCell className="text-xs text-text-secondary">{formatDate(req.createdAt)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedRequest(req)}
+                              className="h-7 w-7 p-0"
+                              title="View details"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                            {req.status === 'PENDING' && (
+                              <>
+                                <Button
+                                  variant="success"
+                                  size="sm"
+                                  onClick={() => handleApprove(req.id)}
+                                  loading={actionLoading === req.id + '-approve'}
+                                  className="h-7 px-2 text-xs"
+                                >
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleReject(req.id)}
+                                  loading={actionLoading === req.id + '-reject'}
+                                  className="h-7 px-2 text-xs"
+                                >
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

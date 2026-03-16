@@ -7,12 +7,74 @@
     @apply border-border;
   }
 
+  :root {
+    --admin-space-section: 1.5rem;
+    --admin-space-card: 1rem;
+    --admin-title-size: 1.5rem;
+    --status-success-soft: #ecfdf3;
+    --status-warning-soft: #fff8e6;
+    --status-danger-soft: #fff1f2;
+    --status-info-soft: #e7f3ff;
+  }
+
   body {
     @apply bg-background text-text-primary font-sans antialiased;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold;
+  }
+}
+
+@layer components {
+  .admin-shell {
+    @apply animate-fade-in;
+    gap: var(--admin-space-section);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .admin-heading {
+    font-size: var(--admin-title-size);
+    @apply font-bold text-text-primary tracking-tight;
+  }
+
+  .admin-subheading {
+    @apply text-sm text-text-secondary mt-1;
+  }
+
+  .admin-kpi-card {
+    @apply rounded-xl border border-border bg-white shadow-sm h-full;
+    min-height: 104px;
+  }
+
+  .admin-kpi-content {
+    padding: var(--admin-space-card);
+    @apply flex flex-col justify-between h-full;
+  }
+
+  .admin-icon-chip {
+    @apply h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0;
+  }
+
+  .admin-table-wrap {
+    @apply overflow-x-auto;
+  }
+
+  .status-soft-success {
+    background: var(--status-success-soft);
+  }
+
+  .status-soft-warning {
+    background: var(--status-warning-soft);
+  }
+
+  .status-soft-danger {
+    background: var(--status-danger-soft);
+  }
+
+  .status-soft-info {
+    background: var(--status-info-soft);
   }
 }
 

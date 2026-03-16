@@ -26,8 +26,8 @@ export default function StatsCard({
   iconBg = 'bg-primary-light',
 }: StatsCardProps) {
   return (
-    <Card className={cn('hover:shadow-md transition-shadow', className)}>
-      <CardContent className="p-5">
+    <Card className={cn('admin-kpi-card hover:shadow-md transition-shadow', className)}>
+      <CardContent className="admin-kpi-content">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-text-secondary truncate">{title}</p>
@@ -49,7 +49,7 @@ export default function StatsCard({
               </div>
             )}
           </div>
-          <div className={cn('p-3 rounded-xl flex-shrink-0', iconBg)}>
+          <div className={cn('admin-icon-chip', iconBg)}>
             {icon}
           </div>
         </div>
