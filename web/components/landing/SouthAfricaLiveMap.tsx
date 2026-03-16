@@ -1,6 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import dynamic from 'next/dynamic'
+import type { LatLngExpression } from 'leaflet'
 
 export type MapMarkerType = 'shop' | 'user' | 'group'
 
@@ -26,27 +28,77 @@ const SOUTH_AFRICA_BOUNDS = {
   maxLng: 33.3,
 }
 
-const MAP_WIDTH = 1000
-const MAP_HEIGHT = 760
+const saBounds: [[number, number], [number, number]] = [
+  [SOUTH_AFRICA_BOUNDS.minLat, SOUTH_AFRICA_BOUNDS.minLng],
+  [SOUTH_AFRICA_BOUNDS.maxLat, SOUTH_AFRICA_BOUNDS.maxLng],
+]
+
+// Simplified South Africa mainland boundary (lat, lng) for visual country overlay.
+const southAfricaOutline: LatLngExpression[] = [
+  [-28.5767, 16.3449],
+  [-29.2573, 17.0629],
+  [-30.7257, 17.5669],
+  [-31.6616, 18.2479],
+  [-32.6113, 18.2217],
+  [-33.2814, 17.9252],
+  [-34.8192, 18.4246],
+  [-34.4626, 20.6891],
+  [-34.4172, 22.5741],
+  [-34.2588, 24.4153],
+  [-33.9871, 25.9097],
+  [-33.7968, 27.5424],
+  [-33.9446, 28.6571],
+  [-34.1425, 29.616],
+  [-34.55, 30.9018],
+  [-34.8191, 31.3256],
+  [-34.0207, 31.08],
+  [-32.172, 28.9256],
+  [-30.6451, 28.2198],
+  [-29.2413, 29.0184],
+  [-28.8514, 28.5417],
+  [-27.5325, 29.4321],
+  [-26.9993, 30.9497],
+  [-26.0226, 32.8301],
+  [-25.5004, 32.0717],
+  [-24.3694, 31.1914],
+  [-23.6589, 30.5281],
+  [-22.2716, 29.4321],
+  [-22.1022, 28.0172],
+  [-22.0913, 25.8475],
+  [-22.8243, 25.6491],
+  [-24.6964, 20.1657],
+  [-28.5767, 16.3449],
+]
+
+const MapContainer = dynamic(
+  () => import('react-leaflet').then((module) => module.MapContainer),
+  { ssr: false }
+)
+const TileLayer = dynamic(
+  () => import('react-leaflet').then((module) => module.TileLayer),
+  { ssr: false }
+)
+const Polygon = dynamic(
+  () => import('react-leaflet').then((module) => module.Polygon),
+  { ssr: false }
+)
+const CircleMarker = dynamic(
+  () => import('react-leaflet').then((module) => module.CircleMarker),
+  { ssr: false }
+)
+const Tooltip = dynamic(
+  () => import('react-leaflet').then((module) => module.Tooltip),
+  { ssr: false }
+)
+const ZoomControl = dynamic(
+  () => import('react-leaflet').then((module) => module.ZoomControl),
+  { ssr: false }
+)
 
 const markerMeta: Record<MapMarkerType, { label: string; color: string; ring: string }> = {
   shop: { label: 'Shops', color: '#F97316', ring: '#FDBA74' },
   user: { label: 'Users', color: '#0EA5E9', ring: '#7DD3FC' },
   group: { label: 'Stokvel Groups', color: '#10B981', ring: '#6EE7B7' },
-}
-
-function projectToSvg(lat: number, lng: number) {
-  const x =
-    ((Math.max(SOUTH_AFRICA_BOUNDS.minLng, Math.min(SOUTH_AFRICA_BOUNDS.maxLng, lng)) - SOUTH_AFRICA_BOUNDS.minLng) /
-      (SOUTH_AFRICA_BOUNDS.maxLng - SOUTH_AFRICA_BOUNDS.minLng)) *
-    MAP_WIDTH
-
-  const y =
-    ((SOUTH_AFRICA_BOUNDS.maxLat - Math.max(SOUTH_AFRICA_BOUNDS.minLat, Math.min(SOUTH_AFRICA_BOUNDS.maxLat, lat))) /
-      (SOUTH_AFRICA_BOUNDS.maxLat - SOUTH_AFRICA_BOUNDS.minLat)) *
-    MAP_HEIGHT
-
-  return { x, y }
 }
 
 export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
@@ -118,10 +170,11 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
   )
 
   const activeMarker = selected ?? hovered
+  const mapCenter: LatLngExpression = [-29.2, 24.8]
 
   return (
-    <div className="rounded-2xl border border-border bg-white shadow-sm overflow-hidden">
-      <div className="px-5 pt-5 pb-4 border-b border-border bg-gradient-to-r from-sky-50 via-white to-emerald-50">
+    <div className="rounded-2xl border border-border bg-white shadow-xl overflow-hidden">
+      <div className="px-5 pt-5 pb-4 border-b border-border bg-[radial-gradient(circle_at_top_left,_#dbeafe_0%,_#ecfeff_35%,_#ffffff_75%)]">
         <h3 className="text-xl font-bold text-text-primary">South Africa Community Map</h3>
         <p className="text-sm text-text-secondary mt-1">
           Live coverage across {areaCount} areas with {totals.shop} shops, {totals.user} users and {totals.group} stokvel groups.
@@ -191,65 +244,70 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
         </div>
       </div>
 
-      <div className="relative bg-slate-950/95">
-        <svg
-          viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
-          className="h-[440px] sm:h-[520px] w-full"
-          role="img"
-          aria-label="Interactive South Africa map with community markers"
+      <div className="relative bg-slate-900">
+        <div className="absolute left-4 top-4 z-[450] rounded-lg border border-cyan-200/80 bg-white/90 px-3 py-2 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
+          True map projection with South Africa boundary overlay
+        </div>
+
+        <MapContainer
+          center={mapCenter}
+          zoom={5}
+          minZoom={4}
+          maxZoom={12}
+          maxBounds={saBounds}
+          maxBoundsViscosity={1}
+          zoomControl={false}
+          className="h-[460px] sm:h-[560px] w-full"
+          scrollWheelZoom
         >
-          <defs>
-            <linearGradient id="seaGradient" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#0B2447" />
-              <stop offset="100%" stopColor="#111827" />
-            </linearGradient>
-            <linearGradient id="saGradient" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#F8FAFC" />
-              <stop offset="100%" stopColor="#DDE7F3" />
-            </linearGradient>
-          </defs>
+          <ZoomControl position="bottomright" />
 
-          <rect x="0" y="0" width={MAP_WIDTH} height={MAP_HEIGHT} fill="url(#seaGradient)" onClick={() => setSelectedMarkerId(null)} />
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
+            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          />
 
-          <path
-            d="M171 571 L156 543 L167 522 L205 498 L223 466 L247 448 L289 444 L321 427 L358 427 L391 405 L418 418 L456 414 L489 392 L526 383 L553 357 L592 361 L637 344 L664 369 L706 388 L729 423 L766 434 L802 461 L821 508 L855 522 L877 558 L867 605 L829 641 L780 648 L755 681 L723 700 L692 697 L640 726 L582 726 L535 703 L478 705 L446 681 L413 686 L374 670 L342 644 L307 626 L273 592 L236 591 Z"
-            fill="url(#saGradient)"
-            stroke="#93A6C1"
-            strokeWidth="3"
-            onClick={() => setSelectedMarkerId(null)}
+          <Polygon
+            pathOptions={{
+              color: '#0369A1',
+              weight: 2.5,
+              fillColor: '#38BDF8',
+              fillOpacity: 0.13,
+            }}
+            positions={southAfricaOutline}
           />
 
           {filtered.map((marker) => {
-            const point = projectToSvg(marker.lat, marker.lng)
             const isSelected = marker.id === selectedMarkerId
 
             return (
-              <g key={marker.id} transform={`translate(${point.x}, ${point.y})`}>
-                <circle
-                  r={isSelected ? 11 : 8}
-                  fill="transparent"
-                  stroke={markerMeta[marker.type].ring}
-                  strokeWidth={isSelected ? 3 : 2}
-                  opacity={0.85}
-                />
-                <circle
-                  r={isSelected ? 7 : 5}
-                  fill={markerMeta[marker.type].color}
-                  stroke="#FFFFFF"
-                  strokeWidth="1.5"
-                  className="cursor-pointer"
-                  onClick={() => setSelectedMarkerId(marker.id)}
-                  onMouseEnter={() => setHoveredMarkerId(marker.id)}
-                  onMouseLeave={() => setHoveredMarkerId(null)}
-                >
-                  <title>
-                    {marker.name} ({markerMeta[marker.type].label}) - {marker.areaName}, {marker.province}
-                  </title>
-                </circle>
-              </g>
+              <CircleMarker
+                key={marker.id}
+                center={[marker.lat, marker.lng]}
+                radius={isSelected ? 10 : 7}
+                pathOptions={{
+                  color: markerMeta[marker.type].ring,
+                  weight: isSelected ? 4 : 2,
+                  fillColor: markerMeta[marker.type].color,
+                  fillOpacity: 0.95,
+                }}
+                eventHandlers={{
+                  click: () => setSelectedMarkerId(marker.id),
+                  mouseover: () => setHoveredMarkerId(marker.id),
+                  mouseout: () => setHoveredMarkerId(null),
+                }}
+              >
+                <Tooltip direction="top" offset={[0, -8]} opacity={1}>
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-semibold">{marker.name}</p>
+                    <p className="text-[11px] text-slate-600">{markerMeta[marker.type].label.slice(0, -1)} • {marker.areaName}</p>
+                    <p className="text-[11px] text-slate-500">{marker.province}</p>
+                  </div>
+                </Tooltip>
+              </CircleMarker>
             )
           })}
-        </svg>
+        </MapContainer>
       </div>
 
       <div className="px-5 py-4 border-t border-border bg-slate-50/80">

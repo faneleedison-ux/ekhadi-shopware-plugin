@@ -1,11 +1,9 @@
 name: Validate Shopware Extension
 
 on:
-  push:
-    branches: ['**']
-    tags: ['v*.*.*']
-  pull_request:
-    branches: [main, develop]
+  # Temporarily paused to avoid failure emails while GitHub Actions billing is locked.
+  # Re-enable by restoring push/pull_request triggers.
+  workflow_dispatch:
 
 jobs:
   validate:
