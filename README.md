@@ -13,7 +13,21 @@ This repository now contains two implementations:
 
 ## Architecture
 
-![e-Khadi Architecture](./mermaid-diagram-2026-03-16-143931.png)
+![e-Khadi Architecture](./assets/images/architecture/system-architecture.png)
+
+## App Screenshots
+
+![App Preview 1](./assets/images/screenshots/app-preview-01.png)
+![App Preview 2](./assets/images/screenshots/app-preview-02.png)
+![App Preview 3](./assets/images/screenshots/app-preview-03.png)
+![App Preview 4](./assets/images/screenshots/app-preview-04.png)
+![App Preview 5](./assets/images/screenshots/app-preview-05.png)
+![App Preview 6](./assets/images/screenshots/app-preview-06.png)
+![App Preview 7](./assets/images/screenshots/app-preview-07.png)
+![App Preview 8](./assets/images/screenshots/app-preview-08.png)
+![App Preview 9](./assets/images/screenshots/app-preview-09.png)
+![App Preview 10](./assets/images/screenshots/app-preview-10.png)
+![App Preview 11](./assets/images/screenshots/app-preview-11.png)
 
 ---
 

@@ -23,9 +23,10 @@ type AreaOption = {
 
 type Props = {
   areas: AreaOption[]
+  onCreated?: (groupName: string) => void
 }
 
-export default function CreateGroupDialog({ areas }: Props) {
+export default function CreateGroupDialog({ areas, onCreated }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -68,6 +69,7 @@ export default function CreateGroupDialog({ areas }: Props) {
       }
 
       setOpen(false)
+      onCreated?.(name.trim())
       setName('')
       setDescription('')
       setMaxMembers(10)
