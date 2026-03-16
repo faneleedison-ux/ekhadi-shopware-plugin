@@ -2,13 +2,45 @@
 
 **Community Credit & Stokvel Platform for South African Spaza Shops**
 
-e-Khadi is a Shopware 6 plugin that enables community-based rotating savings groups (stokvels) and essential-goods micro-credit for SASSA grant recipients. Built for the Huawei Code4Mzansi 2025 competition.
+e-Khadi is a community credit and stokvel platform for SASSA grant recipients, built for the Huawei Code4Mzansi 2025 competition.
+
+This repository now contains two implementations:
+
+- **Current submission app (active):** Next.js web application in `web/` (deployed live)
+- **Legacy implementation (reference):** Shopware 6 plugin in `src/`
 
 ---
 
 ## Architecture
 
 ![e-Khadi Architecture](./mermaid-diagram-2026-03-16-143931.png)
+
+---
+
+## Live Demo (Current Submission)
+
+- **Live URL:** https://web-three-wine-92.vercel.app
+- **GitHub:** https://github.com/faneleedison-ux/ekhadi-shopware-plugin
+
+### Demo Credentials
+
+- **Admin:** `admin@ekhadi.co.za` / `Admin123!`
+- **Member:** `member@ekhadi.co.za` / `Member123!`
+- **Shop:** `shop@ekhadi.co.za` / `Shop123!`
+
+### Seeded Demo Dataset (Production)
+
+- Provinces: 9
+- Areas: 32
+- Members: 110
+- Shops: 92
+- Groups: 30
+- Group memberships: 120
+- Credit requests: 120
+- Transactions: 251
+- Notifications: 96
+- Repayments: 72
+- Rotation cycles: 60
 
 ---
 
@@ -25,13 +57,58 @@ Many South Africans who receive SASSA grants (SRD R350, Old Age R1890, Disabilit
 
 ## Compatibility
 
+- Next.js 14.x (App Router)
+- Node.js 18+
+- PostgreSQL (Supabase)
+- Vercel deployment
+
+### Legacy Compatibility (Shopware Plugin)
+
 - Shopware 6.6.x
 - PHP 8.1+
 - MySQL 8.0+ / MariaDB 10.6+
 
 ---
 
-## How to Run
+## How to Run (Current Web App)
+
+### Prerequisites
+
+- Node.js 18+
+- npm
+- PostgreSQL database (Supabase recommended)
+
+### Local Run
+
+```bash
+cd web
+npm install
+cp .env.example .env.local
+
+# Fill DATABASE_URL, DIRECT_URL, NEXTAUTH_SECRET, NEXTAUTH_URL
+npm run dev
+```
+
+Open http://localhost:3000
+
+### Production Deploy (Vercel)
+
+```bash
+cd web
+npx vercel --prod
+```
+
+Set these production environment variables in Vercel:
+
+- `DATABASE_URL`
+- `DIRECT_URL`
+- `NEXTAUTH_SECRET`
+- `NEXTAUTH_URL`
+- `SEED_SECRET` (only if you need protected seed route)
+
+---
+
+## How to Run (Legacy Shopware Plugin)
 
 ### Prerequisites
 
@@ -73,7 +150,7 @@ bin/console database:migrate --all EKhadi
 bin/console cache:clear
 ```
 
-### Seed Demo Data (1000 customers, 9 provinces, 180 areas, 81 groups)
+### Seed Demo Data (legacy plugin)
 
 ```bash
 # Seed all demo data
@@ -86,7 +163,7 @@ bin/console ekhadi:seed --customers=500
 bin/console ekhadi:seed --fresh
 ```
 
-Seed credentials for demo customers: **password** `eKhadi@2025!`, **customer number** prefix `EKH`.
+Seed credentials for demo customers (legacy plugin): **password** `eKhadi@2025!`, **customer number** prefix `EKH`.
 
 ### Install Order States
 
@@ -179,6 +256,10 @@ Flat 2% service fee. No compound interest.
 ---
 
 ## API Reference
+
+> The endpoint catalog below is for the **legacy Shopware plugin** API in `src/Controller/Api`.
+>
+> The current Next.js app uses route handlers under `web/app/api`.
 
 All API endpoints require Bearer token authentication:
 ```
@@ -377,17 +458,25 @@ src/
 
 ## Seed Data Summary
 
-Running `bin/console ekhadi:seed` creates:
+### Current Web App Seed (production demo)
 
 | Data | Count |
 |---|---|
-| Provinces | 9 (all SA provinces) |
-| Areas | 180 (20 per province) |
-| Customers | 1000 (realistic SA names, SASSA profiles) |
-| Stokvel groups | 81 (9 per province) |
-| Wallets + buckets | 81 wallets × 5 buckets = 405 buckets |
-| Grant cycle history | 6 months × 200 customers |
-| Credit requests | ~300 (mixed pending/approved/rejected/repaid) |
+| Provinces | 9 |
+| Areas | 32 |
+| Members | 110 |
+| Shops | 92 |
+| Stokvel groups | 30 |
+| Group memberships | 120 |
+| Credit requests | 120 |
+| Transactions | 251 |
+| Notifications | 96 |
+| Repayments | 72 |
+| Rotation cycles | 60 |
+
+### Legacy Shopware Plugin Seed
+
+Running `bin/console ekhadi:seed` creates plugin-side data in a Shopware installation.
 
 ---
 
@@ -420,7 +509,15 @@ bin/console dbal:run-sql "SHOW TABLES LIKE 'ekhadi_%'"
 
 ## Changelog
 
-### v2.0.0 — e-Khadi Platform (Current)
+### v3.0.0 — Next.js Live Submission (Current)
+- Added production-ready Next.js web app under `web/`
+- Added role-based auth flows (Admin, Member, Shop)
+- Added Supabase-backed production data store
+- Added protected production seed route with realistic South African demo dataset
+- Added live Vercel deployment and demo credentials
+- Kept Shopware plugin implementation as legacy reference
+
+### v2.0.0 — e-Khadi Platform (Legacy Shopware)
 - Added 9 SA provinces × 20 geographic areas (180 total)
 - Added stokvel group system: `ekhadi_group`, `ekhadi_group_member`
 - Added group wallet + 6 spending bucket types: `ekhadi_group_wallet`, `ekhadi_group_bucket`
