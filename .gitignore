@@ -1,1 +1,6 @@
 .vercel
+web/node_modules/
+web/.next/
+web/.env.local
+web/tsconfig.tsbuildinfo
+web/.DS_Store
