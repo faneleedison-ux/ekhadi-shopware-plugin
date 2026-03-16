@@ -1,17 +1,22 @@
 import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
-import { UsersRound, Plus } from 'lucide-react'
+import { UsersRound } from 'lucide-react'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import CreateGroupDialog from '@/components/admin/CreateGroupDialog'
 
 export default async function GroupsPage() {
   const session = await getServerSession(authOptions)
   if (!session || session.user.role !== 'ADMIN') redirect('/login')
+
+  const areas = await prisma.area.findMany({
+    select: { id: true, name: true, province: true },
+    orderBy: { name: 'asc' },
+  })
 
   const groups = await prisma.group.findMany({
     include: {
@@ -34,10 +39,7 @@ export default async function GroupsPage() {
           <h1 className="text-2xl font-bold text-text-primary">Stokvel Groups</h1>
           <p className="text-text-secondary mt-1">{groups.length} active groups</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Group
-        </Button>
+        <CreateGroupDialog areas={areas} />
       </div>
 
       {/* Summary cards */}
