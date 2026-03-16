@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>e-Khadi Demo | Interactive Credit Simulator</title>
+    <style>
+      :root {
+        --sand: #f6f1e8;
+        --paper: #fffefb;
+        --earth: #593521;
+        --rust: #be4f22;
+        --rust-dark: #943a17;
+        --sage: #7a9b7d;
+        --ink: #1f1b16;
+        --border: #dbcfc3;
+        --ok: #176f43;
+        --warn: #8a6406;
+        --no: #8b1e1e;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 15% 20%, #f9d8ac 0%, transparent 28%),
+          radial-gradient(circle at 88% 12%, #f2d6bc 0%, transparent 33%),
+          linear-gradient(160deg, #f8f2e7, #ede4d2);
+        min-height: 100vh;
+      }
+
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 26px 18px 38px;
+      }
+
+      .hero {
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 22px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+        margin-bottom: 18px;
+      }
+
+      .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        font-size: 0.74rem;
+        color: var(--earth);
+        margin-bottom: 8px;
+      }
+
+      h1 {
+        margin: 0;
+        line-height: 1.05;
+        font-size: clamp(1.9rem, 4vw, 3rem);
+      }
+
+      .subtitle {
+        margin-top: 10px;
+        line-height: 1.45;
+        max-width: 74ch;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1.08fr 0.92fr;
+        gap: 14px;
+      }
+
+      .card {
+        background: var(--paper);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 16px;
+      }
+
+      .card h2 {
+        margin: 0 0 12px;
+        font-size: 1.05rem;
+      }
+
+      .meta {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .stat {
+        border: 1px dashed var(--border);
+        border-radius: 12px;
+        padding: 10px;
+      }
+
+      .stat small {
+        display: block;
+        opacity: 0.7;
+        margin-bottom: 6px;
+      }
+
+      .stat strong {
+        font-size: 1.12rem;
+      }
+
+      form {
+        margin-top: 8px;
+        display: grid;
+        gap: 10px;
+      }
+
+      label {
+        font-size: 0.87rem;
+        font-weight: 600;
+      }
+
+      input, select, button {
+        width: 100%;
+        font: inherit;
+        border-radius: 10px;
+      }
+
+      input, select {
+        border: 1px solid var(--border);
+        background: #fff;
+        padding: 10px;
+      }
+
+      button {
+        border: 0;
+        background: var(--rust);
+        color: #fff;
+        font-weight: 700;
+        padding: 11px 12px;
+        cursor: pointer;
+      }
+
+      button:hover { background: var(--rust-dark); }
+
+      .secondary {
+        background: #fff;
+        border: 1px solid var(--border);
+        color: var(--ink);
+      }
+
+      .secondary:hover { background: #f8f5ef; }
+
+      .stack {
+        display: grid;
+        gap: 10px;
+      }
+
+      .message {
+        border-radius: 12px;
+        padding: 10px;
+        font-size: 0.9rem;
+        border: 1px solid var(--border);
+        background: #faf6f1;
+      }
+
+      .message.ok {
+        border-color: #c4e5d3;
+        color: var(--ok);
+        background: #edf8f1;
+      }
+
+      .message.warn {
+        border-color: #f0dcaf;
+        color: var(--warn);
+        background: #fff9e9;
+      }
+
+      .message.no {
+        border-color: #efc8c8;
+        color: var(--no);
+        background: #fff1f1;
+      }
+
+      .log {
+        max-height: 220px;
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px;
+        font-size: 0.88rem;
+        background: #fff;
+      }
+
+      .log p {
+        margin: 0 0 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px dashed #eee2d5;
+      }
+
+      .links {
+        margin-top: 12px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .links a {
+        text-decoration: none;
+        color: var(--earth);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 6px 12px;
+        background: #fff;
+        font-size: 0.85rem;
+      }
+
+      footer {
+        margin-top: 14px;
+        font-size: 0.86rem;
+        opacity: 0.8;
+      }
+
+      @media (max-width: 900px) {
+        .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <section class="hero">
+        <div class="eyebrow">e-Khadi Interactive Demo</div>
+        <h1>View and interact with the platform on Vercel</h1>
+        <p class="subtitle">
+          This demo simulates real e-Khadi product rules: behaviour-based credit limits, essential-only buckets,
+          area-restricted spending, and repayment from grant cycle. It runs fully in-browser for live interaction.
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>Customer State</h2>
+          <div class="meta">
+            <div class="stat"><small>Score</small><strong id="scoreView">67</strong></div>
+            <div class="stat"><small>Credit Limit</small><strong id="limitView">R200</strong></div>
+            <div class="stat"><small>Outstanding</small><strong id="debtView">R0</strong></div>
+            <div class="stat"><small>Risk</small><strong id="riskView">Medium</strong></div>
+          </div>
+
+          <form id="creditForm">
+            <label for="score">Behaviour Score (0-100)</label>
+            <input id="score" type="number" min="0" max="100" value="67" />
+
+            <label for="area">Customer Area</label>
+            <select id="area">
+              <option value="soweto">Soweto</option>
+              <option value="khayelitsha">Khayelitsha</option>
+              <option value="alexandra">Alexandra</option>
+            </select>
+
+            <label for="shopArea">Shop Area</label>
+            <select id="shopArea">
+              <option value="soweto">Soweto</option>
+              <option value="khayelitsha">Khayelitsha</option>
+              <option value="alexandra">Alexandra</option>
+            </select>
+
+            <label for="bucket">Purchase Bucket</label>
+            <select id="bucket">
+              <option value="food">food</option>
+              <option value="medicine">medicine</option>
+              <option value="toiletries">toiletries</option>
+              <option value="electricity">electricity</option>
+              <option value="baby_products">baby_products</option>
+              <option value="general">general</option>
+            </select>
+
+            <label for="amount">Credit Amount (R)</label>
+            <input id="amount" type="number" min="1" value="120" />
+
+            <div class="stack">
+              <button type="submit">Request Credit</button>
+              <button id="repayBtn" class="secondary" type="button">Simulate Grant Repayment</button>
+              <button id="resetBtn" class="secondary" type="button">Reset Demo</button>
+            </div>
+          </form>
+        </article>
+
+        <article class="card">
+          <h2>Rule Engine Output</h2>
+          <div id="message" class="message warn">Make a credit request to test approval and validation rules.</div>
+
+          <h2 style="margin-top: 14px;">Activity Log</h2>
+          <div class="log" id="log"></div>
+
+          <div class="links">
+            <a href="https://github.com/faneleedison-ux/ekhadi-shopware-plugin" target="_blank" rel="noreferrer">GitHub Repo</a>
+            <a href="https://github.com/faneleedison-ux/ekhadi-shopware-plugin/blob/main/README.md" target="_blank" rel="noreferrer">Plugin Setup</a>
+          </div>
+
+          <footer>
+            Demo note: this is an interactive frontend simulation on Vercel. Full Shopware plugin APIs run in Shopware hosting.
+          </footer>
+        </article>
+      </section>
+    </div>
+
+    <script>
+      const limits = [
+        { min: 80, value: 300 },
+        { min: 60, value: 200 },
+        { min: 40, value: 150 },
+        { min: 20, value: 100 },
+        { min: 0, value: 50 }
+      ];
+      const essentialBuckets = new Set(["food", "medicine", "toiletries", "electricity", "baby_products"]);
+
+      const state = {
+        score: 67,
+        creditLimit: 200,
+        outstanding: 0,
+        risk: "Medium"
+      };
+
+      const refs = {
+        scoreView: document.getElementById("scoreView"),
+        limitView: document.getElementById("limitView"),
+        debtView: document.getElementById("debtView"),
+        riskView: document.getElementById("riskView"),
+        message: document.getElementById("message"),
+        log: document.getElementById("log"),
+        form: document.getElementById("creditForm"),
+        score: document.getElementById("score"),
+        area: document.getElementById("area"),
+        shopArea: document.getElementById("shopArea"),
+        bucket: document.getElementById("bucket"),
+        amount: document.getElementById("amount"),
+        repayBtn: document.getElementById("repayBtn"),
+        resetBtn: document.getElementById("resetBtn")
+      };
+
+      function getLimit(score) {
+        return limits.find((entry) => score >= entry.min).value;
+      }
+
+      function computeRisk(outstanding, score) {
+        if (outstanding === 0) return "Low";
+        if (score < 40 || outstanding > 180) return "High";
+        return "Medium";
+      }
+
+      function render() {
+        refs.scoreView.textContent = String(state.score);
+        refs.limitView.textContent = `R${state.creditLimit}`;
+        refs.debtView.textContent = `R${state.outstanding}`;
+        refs.riskView.textContent = state.risk;
+      }
+
+      function notify(text, mode) {
+        refs.message.className = `message ${mode}`;
+        refs.message.textContent = text;
+      }
+
+      function pushLog(text) {
+        const p = document.createElement("p");
+        const time = new Date().toLocaleTimeString();
+        p.textContent = `${time}: ${text}`;
+        refs.log.prepend(p);
+      }
+
+      refs.form.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const score = Math.max(0, Math.min(100, Number(refs.score.value) || 0));
+        const amount = Math.max(0, Number(refs.amount.value) || 0);
+        const customerArea = refs.area.value;
+        const selectedShopArea = refs.shopArea.value;
+        const bucket = refs.bucket.value;
+
+        state.score = score;
+        state.creditLimit = getLimit(score);
+
+        if (customerArea !== selectedShopArea) {
+          state.risk = computeRisk(state.outstanding, state.score);
+          render();
+          notify("Rejected: customer can only spend in their registered area.", "no");
+          pushLog(`Rejected R${amount} request due to area mismatch (${customerArea} vs ${selectedShopArea}).`);
+          return;
+        }
+
+        if (!essentialBuckets.has(bucket)) {
+          state.risk = computeRisk(state.outstanding, state.score);
+          render();
+          notify("Rejected: credit is available only for essential goods buckets.", "no");
+          pushLog(`Rejected R${amount} request because '${bucket}' is not essential.`);
+          return;
+        }
+
+        if (amount <= 0) {
+          notify("Enter a valid amount above R0.", "warn");
+          return;
+        }
+
+        if (state.outstanding + amount > state.creditLimit) {
+          state.risk = computeRisk(state.outstanding, state.score);
+          render();
+          notify(`Rejected: request exceeds credit limit of R${state.creditLimit}.`, "no");
+          pushLog(`Rejected R${amount} request due to limit. Outstanding: R${state.outstanding}.`);
+          return;
+        }
+
+        state.outstanding += amount;
+        state.risk = computeRisk(state.outstanding, state.score);
+        render();
+
+        const fee = Math.round(amount * 0.02);
+        notify(`Approved: R${amount} for ${bucket}. Flat service fee will be R${fee} at repayment.`, "ok");
+        pushLog(`Approved R${amount} credit in '${bucket}' for area ${customerArea}.`);
+      });
+
+      refs.repayBtn.addEventListener("click", () => {
+        if (state.outstanding === 0) {
+          notify("No outstanding debt to repay.", "warn");
+          pushLog("Repayment skipped: no debt.");
+          return;
+        }
+
+        const fee = Math.round(state.outstanding * 0.02);
+        const total = state.outstanding + fee;
+        pushLog(`Grant repayment processed: principal R${state.outstanding} + fee R${fee} = R${total}.`);
+        state.outstanding = 0;
+        state.risk = computeRisk(state.outstanding, state.score);
+        render();
+        notify(`Repayment complete. Deducted R${total} from grant cycle.`, "ok");
+      });
+
+      refs.resetBtn.addEventListener("click", () => {
+        state.score = 67;
+        state.creditLimit = getLimit(state.score);
+        state.outstanding = 0;
+        state.risk = "Medium";
+
+        refs.score.value = "67";
+        refs.area.value = "soweto";
+        refs.shopArea.value = "soweto";
+        refs.bucket.value = "food";
+        refs.amount.value = "120";
+        refs.log.innerHTML = "";
+
+        render();
+        notify("Demo reset. You can run another scenario.", "warn");
+      });
+
+      render();
+      pushLog("Demo initialized. Ready for scenario testing.");
+    </script>
+  </body>
+</html>
