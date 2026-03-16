@@ -1,0 +1,135 @@
+<?php
+
+namespace EKhadi\Service;
+
+use Shopware\Core\Framework\Context;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
+use Shopware\Core\Framework\Uuid\Uuid;
+
+class StoreCreditManager
+{
+    private EntityRepository $storeCreditRepository;
+    private EntityRepository $storeCreditHistoryRepository;
+
+    public function __construct(
+        EntityRepository $storeCreditRepository,
+        EntityRepository $storeCreditHistoryRepository,
+    ) {
+        $this->storeCreditRepository        = $storeCreditRepository;
+        $this->storeCreditHistoryRepository = $storeCreditHistoryRepository;
+    }
+
+    public function addCredit(string $customerId, ?string $orderId, ?string $currencyId, float $amount, Context $context, ?string $reason = null): string
+    {
+
+        $storeCreditId = $this->getStoreCreditId($customerId, $context);
+
+        if ($storeCreditId) {
+            $currentBalance = $this->getCreditBalance($customerId, $context)['balanceAmount'];
+            $newBalance     = $currentBalance + $amount;
+
+            $this->storeCreditRepository->update([
+                [
+                    'id'         => $storeCreditId,
+                    'balance'    => $newBalance,
+                    'currencyId' => $currencyId,
+                    'updatedAt'  => (new \DateTime())->format('Y-m-d H:i:s'),
+                ]
+            ], $context);
+        } else {
+            $storeCreditId = Uuid::randomHex();
+            $this->storeCreditRepository->create([
+                [
+                    'id'         => $storeCreditId,
+                    'customerId' => $customerId,
+                    'balance'    => $amount,
+                    'currencyId' => $currencyId,
+                ]
+            ], $context);
+        }
+
+        $historyId = Uuid::randomHex();
+        $this->storeCreditHistoryRepository->create([
+            [
+                'id'            => $historyId,
+                'storeCreditId' => $storeCreditId,
+                'orderId'       => $orderId,
+                'amount'        => $amount,
+                'currencyId'    => $currencyId,
+                'reason'        => $reason ?: 'Not specified',
+                'actionType'    => 'add',
+                'createdAt'     => (new \DateTime())->format('Y-m-d H:i:s.u'),
+            ]
+        ], $context);
+
+        return $historyId;
+    }
+
+    public function deductCredit(string $customerId, float $amount, Context $context, ?string $orderId, ?string $currencyId, ?string $reason = null): ?string
+    {
+        $storeCreditId = $this->getStoreCreditId($customerId, $context);
+
+        if (!$storeCreditId) {
+            return null;
+        }
+
+        $currentBalance = $this->getCreditBalance($customerId, $context)['balanceAmount'];
+
+        if ($currentBalance < $amount) {
+            return null;
+        }
+
+        $newBalance = $currentBalance - $amount;
+
+        $this->storeCreditRepository->update([
+            [
+                'id'         => $storeCreditId,
+                'balance'    => $newBalance,
+                'currencyId' => $currencyId,
+                'updatedAt'  => (new \DateTime())->format('Y-m-d H:i:s'),
+            ]
+        ], $context);
+
+        $historyId = Uuid::randomHex();
+        $this->storeCreditHistoryRepository->create([
+            [
+                'id'            => $historyId,
+                'storeCreditId' => $storeCreditId,
+                'orderId'       => $orderId,
+                'amount'        => $amount,
+                'currencyId'    => $currencyId,
+                'reason'        => $reason ?: 'Not specified',
+                'actionType'    => 'deduct',
+                'createdAt'     => (new \DateTime())->format('Y-m-d H:i:s.u'),
+            ]
+        ], $context);
+
+        return $historyId;
+    }
+    public function getCreditBalance(string $customerId, Context $context): array
+    {
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('customerId', $customerId));
+        $result = $this->storeCreditRepository->search($criteria, $context);
+
+        $storeCreditEntity = $result->first();
+
+        return [
+            'balanceAmount'     => $storeCreditEntity ? $storeCreditEntity->get('balance') : 0.0,
+            'balanceCurrencyId' => $storeCreditEntity ? $storeCreditEntity->get('currencyId') : null,
+        ];
+    }
+
+    public function getStoreCreditId(string $customerId, Context $context): ?string
+    {
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('customerId', $customerId));
+        $result = $this->storeCreditRepository->search($criteria, $context);
+
+        $storeCreditEntity = $result->first();
+
+        return $storeCreditEntity ? $storeCreditEntity->get('id') : null;
+    }
+}

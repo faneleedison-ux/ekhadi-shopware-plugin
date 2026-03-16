@@ -1,0 +1,67 @@
+{
+    "name": "ekhadi/ekhadi-plugin",
+    "description": "e-Khadi: Community Credit & Stokvel Platform for Shopware 6",
+    "type": "shopware-platform-plugin",
+    "version": "2.0.0",
+    "license": "MIT",
+    "authors": [
+      {
+        "name": "e-Khadi",
+        "role": "Manufacturer"
+      }
+    ],
+    "require": {
+        "shopware/core": "~6.6.0",
+        "shopware/storefront": "~6.6.0"
+    },
+    "require-dev": {
+        "squizlabs/php_codesniffer": "^4.0",
+        "phpstan/phpstan": "^2.1"
+    },
+    "extra": {
+        "shopware-plugin-class": "EKhadi\\EKhadi",
+        "label": {
+            "de-DE": "e-Khadi",
+            "en-GB": "e-Khadi"
+        },
+        "description": {
+          "de-DE": "e-Khadi: Community-Kredit und Stokvel-Plattform für SASSA-Leistungsempfänger in Südafrika.",
+          "en-GB": "e-Khadi: Community credit and stokvel platform for South African SASSA grant recipients. Enables rotating savings groups, essential-goods-only micro-credit (R50-R300), and geographic area enforcement for spaza shops."
+        },
+        "manufacturerLink": {
+          "de-DE": "https://github.com/ekhadi",
+          "en-GB": "https://github.com/ekhadi"
+        },
+        "supportLink": {
+          "de-DE": "https://github.com/ekhadi",
+          "en-GB": "https://github.com/ekhadi"
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "EKhadi\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "EKhadi\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "@enable-prepush"
+        ],
+        "post-update-cmd": [
+            "@enable-prepush"
+        ],
+        "enable-prepush": [
+            "cp ./pre-push .git/hooks/pre-push",
+            "chmod +x .git/hooks/pre-push"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "symfony/runtime": true
+        }
+    }
+}

@@ -1,0 +1,256 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>
+        <service id="EKhadi\Core\Content\StoreCredit\StoreCreditDefinition" public="true">
+            <tag name="shopware.entity.definition" entity="store_credit" />
+        </service>
+
+        <service id="EKhadi\Core\Content\StoreCreditHistory\StoreCreditHistoryDefinition">
+            <tag name="shopware.entity.definition" entity="store_credit_history" />
+        </service>
+
+        <service id="EKhadi\Service\StoreCreditManager">
+            <argument type="service" id="store_credit.repository"/>
+            <argument type="service" id="store_credit_history.repository"/>
+        </service>
+
+        <service id="EKhadi\Service\OrderStateInstaller">
+            <argument type="service" id="state_machine.repository" />
+            <argument type="service" id="state_machine_state.repository" />
+            <argument type="service" id="state_machine_transition.repository" />
+            <argument type="service" id="state_machine_history.repository" />
+        </service>
+
+        <service id="EKhadi\Controller\StoreCreditController">
+            <argument type="service" id="EKhadi\Service\StoreCreditManager" />
+            <tag name="controller.service_arguments"/>
+        </service>
+
+        <service id="EKhadi\Controller\StoreCreditPageController">
+            <argument type="service" id="store_credit.repository"/>
+            <argument type="service" id="store_credit_history.repository"/>
+            <tag name="controller.service_arguments"/>
+            <call method="setContainer">
+                <argument type="service" id="service_container"/>
+            </call>
+            <call method="setTwig">
+                <argument type="service" id="twig"/>
+            </call>
+        </service>
+
+        <service id="EKhadi\Subscriber\CartSubscriber">
+            <argument type="service" id="EKhadi\Service\StoreCreditManager"/>
+            <argument type="service" id="EKhadi\Service\GroupWalletManager"/>
+            <argument type="service" id="EKhadi\Service\GrantCycleService"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="EKhadi\Subscriber\OrderRefundSubscriber" public="true">
+            <argument type="service" id="order.repository" />
+            <argument type="service" id="order_return.repository" on-invalid="null"/>
+            <argument type="service" id="EKhadi\Controller\StoreCreditController" />
+            <tag name="kernel.event_subscriber" />
+        </service>
+
+        <service id="EKhadi\Storefront\Controller\StoreCreditApplyController">
+            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
+            <argument type="service" id="store_credit.repository"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="service" id="EKhadi\Service\GroupWalletManager"/>
+            <argument type="service" id="EKhadi\Service\AreaManager"/>
+            <call method="setContainer">
+                <argument type="service" id="service_container"/>
+            </call>
+            <tag name="controller.service_arguments"/>
+        </service>
+
+        <service id="EKhadi\EventSubscriber\StoreCreditCheckoutSubscriber">
+            <argument type="service" id="EKhadi\Service\StoreCreditManager"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="EKhadi\Command\OrderStateInstallerCommand">
+            <argument type="service" id="EKhadi\Service\OrderStateInstaller"/>
+            <tag name="console.command" command="store-credit:install-order-state" />
+        </service>
+
+        <service id="EKhadi\Command\EKhadiSeedCommand">
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <tag name="console.command" command="ekhadi:seed"/>
+        </service>
+
+        <service id="EKhadi\Subscriber\ConfigCommandSubscriber">
+            <argument type="service" id="console.command_loader"/>
+            <argument type="service" id="logger"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="EKhadi\Subscriber\OrderEditSubscriber">
+            <argument type="service" id="order.repository"/>
+            <argument type="service" id="Shopware\Core\System\StateMachine\StateMachineRegistry"/>
+            <argument type="service" id="Symfony\Component\EventDispatcher\EventDispatcherInterface"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="service" id="Shopware\Core\System\NumberRange\ValueGenerator\NumberRangeValueGeneratorInterface"/>
+            <argument type="service" id="Shopware\Administration\Notification\NotificationService"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="EKhadi\Core\Checkout\Cart\Processor\ValidateStoreCreditCartProcessor">
+            <tag name="shopware.cart.processor" priority="-20000"/>
+        </service>
+
+        <!-- ================================================================ -->
+        <!-- e-Khadi area / spaza shop / customer profile entities           -->
+        <!-- ================================================================ -->
+
+        <service id="EKhadi\Core\Content\EKhadi\Area\EKhadiAreaDefinition">
+            <tag name="shopware.entity.definition" entity="ekhadi_area"/>
+        </service>
+
+        <service id="EKhadi\Core\Content\EKhadi\AreaShop\EKhadiAreaShopDefinition">
+            <tag name="shopware.entity.definition" entity="ekhadi_area_shop"/>
+        </service>
+
+        <service id="EKhadi\Core\Content\EKhadi\CustomerProfile\EKhadiCustomerProfileDefinition">
+            <tag name="shopware.entity.definition" entity="ekhadi_customer_profile"/>
+        </service>
+
+        <service id="EKhadi\Service\AreaManager">
+            <argument type="service" id="ekhadi_area.repository"/>
+            <argument type="service" id="ekhadi_area_shop.repository"/>
+            <argument type="service" id="ekhadi_customer_profile.repository"/>
+        </service>
+
+        <service id="EKhadi\Controller\Api\EKhadiAreaController">
+            <argument type="service" id="EKhadi\Service\AreaManager"/>
+            <tag name="controller.service_arguments"/>
+        </service>
+
+        <!-- ================================================================ -->
+        <!-- e-Khadi stokvel entities                                         -->
+        <!-- ================================================================ -->
+
+        <service id="EKhadi\Core\Content\EKhadi\Group\EKhadiGroupDefinition">
+            <tag name="shopware.entity.definition" entity="ekhadi_group"/>
+        </service>
+
+        <service id="EKhadi\Core\Content\EKhadi\GroupMember\EKhadiGroupMemberDefinition">
+            <tag name="shopware.entity.definition" entity="ekhadi_group_member"/>
+        </service>
+
+        <service id="EKhadi\Core\Content\EKhadi\GroupWallet\EKhadiGroupWalletDefinition">
+            <tag name="shopware.entity.definition" entity="ekhadi_group_wallet"/>
+        </service>
+
+        <service id="EKhadi\Core\Content\EKhadi\GroupBucket\EKhadiGroupBucketDefinition">
+            <tag name="shopware.entity.definition" entity="ekhadi_group_bucket"/>
+        </service>
+
+        <service id="EKhadi\Core\Content\EKhadi\RotationCycle\EKhadiRotationCycleDefinition">
+            <tag name="shopware.entity.definition" entity="ekhadi_rotation_cycle"/>
+        </service>
+
+        <service id="EKhadi\Core\Content\EKhadi\CreditRequest\EKhadiCreditRequestDefinition">
+            <tag name="shopware.entity.definition" entity="ekhadi_credit_request"/>
+        </service>
+
+        <!-- ================================================================ -->
+        <!-- e-Khadi services                                                 -->
+        <!-- ================================================================ -->
+
+        <service id="EKhadi\Service\GroupManager">
+            <argument type="service" id="ekhadi_group.repository"/>
+            <argument type="service" id="ekhadi_group_member.repository"/>
+            <argument type="service" id="ekhadi_group_wallet.repository"/>
+        </service>
+
+        <service id="EKhadi\Service\GroupWalletManager">
+            <argument type="service" id="ekhadi_group_wallet.repository"/>
+            <argument type="service" id="ekhadi_group_bucket.repository"/>
+            <argument type="service" id="EKhadi\Service\GroupManager"/>
+        </service>
+
+        <service id="EKhadi\Service\RotationManager">
+            <argument type="service" id="ekhadi_rotation_cycle.repository"/>
+            <argument type="service" id="EKhadi\Service\GroupManager"/>
+            <argument type="service" id="EKhadi\Service\StoreCreditManager"/>
+        </service>
+
+        <service id="EKhadi\Service\CreditRulesEngine">
+            <argument type="service" id="ekhadi_credit_request.repository"/>
+            <argument type="service" id="ekhadi_repayment_schedule.repository"/>
+            <argument type="service" id="ekhadi_grant_cycle.repository"/>
+            <argument type="service" id="EKhadi\Service\AreaManager"/>
+        </service>
+
+        <service id="EKhadi\Service\RepaymentService">
+            <argument type="service" id="ekhadi_repayment_schedule.repository"/>
+            <argument type="service" id="ekhadi_credit_request.repository"/>
+            <argument type="service" id="EKhadi\Service\StoreCreditManager"/>
+            <argument type="service" id="EKhadi\Service\CreditRulesEngine"/>
+            <argument type="service" id="EKhadi\Service\AreaManager"/>
+        </service>
+
+        <service id="EKhadi\Service\GrantCycleService">
+            <argument type="service" id="ekhadi_grant_cycle.repository"/>
+            <argument type="service" id="EKhadi\Service\AreaManager"/>
+            <argument type="service" id="EKhadi\Service\StoreCreditManager"/>
+        </service>
+
+        <service id="EKhadi\Service\CreditRequestManager">
+            <argument type="service" id="ekhadi_credit_request.repository"/>
+            <argument type="service" id="EKhadi\Service\GroupManager"/>
+            <argument type="service" id="EKhadi\Service\GroupWalletManager"/>
+            <argument type="service" id="EKhadi\Service\StoreCreditManager"/>
+            <argument type="service" id="EKhadi\Service\CreditRulesEngine"/>
+            <argument type="service" id="EKhadi\Service\RepaymentService"/>
+        </service>
+
+        <!-- ================================================================ -->
+        <!-- e-Khadi API controllers                                          -->
+        <!-- ================================================================ -->
+
+        <service id="EKhadi\Controller\Api\EKhadiGroupController">
+            <argument type="service" id="EKhadi\Service\GroupManager"/>
+            <tag name="controller.service_arguments"/>
+        </service>
+
+        <service id="EKhadi\Controller\Api\EKhadiWalletController">
+            <argument type="service" id="EKhadi\Service\GroupWalletManager"/>
+            <tag name="controller.service_arguments"/>
+        </service>
+
+        <service id="EKhadi\Controller\Api\EKhadiRotationController">
+            <argument type="service" id="EKhadi\Service\RotationManager"/>
+            <tag name="controller.service_arguments"/>
+        </service>
+
+        <service id="EKhadi\Controller\Api\EKhadiCreditRequestController">
+            <argument type="service" id="EKhadi\Service\CreditRequestManager"/>
+            <tag name="controller.service_arguments"/>
+        </service>
+
+        <service id="EKhadi\Controller\Api\EKhadiGrantController">
+            <argument type="service" id="EKhadi\Service\GrantCycleService"/>
+            <argument type="service" id="EKhadi\Service\RepaymentService"/>
+            <argument type="service" id="EKhadi\Service\CreditRulesEngine"/>
+            <argument type="service" id="EKhadi\Service\AreaManager"/>
+            <tag name="controller.service_arguments"/>
+        </service>
+
+        <service id="EKhadi\Core\Content\EKhadi\GrantCycle\EKhadiGrantCycleDefinition">
+            <tag name="shopware.entity.definition" entity="ekhadi_grant_cycle"/>
+        </service>
+
+        <service id="EKhadi\Core\Content\EKhadi\RepaymentSchedule\EKhadiRepaymentScheduleDefinition">
+            <tag name="shopware.entity.definition" entity="ekhadi_repayment_schedule"/>
+        </service>
+
+    </services>
+</container>

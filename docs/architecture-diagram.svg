@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <defs>
+    <style>
+      .title { font: 600 24px Arial, Helvetica, sans-serif; fill: #111827; }
+      .section { font: 600 20px Arial, Helvetica, sans-serif; fill: #111827; }
+      .label { font: 16px Arial, Helvetica, sans-serif; fill: #111827; }
+      .label-small { font: 14px Arial, Helvetica, sans-serif; fill: #111827; }
+      .box { fill: #ffffff; stroke: #1f2937; stroke-width: 2; rx: 8; ry: 8; }
+      .cloud { fill: #f3f6ff; stroke: #4169e1; stroke-width: 2; rx: 14; ry: 14; }
+      .arrow { stroke: #1f2937; stroke-width: 2.5; fill: none; marker-end: url(#arrowhead); }
+      .dashed { stroke-dasharray: 6 6; }
+      .bg { fill: #ffffff; }
+      .divider { stroke: #e5e7eb; stroke-width: 2; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#1f2937" />
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1600" height="1000" />
+
+  <text class="title" x="40" y="40">e-Khadi Architecture</text>
+  <line class="divider" x1="40" y1="55" x2="1560" y2="55" />
+
+  <!-- Section 1: Current Architecture -->
+  <text class="section" x="40" y="95">Current Architecture (As-Is)</text>
+
+  <!-- Users -->
+  <rect class="box" x="80" y="120" width="160" height="60" />
+  <text class="label" x="160" y="156" text-anchor="middle">Customers</text>
+
+  <rect class="box" x="80" y="220" width="160" height="60" />
+  <text class="label" x="160" y="256" text-anchor="middle">Admins</text>
+
+  <!-- Shopware -->
+  <rect class="box" x="320" y="120" width="200" height="60" />
+  <text class="label" x="420" y="156" text-anchor="middle">Storefront UI</text>
+
+  <rect class="box" x="320" y="220" width="200" height="60" />
+  <text class="label" x="420" y="256" text-anchor="middle">Admin UI</text>
+
+  <rect class="box" x="600" y="170" width="220" height="70" />
+  <text class="label" x="710" y="205" text-anchor="middle">Shopware 6 Core</text>
+
+  <rect class="box" x="860" y="170" width="200" height="70" />
+  <text class="label" x="960" y="205" text-anchor="middle">e-Khadi Plugin</text>
+
+  <rect class="box" x="1120" y="170" width="200" height="70" />
+  <text class="label" x="1220" y="205" text-anchor="middle">MySQL Database</text>
+
+  <!-- Arrows As-Is -->
+  <line class="arrow" x1="240" y1="150" x2="320" y2="150" />
+  <line class="arrow" x1="240" y1="250" x2="320" y2="250" />
+  <line class="arrow" x1="520" y1="150" x2="600" y2="200" />
+  <line class="arrow" x1="520" y1="250" x2="600" y2="210" />
+  <line class="arrow" x1="820" y1="205" x2="860" y2="205" />
+  <line class="arrow" x1="1060" y1="205" x2="1120" y2="205" />
+
+  <line class="divider" x1="40" y1="460" x2="1560" y2="460" />
+
+  <!-- Section 2: Target Architecture -->
+  <text class="section" x="40" y="510">Target Architecture (To-Be with Huawei Cloud)</text>
+
+  <!-- Users -->
+  <rect class="box" x="80" y="570" width="180" height="60" />
+  <text class="label" x="170" y="606" text-anchor="middle">Customers</text>
+
+  <rect class="box" x="80" y="660" width="180" height="60" />
+  <text class="label" x="170" y="696" text-anchor="middle">Admins</text>
+
+  <rect class="box" x="80" y="750" width="180" height="60" />
+  <text class="label" x="170" y="786" text-anchor="middle">Mobile / Partners</text>
+
+  <!-- Shopware -->
+  <rect class="box" x="360" y="580" width="200" height="60" />
+  <text class="label" x="460" y="616" text-anchor="middle">Storefront UI</text>
+
+  <rect class="box" x="360" y="670" width="200" height="60" />
+  <text class="label" x="460" y="706" text-anchor="middle">Admin UI</text>
+
+  <rect class="box" x="620" y="625" width="220" height="80" />
+  <text class="label" x="730" y="665" text-anchor="middle">Shopware 6 Core</text>
+
+  <rect class="box" x="900" y="625" width="200" height="80" />
+  <text class="label" x="1000" y="665" text-anchor="middle">e-Khadi Plugin</text>
+
+  <!-- Huawei Cloud Group -->
+  <rect class="cloud" x="1100" y="560" width="440" height="330" />
+  <text class="label" x="1120" y="590">Huawei Cloud</text>
+
+  <rect class="box" x="1120" y="610" width="190" height="50" />
+  <text class="label-small" x="1215" y="640" text-anchor="middle">API Gateway (APIG)</text>
+
+  <rect class="box" x="1330" y="610" width="190" height="50" />
+  <text class="label-small" x="1425" y="640" text-anchor="middle">RDS for MySQL</text>
+
+  <rect class="box" x="1120" y="680" width="190" height="50" />
+  <text class="label-small" x="1215" y="710" text-anchor="middle">Object Storage (OBS)</text>
+
+  <rect class="box" x="1330" y="680" width="190" height="50" />
+  <text class="label-small" x="1425" y="710" text-anchor="middle">SMN Notifications</text>
+
+  <rect class="box" x="1120" y="750" width="190" height="50" />
+  <text class="label-small" x="1215" y="780" text-anchor="middle">FunctionGraph Jobs</text>
+
+  <rect class="box" x="1330" y="750" width="190" height="50" />
+  <text class="label-small" x="1425" y="780" text-anchor="middle">CodeArts Pipeline</text>
+
+  <!-- Arrows To-Be -->
+  <line class="arrow" x1="260" y1="600" x2="360" y2="610" />
+  <line class="arrow" x1="260" y1="690" x2="360" y2="700" />
+  <line class="arrow" x1="260" y1="780" x2="1120" y2="635" />
+
+  <line class="arrow" x1="560" y1="610" x2="620" y2="660" />
+  <line class="arrow" x1="560" y1="700" x2="620" y2="670" />
+  <line class="arrow" x1="1310" y1="635" x2="620" y2="665" />
+
+  <line class="arrow" x1="840" y1="665" x2="900" y2="665" />
+
+  <line class="arrow" x1="1100" y1="665" x2="1330" y2="635" />
+  <line class="arrow" x1="1100" y1="665" x2="1120" y2="705" />
+  <line class="arrow" x1="1100" y1="665" x2="1330" y2="705" />
+
+  <line class="arrow dashed" x1="730" y1="625" x2="1215" y2="750" />
+  <line class="arrow dashed" x1="1425" y1="750" x2="730" y2="625" />
+
+</svg>
