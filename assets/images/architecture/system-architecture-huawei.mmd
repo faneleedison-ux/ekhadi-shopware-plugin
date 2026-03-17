@@ -1,63 +1,86 @@
-flowchart LR
-  %% e-Khadi Huawei-target architecture with CI/CD and IaC
+flowchart TB
+  %% e-Khadi architecture: current app shape + Huawei target runtime
 
-  DEV["Developer Team"] --> GH["GitHub Repository"]
-  GH --> GHA["GitHub Actions CI/CD"]
-  GHA --> TF["Terraform IaC"]
-
-  subgraph StateMgmt[Terraform State Management]
-    OBSSTATE["Huawei OBS Bucket\nTerraform State"]
-    LOCK["State Locking\n(Managed lock table)"]
+  subgraph ClientLayer[Client Layer]
+    USERS["Users\nMember / Shop / Admin"]
+    BROWSER["Web Browser / Mobile Browser"]
+    USERS --> BROWSER
   end
 
-  TF --> OBSSTATE
-  TF --> LOCK
+  subgraph FrontendLayer[Presentation Layer]
+    NEXT["Next.js 14 App (App Router)\nRole-based dashboards + Auth UI"]
+    EDGE["Edge Middleware\nRoute protection + role checks"]
+    NEXT --> EDGE
+  end
 
-  subgraph Huawei[Huawei Cloud Production]
-    VPC["VPC + Security Groups"]
-    APIG["API Gateway (APIG)"]
-    FG["FunctionGraph"]
-    RDS["RDS for PostgreSQL"]
-    OBS["Object Storage Service (OBS)"]
-    SMN["Simple Message Notification (SMN)"]
-    IAM["IAM"]
+  subgraph ApiLayer[API Layer]
+    API["Next.js API Routes\nDomain APIs (credit, groups, repayments)"]
+    APIG["Huawei API Gateway (APIG)\nRate limiting + secure ingress"]
+    NEXT --> API
+    API --> APIG
+  end
 
+  subgraph ServiceLayer[Business Service Layer - Huawei]
+    FG["FunctionGraph\nScoring, approval, repayment logic"]
     APIG --> FG
+  end
+
+  subgraph DataLayer[Data and Integration Layer]
+    RDS["RDS for PostgreSQL\nCore transactional data"]
+    OBS["Object Storage Service (OBS)\nDocuments, exports, media"]
+    SMN["Simple Message Notification (SMN)\nApprovals, reminders, alerts"]
     FG --> RDS
     FG --> OBS
     FG --> SMN
-
-    IAM -. Access Control .-> APIG
-    IAM -. Access Control .-> FG
-    IAM -. Access Control .-> RDS
-    IAM -. Access Control .-> OBS
-    VPC -. Private Network .-> APIG
-    VPC -. Private Network .-> FG
-    VPC -. Private Network .-> RDS
   end
 
-  TF --> VPC
-  TF --> APIG
-  TF --> FG
-  TF --> RDS
-  TF --> OBS
-  TF --> SMN
-  TF --> IAM
+  subgraph SecurityNetwork[Security and Network]
+    IAM["IAM\nIdentity and access control"]
+    VPC["VPC + Security Groups\nPrivate network boundaries"]
+  end
 
-  USERS["Web Users\n(Member / Shop / Admin)"] --> APIG
+  IAM -. Policy Enforcement .-> APIG
+  IAM -. Policy Enforcement .-> FG
+  IAM -. Policy Enforcement .-> RDS
+  IAM -. Policy Enforcement .-> OBS
+  VPC -. Network Isolation .-> APIG
+  VPC -. Network Isolation .-> FG
+  VPC -. Network Isolation .-> RDS
 
-  classDef github fill:#24292f,stroke:#111,color:#fff,stroke-width:1px;
-  classDef ci fill:#0b5fff,stroke:#003087,color:#fff,stroke-width:1px;
-  classDef terraform fill:#7b42bc,stroke:#4f2b7a,color:#fff,stroke-width:1px;
-  classDef huawei fill:#d94f00,stroke:#8c2f00,color:#fff,stroke-width:1px;
-  classDef data fill:#0c5db3,stroke:#083b70,color:#fff,stroke-width:1px;
-  classDef net fill:#0f766e,stroke:#115e59,color:#fff,stroke-width:1px;
-  classDef user fill:#374151,stroke:#1f2937,color:#fff,stroke-width:1px;
+  subgraph DeliveryOps[Delivery and Infrastructure]
+    DEV["Developer Team"]
+    GH["GitHub Repository"]
+    GHA["GitHub Actions CI/CD"]
+    TF["Terraform IaC"]
+    OBSSTATE["OBS Bucket\nTerraform state"]
+    LOCK["State Locking\n(lock table)"]
 
-  class GH github;
-  class GHA ci;
-  class TF terraform;
-  class APIG,FG,OBS,SMN,IAM huawei;
-  class RDS,OBSSTATE,LOCK data;
-  class VPC net;
-  class DEV,USERS user;
+    DEV --> GH --> GHA --> TF
+    TF --> OBSSTATE
+    TF --> LOCK
+    TF --> APIG
+    TF --> FG
+    TF --> RDS
+    TF --> OBS
+    TF --> SMN
+    TF --> IAM
+    TF --> VPC
+  end
+
+  BROWSER --> NEXT
+
+  classDef user fill:#334155,stroke:#0f172a,color:#ffffff,stroke-width:1px;
+  classDef frontend fill:#0f766e,stroke:#115e59,color:#ffffff,stroke-width:1px;
+  classDef api fill:#2563eb,stroke:#1e40af,color:#ffffff,stroke-width:1px;
+  classDef service fill:#b45309,stroke:#7c2d12,color:#ffffff,stroke-width:1px;
+  classDef data fill:#1d4ed8,stroke:#1e3a8a,color:#ffffff,stroke-width:1px;
+  classDef security fill:#047857,stroke:#065f46,color:#ffffff,stroke-width:1px;
+  classDef delivery fill:#6d28d9,stroke:#4c1d95,color:#ffffff,stroke-width:1px;
+
+  class USERS,BROWSER user;
+  class NEXT,EDGE frontend;
+  class API,APIG api;
+  class FG service;
+  class RDS,OBS,SMN data;
+  class IAM,VPC security;
+  class DEV,GH,GHA,TF,OBSSTATE,LOCK delivery;
