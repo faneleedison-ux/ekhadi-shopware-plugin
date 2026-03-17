@@ -88,7 +88,7 @@ async function getProvinceRiskData(): Promise<ProvinceRisk[]> {
     if (rep.status === 'OVERDUE') repStats[prov].overdue++
   }
 
-  return SA_PROVINCES.map((province) => {
+  return SA_PROVINCES.map<ProvinceRisk>((province) => {
     const req = reqStats[province]
     const rep = repStats[province]
 
