@@ -47,24 +47,26 @@ The current web app is live on Vercel for demo access, while the target competit
 
 ## App Screenshots
 
+Updated: 17 March 2026 (captured from the live deployment)
+
 <p align="center">
-  <img src="./assets/images/screenshots/app-preview-01.png" width="31%" alt="App preview 1" />
-  <img src="./assets/images/screenshots/app-preview-02.png" width="31%" alt="App preview 2" />
-  <img src="./assets/images/screenshots/app-preview-03.png" width="31%" alt="App preview 3" />
+  <img src="./assets/images/screenshots/app-preview-01.png" width="31%" alt="Landing page" />
+  <img src="./assets/images/screenshots/app-preview-02.png" width="31%" alt="Registration page" />
+  <img src="./assets/images/screenshots/app-preview-03.png" width="31%" alt="Login page" />
 </p>
 <p align="center">
-  <img src="./assets/images/screenshots/app-preview-04.png" width="31%" alt="App preview 4" />
-  <img src="./assets/images/screenshots/app-preview-05.png" width="31%" alt="App preview 5" />
-  <img src="./assets/images/screenshots/app-preview-06.png" width="31%" alt="App preview 6" />
+  <img src="./assets/images/screenshots/app-preview-04.png" width="31%" alt="Member dashboard" />
+  <img src="./assets/images/screenshots/app-preview-05.png" width="31%" alt="Member wallet" />
+  <img src="./assets/images/screenshots/app-preview-06.png" width="31%" alt="Member group" />
 </p>
 <p align="center">
-  <img src="./assets/images/screenshots/app-preview-07.png" width="31%" alt="App preview 7" />
-  <img src="./assets/images/screenshots/app-preview-08.png" width="31%" alt="App preview 8" />
-  <img src="./assets/images/screenshots/app-preview-09.png" width="31%" alt="App preview 9" />
+  <img src="./assets/images/screenshots/app-preview-07.png" width="31%" alt="Member credit request" />
+  <img src="./assets/images/screenshots/app-preview-08.png" width="31%" alt="Shop dashboard" />
+  <img src="./assets/images/screenshots/app-preview-09.png" width="31%" alt="Shop transactions" />
 </p>
 <p align="center">
-  <img src="./assets/images/screenshots/app-preview-10.png" width="31%" alt="App preview 10" />
-  <img src="./assets/images/screenshots/app-preview-11.png" width="31%" alt="App preview 11" />
+  <img src="./assets/images/screenshots/app-preview-10.png" width="31%" alt="Admin dashboard" />
+  <img src="./assets/images/screenshots/app-preview-11.png" width="31%" alt="Admin credit requests" />
 </p>
 
 ---
