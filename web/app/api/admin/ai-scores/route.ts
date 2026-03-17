@@ -24,7 +24,9 @@ export async function GET() {
 
   if (pendingRequests.length === 0) return NextResponse.json([])
 
-  const requesterIds = [...new Set(pendingRequests.map((r) => r.requesterId))]
+  const requesterIds = pendingRequests
+    .map((r) => r.requesterId)
+    .filter((id, index, arr) => arr.indexOf(id) === index)
 
   const [profiles, paidRepayments, approvedRequests, pendingDebt, monthlyRequests] =
     await Promise.all([
