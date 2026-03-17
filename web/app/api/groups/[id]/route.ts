@@ -35,6 +35,14 @@ export async function GET(
     return NextResponse.json({ error: 'Group not found' }, { status: 404 })
   }
 
+  // Non-admins must be a member of the group to view its details
+  if (session.user.role !== 'ADMIN') {
+    const isMember = group.members.some((m) => m.user.id === session.user.id)
+    if (!isMember) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+  }
+
   return NextResponse.json(group)
 }
 
@@ -48,6 +56,18 @@ export async function PATCH(
   }
 
   const body = await req.json()
+
+  if (body.maxMembers !== undefined) {
+    const currentCount = await prisma.groupMember.count({
+      where: { groupId: params.id },
+    })
+    if (body.maxMembers < currentCount) {
+      return NextResponse.json(
+        { error: `Cannot set maxMembers below the current member count (${currentCount})` },
+        { status: 400 }
+      )
+    }
+  }
 
   const group = await prisma.group.update({
     where: { id: params.id },

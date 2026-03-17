@@ -99,8 +99,8 @@ export async function POST(
         })
       }
 
-      // Create repayment schedule (amount + 2% fee)
-      const repaymentAmount = amount * 1.02
+      // Create repayment schedule (amount + 2% fee, rounded to 2 decimal places)
+      const repaymentAmount = Math.round(amount * 1.02 * 100) / 100
       const dueDate = new Date(currentYear, currentMonth, 1) // 1st of next month
       await tx.repaymentSchedule.create({
         data: {

@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { CheckCircle, XCircle, Clock, FileText, Eye } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, FileText, Eye, ShieldCheck, AlertTriangle, AlertOctagon } from 'lucide-react'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
+import type { RecommendationLevel } from '@/lib/aiRecommendation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -27,8 +28,45 @@ interface CreditRequest {
   approver?: { name: string } | null
 }
 
+interface AiScore {
+  requestId: string
+  level: RecommendationLevel
+  reason: string
+}
+
+const aiBadgeConfig: Record<RecommendationLevel, { label: string; icon: React.ElementType; classes: string }> = {
+  HIGH_TRUST: {
+    label: 'High Trust',
+    icon: ShieldCheck,
+    classes: 'bg-green-50 text-green-700 border-green-200',
+  },
+  MEDIUM_RISK: {
+    label: 'Medium Risk',
+    icon: AlertTriangle,
+    classes: 'bg-amber-50 text-amber-700 border-amber-200',
+  },
+  FLAG: {
+    label: 'Flag',
+    icon: AlertOctagon,
+    classes: 'bg-red-50 text-red-700 border-red-200',
+  },
+}
+
+function AiRecommendationBadge({ score }: { score: AiScore | undefined }) {
+  if (!score) return <span className="text-xs text-text-secondary">—</span>
+  const cfg = aiBadgeConfig[score.level]
+  const Icon = cfg.icon
+  return (
+    <div className={`inline-flex items-center gap-1 border rounded-lg px-2 py-1 ${cfg.classes}`} title={score.reason}>
+      <Icon className="h-3 w-3 flex-shrink-0" />
+      <span className="text-xs font-semibold whitespace-nowrap">{cfg.label}</span>
+    </div>
+  )
+}
+
 export default function CreditRequestsPage() {
   const [requests, setRequests] = useState<CreditRequest[]>([])
+  const [aiScores, setAiScores] = useState<Record<string, AiScore>>({})
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [selectedRequest, setSelectedRequest] = useState<CreditRequest | null>(null)
@@ -36,6 +74,7 @@ export default function CreditRequestsPage() {
 
   useEffect(() => {
     fetchRequests()
+    fetchAiScores()
   }, [])
 
   const fetchRequests = async () => {
@@ -50,12 +89,26 @@ export default function CreditRequestsPage() {
     }
   }
 
+  const fetchAiScores = async () => {
+    try {
+      const res = await fetch('/api/admin/ai-scores')
+      if (res.ok) {
+        const data: AiScore[] = await res.json()
+        const map: Record<string, AiScore> = {}
+        for (const score of data) map[score.requestId] = score
+        setAiScores(map)
+      }
+    } catch {
+      // Non-blocking — AI scores are advisory only
+    }
+  }
+
   const handleApprove = async (id: string) => {
     setActionLoading(id + '-approve')
     try {
       const res = await fetch(`/api/credit-requests/${id}/approve`, { method: 'POST' })
       if (res.ok) {
-        await fetchRequests()
+        await Promise.all([fetchRequests(), fetchAiScores()])
         setSelectedRequest(null)
       }
     } finally {
@@ -68,7 +121,7 @@ export default function CreditRequestsPage() {
     try {
       const res = await fetch(`/api/credit-requests/${id}/reject`, { method: 'POST' })
       if (res.ok) {
-        await fetchRequests()
+        await Promise.all([fetchRequests(), fetchAiScores()])
         setSelectedRequest(null)
       }
     } finally {
@@ -164,6 +217,7 @@ export default function CreditRequestsPage() {
                     <TableHead>Group</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Reason</TableHead>
+                    <TableHead>AI Rec.</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Actions</TableHead>
@@ -172,7 +226,7 @@ export default function CreditRequestsPage() {
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-text-secondary py-12">
+                      <TableCell colSpan={8} className="text-center text-text-secondary py-12">
                         No {filter !== 'ALL' ? filter.toLowerCase() : ''} requests found
                       </TableCell>
                     </TableRow>
@@ -193,6 +247,12 @@ export default function CreditRequestsPage() {
                           </p>
                         </TableCell>
                         <TableCell className="text-sm max-w-[160px] truncate">{req.reason}</TableCell>
+                        <TableCell>
+                          {req.status === 'PENDING'
+                            ? <AiRecommendationBadge score={aiScores[req.id]} />
+                            : <span className="text-xs text-text-secondary">—</span>
+                          }
+                        </TableCell>
                         <TableCell>{statusBadge(req.status)}</TableCell>
                         <TableCell className="text-xs text-text-secondary">{formatDate(req.createdAt)}</TableCell>
                         <TableCell>
@@ -281,6 +341,15 @@ export default function CreditRequestsPage() {
                 <p className="text-xs text-text-secondary font-medium uppercase tracking-wide">Reason</p>
                 <p className="text-sm mt-1 p-3 bg-background rounded-lg">{selectedRequest.reason}</p>
               </div>
+              {selectedRequest.status === 'PENDING' && aiScores[selectedRequest.id] && (
+                <div>
+                  <p className="text-xs text-text-secondary font-medium uppercase tracking-wide">AI Recommendation</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <AiRecommendationBadge score={aiScores[selectedRequest.id]} />
+                    <p className="text-xs text-text-secondary">{aiScores[selectedRequest.id].reason}</p>
+                  </div>
+                </div>
+              )}
               {selectedRequest.approver && (
                 <div>
                   <p className="text-xs text-text-secondary font-medium uppercase tracking-wide">Processed by</p>

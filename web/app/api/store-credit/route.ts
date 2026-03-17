@@ -45,8 +45,21 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  if (!['CREDIT', 'DEBIT'].includes(type)) {
+    return NextResponse.json({ error: 'type must be CREDIT or DEBIT' }, { status: 400 })
+  }
+
+  if (typeof amount !== 'number' || amount <= 0) {
+    return NextResponse.json({ error: 'amount must be a positive number' }, { status: 400 })
+  }
+
   const result = await prisma.$transaction(async (tx) => {
-    const multiplier = type === 'CREDIT' ? 1 : -1
+    if (type === 'DEBIT') {
+      const current = await tx.storeCredit.findUnique({ where: { userId } })
+      if (!current || Number(current.balance) < amount) {
+        throw new Error('Insufficient store credit balance')
+      }
+    }
 
     await tx.storeCredit.upsert({
       where: { userId },
@@ -56,7 +69,7 @@ export async function POST(req: NextRequest) {
       },
       update: {
         balance: {
-          increment: amount * multiplier,
+          increment: type === 'CREDIT' ? amount : -amount,
         },
       },
     })

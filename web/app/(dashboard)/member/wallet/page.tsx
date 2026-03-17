@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
+import SmartBudgetPlanner from '@/components/member/SmartBudgetPlanner'
 
 const bucketColors: Record<string, string> = {
   FOOD: 'bg-green-500',
@@ -29,28 +30,38 @@ export default async function WalletPage() {
   const session = await getServerSession(authOptions)
   if (!session || session.user.role !== 'MEMBER') redirect('/login')
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    include: {
-      storeCredit: true,
-      storeCreditHistory: {
-        orderBy: { createdAt: 'desc' },
-        take: 30,
-      },
-      groupMemberships: {
-        include: {
-          group: {
-            include: {
-              wallet: {
-                include: { buckets: true },
+  const [user, outstandingDebtAgg] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: {
+        storeCredit: true,
+        storeCreditHistory: {
+          orderBy: { createdAt: 'desc' },
+          take: 30,
+        },
+        customerProfile: { select: { monthlyGrantAmount: true } },
+        grantCycles: {
+          where: { status: 'ACTIVE' },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+        groupMemberships: {
+          include: {
+            group: {
+              include: {
+                wallet: { include: { buckets: true } },
               },
             },
           },
+          take: 1,
         },
-        take: 1,
       },
-    },
-  })
+    }),
+    prisma.repaymentSchedule.aggregate({
+      where: { userId: session.user.id, status: 'PENDING' },
+      _sum: { amount: true },
+    }),
+  ])
 
   if (!user) redirect('/login')
 
@@ -58,6 +69,12 @@ export default async function WalletPage() {
   const transactions = user.storeCreditHistory
   const groupWallet = user.groupMemberships[0]?.group?.wallet
   const buckets = groupWallet?.buckets || []
+
+  const activeGrant = user.grantCycles[0]
+  const grantAmount = activeGrant
+    ? Number(activeGrant.grantAmount)
+    : Number(user.customerProfile?.monthlyGrantAmount || 350)
+  const outstandingDebt = Number(outstandingDebtAgg._sum.amount ?? 0)
 
   const totalDebit = transactions
     .filter((t) => t.type === 'DEBIT')
@@ -95,6 +112,18 @@ export default async function WalletPage() {
           </div>
         </div>
       </div>
+
+      {/* Smart Budget Planner */}
+      <SmartBudgetPlanner
+        grantAmount={grantAmount}
+        outstandingDebt={outstandingDebt}
+        currentBalance={balance}
+        buckets={buckets.map((b) => ({
+          category: b.category,
+          allocatedAmount: Number(b.allocatedAmount),
+          spentAmount: Number(b.spentAmount),
+        }))}
+      />
 
       {/* Bucket breakdown */}
       {buckets.length > 0 && (

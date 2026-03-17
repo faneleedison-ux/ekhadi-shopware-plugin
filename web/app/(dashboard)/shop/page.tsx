@@ -1,12 +1,22 @@
 import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
-import { Store, MapPin, Users, TrendingUp, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
+import { Store, MapPin, Users, TrendingUp, ArrowUpRight, Clock, PieChart } from 'lucide-react'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import StatsCard from '@/components/dashboard/StatsCard'
+import PeakHoursChart from '@/components/shop/PeakHoursChart'
+import CategorySpendDonut, { CategorySlice } from '@/components/shop/CategorySpendDonut'
+
+const CATEGORY_SLICES: Omit<CategorySlice, 'amount'>[] = [
+  { category: 'FOOD',          label: 'Food',          color: 'bg-green-500',  hex: '#22c55e' },
+  { category: 'MEDICINE',      label: 'Medicine',      color: 'bg-blue-500',   hex: '#3b82f6' },
+  { category: 'TOILETRIES',    label: 'Toiletries',    color: 'bg-purple-500', hex: '#a855f7' },
+  { category: 'ELECTRICITY',   label: 'Electricity',   color: 'bg-yellow-500', hex: '#eab308' },
+  { category: 'BABY_PRODUCTS', label: 'Baby Products', color: 'bg-pink-500',   hex: '#ec4899' },
+]
 
 export default async function ShopDashboard() {
   const session = await getServerSession(authOptions)
@@ -33,17 +43,49 @@ export default async function ShopDashboard() {
 
   const areaMemberIds = areaMembers.map((m) => m.userId)
 
-  const recentTransactions = await prisma.storeCreditHistory.findMany({
-    where: {
-      type: 'DEBIT',
-      ...(areaMemberIds.length > 0 ? { userId: { in: areaMemberIds } } : {}),
-    },
-    take: 20,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      user: { select: { name: true, email: true } },
-    },
-  })
+  const memberFilter = areaMemberIds.length > 0 ? { userId: { in: areaMemberIds } } : {}
+
+  const [recentTransactions, allDebitTimestamps, areaGroupBuckets] = await Promise.all([
+    prisma.storeCreditHistory.findMany({
+      where: { type: 'DEBIT', ...memberFilter },
+      take: 20,
+      orderBy: { createdAt: 'desc' },
+      include: { user: { select: { name: true, email: true } } },
+    }),
+    // All DEBIT timestamps for peak hours chart (last 90 days)
+    prisma.storeCreditHistory.findMany({
+      where: {
+        type: 'DEBIT',
+        ...memberFilter,
+        createdAt: { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+      },
+      select: { createdAt: true },
+    }),
+    // Category spend from group buckets in this area
+    shop
+      ? prisma.groupBucket.findMany({
+          where: { wallet: { group: { areaId: shop.areaId } } },
+          select: { category: true, spentAmount: true },
+        })
+      : Promise.resolve([]),
+  ])
+
+  // Build hour distribution (0–23)
+  const hourCounts = new Array(24).fill(0) as number[]
+  for (const tx of allDebitTimestamps) {
+    hourCounts[new Date(tx.createdAt).getHours()]++
+  }
+
+  // Aggregate category spend
+  const categoryTotals: Record<string, number> = {}
+  for (const bucket of areaGroupBuckets) {
+    const cat = bucket.category
+    categoryTotals[cat] = (categoryTotals[cat] ?? 0) + Number(bucket.spentAmount)
+  }
+  const categorySlices: CategorySlice[] = CATEGORY_SLICES.map((meta) => ({
+    ...meta,
+    amount: categoryTotals[meta.category] ?? 0,
+  }))
 
   const totalVolume = recentTransactions.reduce((sum, t) => sum + Number(t.amount), 0)
 
@@ -146,6 +188,37 @@ export default async function ShopDashboard() {
           </CardContent>
         </Card>
       )}
+
+      {/* AI Charts row */}
+      <div className="grid lg:grid-cols-2 gap-5">
+        {/* Peak Hours */}
+        <Card>
+          <CardHeader className="pb-3 flex-row items-center gap-2">
+            <Clock className="h-4 w-4 text-primary" />
+            <CardTitle className="text-base">Peak Transaction Hours</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-text-secondary mb-3">
+              When members are most active — based on last 90 days of DEBIT transactions.
+            </p>
+            <PeakHoursChart hourCounts={hourCounts} />
+          </CardContent>
+        </Card>
+
+        {/* Category Spend Donut */}
+        <Card>
+          <CardHeader className="pb-3 flex-row items-center gap-2">
+            <PieChart className="h-4 w-4 text-primary" />
+            <CardTitle className="text-base">Top Spending Categories</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-text-secondary mb-3">
+              What your community actually needs most — aggregated from all stokvel group buckets in {shop.area.name}.
+            </p>
+            <CategorySpendDonut slices={categorySlices} />
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Transaction history */}
       <Card>

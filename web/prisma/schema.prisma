@@ -28,6 +28,7 @@ enum BucketCategory {
   TOILETRIES
   ELECTRICITY
   BABY_PRODUCTS
+  GENERAL
 }
 
 enum RotationStatus {

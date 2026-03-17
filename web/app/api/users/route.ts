@@ -13,8 +13,13 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const role = searchParams.get('role')
 
+  const VALID_ROLES = ['ADMIN', 'MEMBER', 'SHOP']
+  if (role && !VALID_ROLES.includes(role)) {
+    return NextResponse.json({ error: 'Invalid role value' }, { status: 400 })
+  }
+
   const users = await prisma.user.findMany({
-    where: role ? { role: role as any } : undefined,
+    where: role ? { role: role as 'ADMIN' | 'MEMBER' | 'SHOP' } : undefined,
     select: {
       id: true,
       name: true,
@@ -39,6 +44,11 @@ export async function POST(req: NextRequest) {
         { error: 'Name, email, password and role are required' },
         { status: 400 }
       )
+    }
+
+    const VALID_ROLES = ['ADMIN', 'MEMBER', 'SHOP']
+    if (!VALID_ROLES.includes(role)) {
+      return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
     }
 
     if (password.length < 8) {
@@ -83,18 +93,20 @@ export async function POST(req: NextRequest) {
           ? await tx.area.findUnique({ where: { id: areaId } })
           : await tx.area.findFirst()
 
-        if (defaultArea) {
-          await tx.customerProfile.create({
-            data: {
-              userId: newUser.id,
-              sassaId,
-              areaId: defaultArea.id,
-              creditScore: 50,
-              monthlyGrantAmount: 350,
-              isActive: true,
-            },
-          })
+        if (!defaultArea) {
+          throw new Error('No area found. An area must exist before members can register.')
         }
+
+        await tx.customerProfile.create({
+          data: {
+            userId: newUser.id,
+            sassaId,
+            areaId: defaultArea.id,
+            creditScore: 50,
+            monthlyGrantAmount: 350,
+            isActive: true,
+          },
+        })
 
         // Create store credit wallet
         await tx.storeCredit.create({

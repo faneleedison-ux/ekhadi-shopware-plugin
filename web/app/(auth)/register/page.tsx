@@ -99,11 +99,10 @@ function RegisterForm() {
           {/* Role selector */}
           <div className="space-y-1.5">
             <Label>I am registering as</Label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {[
                 { value: 'MEMBER', label: 'Member', desc: 'SASSA recipient' },
                 { value: 'SHOP', label: 'Shop Owner', desc: 'Spaza shop' },
-                { value: 'ADMIN', label: 'Admin', desc: 'Platform admin' },
               ].map((r) => (
                 <button
                   key={r.value}

@@ -27,11 +27,13 @@ export async function PATCH(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  // Members may only update status; financial fields are admin-only to prevent score gaming
+  const isAdmin = session.user.role === 'ADMIN'
   const updated = await prisma.grantCycle.update({
     where: { id: params.id },
     data: {
-      spentAmount: body.spentAmount !== undefined ? body.spentAmount : undefined,
-      repaidAmount: body.repaidAmount !== undefined ? body.repaidAmount : undefined,
+      ...(isAdmin && body.spentAmount !== undefined ? { spentAmount: body.spentAmount } : {}),
+      ...(isAdmin && body.repaidAmount !== undefined ? { repaidAmount: body.repaidAmount } : {}),
       status: body.status || undefined,
     },
   })

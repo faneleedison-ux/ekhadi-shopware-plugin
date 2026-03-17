@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { computeScoreBreakdown, scoreToLimit } from '@/lib/creditHealthScore'
+
+const VALID_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const
+type CreditRequestStatus = typeof VALID_STATUSES[number]
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -13,9 +17,13 @@ export async function GET(req: NextRequest) {
   const myRequests = searchParams.get('my') === 'true'
   const status = searchParams.get('status')
 
+  if (status && !VALID_STATUSES.includes(status as CreditRequestStatus)) {
+    return NextResponse.json({ error: 'Invalid status value' }, { status: 400 })
+  }
+
   if (session.user.role === 'ADMIN' && !myRequests) {
     const requests = await prisma.creditRequest.findMany({
-      where: status ? { status: status as any } : undefined,
+      where: status ? { status: status as CreditRequestStatus } : undefined,
       include: {
         requester: { select: { name: true, email: true } },
         group: { select: { name: true } },
@@ -57,26 +65,77 @@ export async function POST(req: NextRequest) {
 
     const numAmount = parseFloat(amount)
 
-    if (numAmount < 50 || numAmount > 300) {
+    if (isNaN(numAmount) || numAmount < 50 || numAmount > 300) {
       return NextResponse.json(
         { error: 'Amount must be between R50 and R300' },
         { status: 400 }
       )
     }
 
-    // Check member is in the group
-    const membership = await prisma.groupMember.findUnique({
-      where: {
-        groupId_userId: {
-          groupId,
-          userId: session.user.id,
-        },
-      },
+    // Enforce the user's score-based credit limit
+    const [approvedCount, paidCount, pendingDebt, completedCycles] = await Promise.all([
+      prisma.creditRequest.count({
+        where: { requesterId: session.user.id, status: 'APPROVED' },
+      }),
+      prisma.repaymentSchedule.count({
+        where: { userId: session.user.id, status: 'PAID' },
+      }),
+      prisma.repaymentSchedule.aggregate({
+        where: { userId: session.user.id, status: 'PENDING' },
+        _sum: { amount: true },
+      }),
+      prisma.grantCycle.count({
+        where: { userId: session.user.id, status: 'COMPLETED' },
+      }),
+    ])
+
+    const breakdown = computeScoreBreakdown({
+      approvedRequestsCount: approvedCount,
+      paidRepaymentsCount: paidCount,
+      outstandingDebt: Number(pendingDebt._sum.amount ?? 0),
+      completedCyclesCount: completedCycles,
     })
+    const scoreTotal =
+      breakdown.repaymentScore +
+      breakdown.speedScore +
+      breakdown.noDebtScore +
+      breakdown.cycleConsistencyScore
+    const creditLimit = scoreToLimit(scoreTotal)
+
+    if (numAmount > creditLimit) {
+      return NextResponse.json(
+        { error: `Your current credit limit is R${creditLimit}. Request an amount within your limit.` },
+        { status: 400 }
+      )
+    }
+
+    // Check member is in the group and area matches
+    const [membership, group] = await Promise.all([
+      prisma.groupMember.findUnique({
+        where: { groupId_userId: { groupId, userId: session.user.id } },
+      }),
+      prisma.group.findUnique({
+        where: { id: groupId },
+        select: { areaId: true },
+      }),
+    ])
 
     if (!membership) {
       return NextResponse.json(
         { error: 'You are not a member of this group' },
+        { status: 403 }
+      )
+    }
+
+    // Enforce geographic area restriction: member's area must match the group's area
+    const profile = await prisma.customerProfile.findUnique({
+      where: { userId: session.user.id },
+      select: { areaId: true },
+    })
+
+    if (profile && group && profile.areaId !== group.areaId) {
+      return NextResponse.json(
+        { error: 'You can only request credit from groups in your registered area' },
         { status: 403 }
       )
     }

@@ -6,6 +6,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import StatsCard from '@/components/dashboard/StatsCard'
+import AnomalyAlerts from '@/components/admin/AnomalyAlerts'
+import CreditRiskHeatmap from '@/components/admin/CreditRiskHeatmap'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -142,6 +144,9 @@ export default async function AdminDashboard() {
         </Card>
       </div>
 
+      {/* AI Anomaly Alerts */}
+      <AnomalyAlerts />
+
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Recent Credit Requests */}
         <div className="lg:col-span-2">
@@ -260,6 +265,10 @@ export default async function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
+      </div>
+      {/* AI Credit Risk Heatmap */}
+      <div className="bg-white rounded-2xl border border-border p-5">
+        <CreditRiskHeatmap />
       </div>
     </div>
   )

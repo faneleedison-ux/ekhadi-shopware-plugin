@@ -3,6 +3,9 @@ import { ArrowRight, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { prisma } from '@/lib/db'
 import SouthAfricaLiveMap, { MapMarker } from '@/components/landing/SouthAfricaLiveMap'
+import ActivityFeedTicker, { ActivityItem } from '@/components/landing/ActivityFeedTicker'
+import ImpactCounters from '@/components/landing/ImpactCounters'
+import TestimonialCards from '@/components/landing/TestimonialCards'
 
 const quickPoints = [
   {
@@ -146,6 +149,68 @@ function spreadWithinArea(base: { lat: number; lng: number }, key: string, index
   }
 }
 
+function anonymizeName(fullName: string): string {
+  const parts = fullName.trim().split(' ').filter(Boolean)
+  if (parts.length === 1) return parts[0]
+  return `${parts[0]} ${parts[parts.length - 1][0]}.`
+}
+
+async function getActivityFeed(): Promise<ActivityItem[]> {
+  try {
+    const requests = await prisma.creditRequest.findMany({
+      where: { status: 'APPROVED' },
+      orderBy: { updatedAt: 'desc' },
+      take: 12,
+      select: {
+        amount: true,
+        updatedAt: true,
+        requester: {
+          select: {
+            name: true,
+            customerProfile: {
+              select: { area: { select: { name: true } } },
+            },
+          },
+        },
+      },
+    })
+
+    const now = Date.now()
+    return requests.map((r) => ({
+      name: anonymizeName(r.requester.name),
+      area: r.requester.customerProfile?.area?.name ?? 'South Africa',
+      amount: Number(r.amount),
+      minutesAgo: Math.floor((now - new Date(r.updatedAt).getTime()) / 60_000),
+    }))
+  } catch {
+    return []
+  }
+}
+
+async function getImpactStats(): Promise<{
+  familiesHelped: number
+  totalCreditIssued: number
+  activeGroups: number
+}> {
+  try {
+    const [familiesHelped, creditAggregate, activeGroups] = await Promise.all([
+      prisma.user.count({ where: { role: 'MEMBER' } }),
+      prisma.creditRequest.aggregate({
+        where: { status: 'APPROVED' },
+        _sum: { amount: true },
+      }),
+      prisma.group.count(),
+    ])
+    return {
+      familiesHelped,
+      totalCreditIssued: Math.round(Number(creditAggregate._sum.amount ?? 0)),
+      activeGroups,
+    }
+  } catch {
+    return { familiesHelped: 0, totalCreditIssued: 0, activeGroups: 0 }
+  }
+}
+
 async function getMapData(): Promise<{ markers: MapMarker[]; areaCount: number }> {
   try {
     const [areas, shops, members, groups] = await Promise.all([
@@ -284,7 +349,11 @@ async function getMapData(): Promise<{ markers: MapMarker[]; areaCount: number }
 }
 
 export default async function LandingPage() {
-  const { markers, areaCount } = await getMapData()
+  const [{ markers, areaCount }, activityItems, impactStats] = await Promise.all([
+    getMapData(),
+    getActivityFeed(),
+    getImpactStats(),
+  ])
 
   return (
     <div className="min-h-screen bg-white">
@@ -354,6 +423,9 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* Live Activity Feed */}
+      <ActivityFeedTicker items={activityItems} />
+
       <section className="bg-background py-9">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <h2 className="text-2xl font-bold text-text-primary">How It Works</h2>
@@ -366,6 +438,32 @@ export default async function LandingPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Community Impact Counters */}
+      <section className="bg-white py-9 border-t border-border">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <h2 className="text-2xl font-bold text-text-primary">Community Impact</h2>
+          <p className="text-sm text-text-secondary mt-1 mb-5">
+            Real numbers. Real people. Updated live from the platform.
+          </p>
+          <ImpactCounters
+            familiesHelped={impactStats.familiesHelped}
+            totalCreditIssued={impactStats.totalCreditIssued}
+            activeGroups={impactStats.activeGroups}
+          />
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="bg-background py-9 border-t border-border">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <h2 className="text-2xl font-bold text-text-primary">Voices from the Community</h2>
+          <p className="text-sm text-text-secondary mt-1 mb-5">
+            In their own words.
+          </p>
+          <TestimonialCards />
         </div>
       </section>
 

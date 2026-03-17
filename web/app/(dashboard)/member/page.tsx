@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { formatCurrency, formatDate, getMonthName } from '@/lib/utils'
 import CreditBalanceCard from '@/components/dashboard/CreditBalanceCard'
+import CreditHealthScoreCard from '@/components/dashboard/CreditHealthScoreCard'
 import GrantProgressCard from '@/components/dashboard/GrantProgressCard'
 import MemberVirtualCard from '@/components/dashboard/MemberVirtualCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -76,6 +77,20 @@ export default async function MemberDashboard() {
 
   if (!user) redirect('/login')
 
+  // Fetch scoring inputs for AI Debt Health Score Card
+  const [approvedRequestsCount, paidRepaymentsCount, pendingRepayments, completedCyclesCount] =
+    await Promise.all([
+      prisma.creditRequest.count({ where: { requesterId: user.id, status: 'APPROVED' } }),
+      prisma.repaymentSchedule.count({ where: { userId: user.id, status: 'PAID' } }),
+      prisma.repaymentSchedule.aggregate({
+        where: { userId: user.id, status: 'PENDING' },
+        _sum: { amount: true },
+      }),
+      prisma.grantCycle.count({ where: { userId: user.id, status: 'COMPLETED' } }),
+    ])
+
+  const outstandingDebt = Number(pendingRepayments._sum.amount || 0)
+
   const creditBalance = Number(user.storeCredit?.balance || 0)
   const activeGroup = user.groupMemberships[0]?.group
   const activeGrantCycle = user.grantCycles[0]
@@ -133,6 +148,14 @@ export default async function MemberDashboard() {
         balance={creditBalance}
         memberName={user.name}
         sassaId={user.customerProfile?.sassaId}
+      />
+
+      {/* AI Debt Health Score Card */}
+      <CreditHealthScoreCard
+        approvedRequestsCount={approvedRequestsCount}
+        paidRepaymentsCount={paidRepaymentsCount}
+        outstandingDebt={outstandingDebt}
+        completedCyclesCount={completedCyclesCount}
       />
 
       {/* Quick actions */}
