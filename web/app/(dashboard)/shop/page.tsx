@@ -1,23 +1,13 @@
 import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
-import { Store, MapPin, Users, TrendingUp, ArrowUpRight, Clock, PieChart } from 'lucide-react'
+import Link from 'next/link'
+import { Store, MapPin, Users, TrendingUp, ArrowUpRight, Sparkles, Receipt, ArrowRight, CheckCircle } from 'lucide-react'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import StatsCard from '@/components/dashboard/StatsCard'
-import PeakHoursChart from '@/components/shop/PeakHoursChart'
-import CategorySpendDonut, { CategorySlice } from '@/components/shop/CategorySpendDonut'
-import StockForecastCard, { ForecastItem } from '@/components/shop/StockForecastCard'
-
-const CATEGORY_SLICES: Omit<CategorySlice, 'amount'>[] = [
-  { category: 'FOOD',          label: 'Food',          color: 'bg-green-500',  hex: '#22c55e' },
-  { category: 'MEDICINE',      label: 'Medicine',      color: 'bg-blue-500',   hex: '#3b82f6' },
-  { category: 'TOILETRIES',    label: 'Toiletries',    color: 'bg-purple-500', hex: '#a855f7' },
-  { category: 'ELECTRICITY',   label: 'Electricity',   color: 'bg-yellow-500', hex: '#eab308' },
-  { category: 'BABY_PRODUCTS', label: 'Baby Products', color: 'bg-pink-500',   hex: '#ec4899' },
-]
 
 export default async function ShopDashboard() {
   const session = await getServerSession(authOptions)
@@ -25,125 +15,8 @@ export default async function ShopDashboard() {
 
   const shop = await prisma.shop.findUnique({
     where: { userId: session.user.id },
-    include: {
-      area: {
-        include: {
-          _count: { select: { customerProfiles: true } },
-        },
-      },
-    },
+    include: { area: { include: { _count: { select: { customerProfiles: true } } } } },
   })
-
-  // Get member user IDs in this shop's area
-  const areaMembers = shop
-    ? await prisma.customerProfile.findMany({
-        where: { areaId: shop.areaId },
-        select: { userId: true },
-      })
-    : []
-
-  const areaMemberIds = areaMembers.map((m) => m.userId)
-
-  const memberFilter = areaMemberIds.length > 0 ? { userId: { in: areaMemberIds } } : {}
-
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-  const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
-
-  const [recentTransactions, allDebitTimestamps, areaGroupBuckets, last30Debits, prev30Debits] = await Promise.all([
-    prisma.storeCreditHistory.findMany({
-      where: { type: 'DEBIT', ...memberFilter },
-      take: 20,
-      orderBy: { createdAt: 'desc' },
-      include: { user: { select: { name: true, email: true } } },
-    }),
-    // All DEBIT timestamps for peak hours chart (last 90 days)
-    prisma.storeCreditHistory.findMany({
-      where: {
-        type: 'DEBIT',
-        ...memberFilter,
-        createdAt: { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
-      },
-      select: { createdAt: true },
-    }),
-    // Category spend from group buckets in this area
-    shop
-      ? prisma.groupBucket.findMany({
-          where: { wallet: { group: { areaId: shop.areaId } } },
-          select: { category: true, spentAmount: true },
-        })
-      : Promise.resolve([]),
-    // Last 30 days debits for forecast
-    prisma.storeCreditHistory.findMany({
-      where: { type: 'DEBIT', ...memberFilter, createdAt: { gte: thirtyDaysAgo } },
-      select: { description: true, createdAt: true },
-    }),
-    // Previous 30 days debits for trend comparison
-    prisma.storeCreditHistory.findMany({
-      where: { type: 'DEBIT', ...memberFilter, createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } },
-      select: { description: true },
-    }),
-  ])
-
-  // Build hour distribution (0–23)
-  const hourCounts = new Array(24).fill(0) as number[]
-  for (const tx of allDebitTimestamps) {
-    hourCounts[new Date(tx.createdAt).getHours()]++
-  }
-
-  // Aggregate category spend
-  const categoryTotals: Record<string, number> = {}
-  for (const bucket of areaGroupBuckets) {
-    const cat = bucket.category
-    categoryTotals[cat] = (categoryTotals[cat] ?? 0) + Number(bucket.spentAmount)
-  }
-  const categorySlices: CategorySlice[] = CATEGORY_SLICES.map((meta) => ({
-    ...meta,
-    amount: categoryTotals[meta.category] ?? 0,
-  }))
-
-  const totalVolume = recentTransactions.reduce((sum, t) => sum + Number(t.amount), 0)
-
-  // ── AI Stock Forecast ────────────────────────────────────────────────────────
-  const CATEGORY_META: Record<string, { label: string; emoji: string; suggestions: (count: number) => string[] }> = {
-    food:          { label: 'Food & Groceries', emoji: '🍞', suggestions: (n) => [`Stock ${Math.max(20, n * 2)}+ loaves of bread this week`, 'Maize meal, cooking oil, and rice move fast', 'Canned goods and long-life milk recommended'] },
-    groceries:     { label: 'Food & Groceries', emoji: '🍞', suggestions: (n) => [`Stock ${Math.max(20, n * 2)}+ loaves of bread this week`, 'Maize meal and cooking oil are top sellers'] },
-    medicine:      { label: 'Medicine', emoji: '💊', suggestions: (n) => [`Keep ${Math.max(40, n * 3)}+ headache tablets in stock`, 'Flu medication and antacids in demand', 'Baby Panado and Calpol frequently requested'] },
-    toiletries:    { label: 'Toiletries & Hygiene', emoji: '🧴', suggestions: (n) => ['Soap, toothpaste, and shampoo are essentials', `Stock ${Math.max(15, n)}+ bars of soap`, 'Sanitary products sell consistently'] },
-    electricity:   { label: 'Electricity & Airtime', emoji: '⚡', suggestions: (n) => [`Prepaid electricity tokens: expect ${Math.max(10, n)} purchases/week`, 'Airtime vouchers across all networks needed', 'Data bundles increasingly popular'] },
-    'baby products': { label: 'Baby Products', emoji: '🍼', suggestions: (n) => [`Stock ${Math.max(10, n)}+ nappy packs`, 'Baby formula and cereal high demand', 'Baby wipes and Vaseline are weekly staples'] },
-  }
-
-  const parseCat = (desc: string) => desc.split(' - ').pop()?.toLowerCase().trim() ?? ''
-
-  const countCats = (items: { description: string }[]) => {
-    const counts: Record<string, number> = {}
-    for (const item of items) {
-      const cat = parseCat(item.description)
-      if (cat) counts[cat] = (counts[cat] ?? 0) + 1
-    }
-    return counts
-  }
-
-  const current30 = countCats(last30Debits)
-  const prev30 = countCats(prev30Debits)
-  const totalCurrent = Object.values(current30).reduce((a, b) => a + b, 0)
-
-  const forecastItems: ForecastItem[] = Object.entries(current30)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 4)
-    .map(([cat, count]) => {
-      const meta = CATEGORY_META[cat]
-      const prevCount = prev30[cat] ?? 0
-      const trend = prevCount > 0 ? Math.round(((count - prevCount) / prevCount) * 100) : 0
-      return {
-        category: meta?.label ?? cat.charAt(0).toUpperCase() + cat.slice(1),
-        emoji: meta?.emoji ?? '📦',
-        percent: totalCurrent > 0 ? Math.round((count / totalCurrent) * 100) : 0,
-        count,
-        trend,
-        suggestions: meta?.suggestions(count) ?? [`${count} purchases this month`],
-      }
-    })
 
   if (!shop) {
     return (
@@ -155,163 +28,115 @@ export default async function ShopDashboard() {
     )
   }
 
+  const areaMembers = await prisma.customerProfile.findMany({
+    where: { areaId: shop.areaId }, select: { userId: true },
+  })
+  const memberIds = areaMembers.map((m) => m.userId)
+  const memberFilter = memberIds.length > 0 ? { userId: { in: memberIds } } : {}
+
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+
+  const [recentTx, totalTxCount, monthlyVolume, topCategory] = await Promise.all([
+    prisma.storeCreditHistory.findMany({
+      where: { type: 'DEBIT', ...memberFilter },
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      include: { user: { select: { name: true } } },
+    }),
+    prisma.storeCreditHistory.count({ where: { type: 'DEBIT', ...memberFilter } }),
+    prisma.storeCreditHistory.aggregate({
+      where: { type: 'DEBIT', ...memberFilter, createdAt: { gte: thirtyDaysAgo } },
+      _sum: { amount: true },
+    }),
+    prisma.storeCreditHistory.findMany({
+      where: { type: 'DEBIT', ...memberFilter, createdAt: { gte: thirtyDaysAgo } },
+      select: { description: true },
+    }),
+  ])
+
+  // Top category this month
+  const catCounts: Record<string, number> = {}
+  for (const tx of topCategory) {
+    const cat = tx.description.split(' - ').pop()?.trim() ?? ''
+    if (cat) catCounts[cat] = (catCounts[cat] ?? 0) + 1
+  }
+  const topCat = Object.entries(catCounts).sort((a, b) => b[1] - a[1])[0]
+  const monthVol = Number(monthlyVolume._sum.amount ?? 0)
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold text-text-primary">Shop Dashboard</h1>
-        <p className="text-text-secondary mt-1">
-          {shop.name} — Manage your e-Khadi transactions
+        <p className="text-text-secondary mt-1 flex items-center gap-1.5">
+          <MapPin className="h-3.5 w-3.5" />{shop.name} · {shop.area.name}, {shop.area.province}
+          <Badge variant={shop.isActive ? 'success' : 'destructive'} className="ml-1">{shop.isActive ? 'Active' : 'Inactive'}</Badge>
         </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <StatsCard
-          title="Area Members"
-          value={shop.area._count.customerProfiles}
-          icon={<Users className="h-5 w-5 text-primary" />}
-          description="In your coverage area"
-          iconBg="bg-primary-light"
-        />
-        <StatsCard
-          title="Transactions (All)"
-          value={recentTransactions.length}
-          icon={<TrendingUp className="h-5 w-5 text-success" />}
-          description="Total processed"
-          iconBg="bg-green-50"
-        />
-        <StatsCard
-          title="Volume (ZAR)"
-          value={formatCurrency(totalVolume)}
-          icon={<ArrowUpRight className="h-5 w-5 text-warning" />}
-          description="Total credit applied"
-          iconBg="bg-yellow-50"
-          className="col-span-2 lg:col-span-1"
-        />
+      {/* KPI summary */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard title="Area Members" value={shop.area._count.customerProfiles} icon={<Users className="h-5 w-5 text-primary" />} description="In your area" iconBg="bg-primary-light" />
+        <StatsCard title="Total Sales" value={totalTxCount} icon={<TrendingUp className="h-5 w-5 text-success" />} description="All time" iconBg="bg-green-50" />
+        <StatsCard title="This Month" value={formatCurrency(monthVol)} icon={<ArrowUpRight className="h-5 w-5 text-warning" />} description="30-day volume" iconBg="bg-yellow-50" className="col-span-2 lg:col-span-1" />
+        <StatsCard title="Top Category" value={topCat?.[0] ?? '—'} icon={<Store className="h-5 w-5 text-violet-500" />} description={topCat ? `${topCat[1]} purchases` : 'No data yet'} iconBg="bg-violet-50" className="col-span-2 lg:col-span-1" />
       </div>
 
-      {/* Shop Info */}
-      {shop && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Store className="h-4 w-4 text-primary" />
-              Shop Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-text-secondary font-medium uppercase tracking-wide">Shop Name</p>
-                  <p className="text-sm font-semibold mt-1">{shop.name}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-text-secondary font-medium uppercase tracking-wide">Status</p>
-                  <div className="mt-1">
-                    <Badge variant={shop.isActive ? 'success' : 'destructive'}>
-                      {shop.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-text-secondary font-medium uppercase tracking-wide">Coverage Area</p>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <MapPin className="h-4 w-4 text-text-secondary" />
-                    <p className="text-sm font-semibold">{shop.area.name}</p>
-                  </div>
-                  <p className="text-xs text-text-secondary mt-0.5">{shop.area.province}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-text-secondary font-medium uppercase tracking-wide">Active Members</p>
-                  <p className="text-sm font-semibold mt-1">
-                    {shop.area._count.customerProfiles} members in {shop.area.name}
-                  </p>
-                </div>
-              </div>
-            </div>
+      {/* Quick links to other sections */}
+      <div className="grid sm:grid-cols-3 gap-3">
+        <Link href="/shop/forecast" className="group rounded-2xl border border-indigo-200 bg-gradient-to-br from-sky-50 to-indigo-50 p-4 hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <Sparkles className="h-5 w-5 text-indigo-500" />
+            <span className="text-[10px] font-bold bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full">AI</span>
+          </div>
+          <p className="font-semibold text-text-primary text-sm">AI Stock Forecast</p>
+          <p className="text-xs text-text-secondary mt-0.5">See what to restock this week</p>
+          <div className="flex items-center gap-1 mt-3 text-xs text-indigo-500 font-medium">View forecast <ArrowRight className="h-3 w-3" /></div>
+        </Link>
 
-            <div className="mt-4 p-3 bg-primary-light rounded-lg">
-              <p className="text-xs font-medium text-primary">Accepted Categories</p>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {['Food', 'Medicine', 'Toiletries', 'Electricity', 'Baby Products'].map((cat) => (
-                  <Badge key={cat} variant="blue" className="text-xs">{cat}</Badge>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        <Link href="/shop/transactions" className="group rounded-2xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-4 hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <TrendingUp className="h-5 w-5 text-green-500" />
+            <span className="text-xs font-bold text-green-600">{totalTxCount}</span>
+          </div>
+          <p className="font-semibold text-text-primary text-sm">Transactions</p>
+          <p className="text-xs text-text-secondary mt-0.5">Full sales history & details</p>
+          <div className="flex items-center gap-1 mt-3 text-xs text-green-600 font-medium">View all <ArrowRight className="h-3 w-3" /></div>
+        </Link>
 
-      {/* AI Charts row */}
-      <div className="grid lg:grid-cols-2 gap-5">
-        {/* Peak Hours */}
-        <Card>
-          <CardHeader className="pb-3 flex-row items-center gap-2">
-            <Clock className="h-4 w-4 text-primary" />
-            <CardTitle className="text-base">Peak Transaction Hours</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-text-secondary mb-3">
-              When members are most active — based on last 90 days of DEBIT transactions.
-            </p>
-            <PeakHoursChart hourCounts={hourCounts} />
-          </CardContent>
-        </Card>
-
-        {/* Category Spend Donut */}
-        <Card>
-          <CardHeader className="pb-3 flex-row items-center gap-2">
-            <PieChart className="h-4 w-4 text-primary" />
-            <CardTitle className="text-base">Top Spending Categories</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-text-secondary mb-3">
-              What your community actually needs most — aggregated from all stokvel group buckets in {shop.area.name}.
-            </p>
-            <CategorySpendDonut slices={categorySlices} />
-          </CardContent>
-        </Card>
+        <Link href="/shop/receipts" className="group rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-sky-50 p-4 hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <Receipt className="h-5 w-5 text-blue-500" />
+            <CheckCircle className="h-4 w-4 text-blue-400" />
+          </div>
+          <p className="font-semibold text-text-primary text-sm">Receipts</p>
+          <p className="text-xs text-text-secondary mt-0.5">Download PDF receipts (OBS)</p>
+          <div className="flex items-center gap-1 mt-3 text-xs text-blue-500 font-medium">View receipts <ArrowRight className="h-3 w-3" /></div>
+        </Link>
       </div>
 
-      {/* AI Stock Forecast */}
-      <StockForecastCard
-        items={forecastItems}
-        totalTransactions={last30Debits.length}
-        areaName={shop.area.name}
-      />
-
-      {/* Transaction history */}
+      {/* Last 5 transactions summary */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Recent Transactions</CardTitle>
+        <CardHeader className="pb-3 flex-row items-center justify-between">
+          <CardTitle className="text-base">Recent Activity</CardTitle>
+          <Link href="/shop/transactions" className="text-xs text-primary hover:underline font-medium flex items-center gap-1">
+            View all <ArrowRight className="h-3 w-3" />
+          </Link>
         </CardHeader>
         <CardContent className="p-0">
-          {recentTransactions.length === 0 ? (
-            <div className="text-center py-10">
-              <TrendingUp className="h-10 w-10 text-text-secondary mx-auto mb-3" />
-              <p className="text-sm font-medium text-text-secondary">No transactions yet</p>
-              <p className="text-xs text-text-secondary mt-1">
-                Transactions will appear here when members use their e-Khadi credit
-              </p>
-            </div>
+          {recentTx.length === 0 ? (
+            <div className="text-center py-8 text-text-secondary text-sm">No transactions yet</div>
           ) : (
             <ul className="divide-y divide-border">
-              {recentTransactions.map((tx) => (
+              {recentTx.map((tx) => (
                 <li key={tx.id} className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50/50">
-                  <div className="w-9 h-9 rounded-full bg-danger/10 flex items-center justify-center flex-shrink-0">
-                    <ArrowUpRight className="h-4 w-4 text-danger" />
+                  <div className="w-8 h-8 rounded-full bg-danger/10 flex items-center justify-center flex-shrink-0">
+                    <ArrowUpRight className="h-3.5 w-3.5 text-danger" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{tx.user.name}</p>
                     <p className="text-xs text-text-secondary">{formatDateTime(tx.createdAt)}</p>
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-semibold text-danger">-{formatCurrency(Number(tx.amount))}</p>
-                    <p className="text-xs text-text-secondary truncate max-w-[100px]">{tx.description}</p>
-                  </div>
+                  <p className="text-sm font-semibold text-danger flex-shrink-0">-{formatCurrency(Number(tx.amount))}</p>
                 </li>
               ))}
             </ul>
