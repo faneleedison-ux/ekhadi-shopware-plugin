@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { publishSMN } from '@/lib/smn'
 
 export async function POST(
   req: NextRequest,
@@ -123,6 +124,13 @@ export async function POST(
 
       return updated
     })
+
+    // Notify via Huawei Cloud SMN (fire and forget)
+    const member = await prisma.user.findUnique({ where: { id: creditRequest.requesterId }, select: { name: true, email: true } })
+    publishSMN(
+      'e-Khadi: Credit Request Approved',
+      `Dear ${member?.name ?? 'Member'},\n\nYour e-Khadi credit request of R${amount.toFixed(2)} has been APPROVED.\n\nReason: ${creditRequest.reason}\nFunds are now available in your wallet.\n\ne-Khadi Team`
+    )
 
     return NextResponse.json(result)
   } catch (error: any) {

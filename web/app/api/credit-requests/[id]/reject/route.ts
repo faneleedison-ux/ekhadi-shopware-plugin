@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { publishSMN } from '@/lib/smn'
 
 export async function POST(
   req: NextRequest,
@@ -47,6 +48,13 @@ export async function POST(
 
     return result
   })
+
+  // Notify via Huawei Cloud SMN
+  const member = await prisma.user.findUnique({ where: { id: creditRequest.requesterId }, select: { name: true } })
+  publishSMN(
+    'e-Khadi: Credit Request Rejected',
+    `Dear ${member?.name ?? 'Member'},\n\nYour e-Khadi credit request of R${Number(creditRequest.amount).toFixed(2)} has been REJECTED.\n\nPlease contact your stokvel group admin for more information.\n\ne-Khadi Team`
+  )
 
   return NextResponse.json(updated)
 }
