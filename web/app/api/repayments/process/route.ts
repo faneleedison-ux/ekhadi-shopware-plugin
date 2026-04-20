@@ -17,10 +17,16 @@ import { prisma } from '@/lib/db'
  *
  * Admin-only. Intended to be called on each new grant payment cycle.
  */
-export async function POST() {
-  const session = await getServerSession(authOptions)
-  if (!session || session.user.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function POST(req: Request) {
+  // Allow FunctionGraph to call this with a shared secret
+  const authHeader = req.headers.get('authorization')
+  const isServiceCall = authHeader === `Bearer ${process.env.FUNCTIONGRAPH_SECRET}` && process.env.FUNCTIONGRAPH_SECRET
+
+  if (!isServiceCall) {
+    const session = await getServerSession(authOptions)
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
   }
 
   const now = new Date()
