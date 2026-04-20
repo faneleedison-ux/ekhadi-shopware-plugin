@@ -12,6 +12,9 @@ import MemberVirtualCard from '@/components/dashboard/MemberVirtualCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import GrantCountdown from '@/components/member/GrantCountdown'
+import StreakBadges from '@/components/member/StreakBadges'
+import NoticeboardWidget from '@/components/member/NoticeboardWidget'
 
 function numericSeed(input: string): string {
   const digits = input.replace(/\D/g, '')
@@ -133,6 +136,8 @@ export default async function MemberDashboard() {
         cvv={cvv}
         tierLabel={tierLabel}
       />
+
+      <GrantCountdown grantAmount={grantData.grantAmount} />
 
       <div>
         <h1 className="text-xl font-bold text-text-primary">
@@ -290,6 +295,14 @@ export default async function MemberDashboard() {
           </CardContent>
         </Card>
       )}
+
+      <StreakBadges
+        paidRepaymentsCount={paidRepaymentsCount}
+        approvedRequestsCount={approvedRequestsCount}
+        completedCyclesCount={completedCyclesCount}
+      />
+
+      <NoticeboardWidget areaId={user.customerProfile?.areaId} />
     </div>
   )
 }

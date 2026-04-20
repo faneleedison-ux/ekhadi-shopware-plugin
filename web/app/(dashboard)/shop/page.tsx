@@ -8,6 +8,7 @@ import { formatCurrency, formatDateTime } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import StatsCard from '@/components/dashboard/StatsCard'
+import SalesHeatmap from '@/components/shop/SalesHeatmap'
 
 export default async function ShopDashboard() {
   const session = await getServerSession(authOptions)
@@ -36,7 +37,7 @@ export default async function ShopDashboard() {
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
-  const [recentTx, totalTxCount, monthlyVolume, topCategory] = await Promise.all([
+  const [recentTx, totalTxCount, monthlyVolume, topCategory, hourlyTx] = await Promise.all([
     prisma.storeCreditHistory.findMany({
       where: { type: 'DEBIT', ...memberFilter },
       take: 5,
@@ -52,6 +53,10 @@ export default async function ShopDashboard() {
       where: { type: 'DEBIT', ...memberFilter, createdAt: { gte: thirtyDaysAgo } },
       select: { description: true },
     }),
+    prisma.storeCreditHistory.findMany({
+      where: { type: 'DEBIT', ...memberFilter, createdAt: { gte: thirtyDaysAgo } },
+      select: { createdAt: true },
+    }),
   ])
 
   // Top category this month
@@ -62,6 +67,11 @@ export default async function ShopDashboard() {
   }
   const topCat = Object.entries(catCounts).sort((a, b) => b[1] - a[1])[0]
   const monthVol = Number(monthlyVolume._sum.amount ?? 0)
+
+  // Build hourly distribution (0-23)
+  const hourlyData = Array.from({ length: 24 }, (_, h) =>
+    hourlyTx.filter((t) => new Date(t.createdAt).getHours() === h).length
+  )
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -113,6 +123,8 @@ export default async function ShopDashboard() {
           <div className="flex items-center gap-1 mt-3 text-xs text-blue-500 font-medium">View receipts <ArrowRight className="h-3 w-3" /></div>
         </Link>
       </div>
+
+      <SalesHeatmap hourlyData={hourlyData} />
 
       {/* Last 5 transactions summary */}
       <Card>

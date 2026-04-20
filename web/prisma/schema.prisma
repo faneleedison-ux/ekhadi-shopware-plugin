@@ -59,6 +59,19 @@ enum StoreCreditType {
   DEBIT
 }
 
+enum BulkBuyStatus {
+  OPEN
+  FUNDED
+  FULFILLED
+  CANCELLED
+}
+
+enum RestockOrderStatus {
+  PENDING
+  ACKNOWLEDGED
+  FULFILLED
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -70,17 +83,26 @@ model User {
   updatedAt    DateTime @updatedAt
 
   // Relations
-  shop               Shop?
-  customerProfile    CustomerProfile?
-  groupMemberships   GroupMember[]
-  creditRequests     CreditRequest[]   @relation("CreditRequestRequester")
-  approvedRequests   CreditRequest[]   @relation("CreditRequestApprover")
-  rotationCycles     RotationCycle[]
-  grantCycles        GrantCycle[]
-  repaymentSchedules RepaymentSchedule[]
-  storeCredit        StoreCredit?
-  storeCreditHistory StoreCreditHistory[]
-  notifications      Notification[]
+  shop                  Shop?
+  customerProfile       CustomerProfile?
+  groupMemberships      GroupMember[]
+  creditRequests        CreditRequest[]        @relation("CreditRequestRequester")
+  approvedRequests      CreditRequest[]        @relation("CreditRequestApprover")
+  rotationCycles        RotationCycle[]
+  grantCycles           GrantCycle[]
+  repaymentSchedules    RepaymentSchedule[]
+  storeCredit           StoreCredit?
+  storeCreditHistory    StoreCreditHistory[]
+  notifications         Notification[]
+  qrTokens              QRPaymentToken[]
+  loyaltyTransactions   LoyaltyTransaction[]
+  authoredNotices       Noticeboard[]
+  bulkBuysCreated       BulkBuyRequest[]       @relation("BulkBuyCreator")
+  bulkBuyParticipations BulkBuyParticipant[]   @relation("BulkBuyParticipant")
+  fraudAlerts           FraudAlert[]
+  creditTransfersGiven  CreditTransfer[]       @relation("TransferSender")
+  creditTransfersGot    CreditTransfer[]       @relation("TransferReceiver")
+  idVerifications       IDVerification[]
 
   @@map("users")
 }
@@ -89,41 +111,47 @@ model Area {
   id          String  @id @default(cuid())
   name        String
   province    String
-  coordinates String? // JSON string for map coordinates
+  coordinates String?
   createdAt   DateTime @default(now())
 
   // Relations
   shops            Shop[]
   customerProfiles CustomerProfile[]
   groups           Group[]
+  notices          Noticeboard[]
 
   @@map("areas")
 }
 
 model Shop {
-  id       String  @id @default(cuid())
-  name     String
-  userId   String  @unique
-  areaId   String
-  isActive Boolean @default(true)
+  id        String   @id @default(cuid())
+  name      String
+  userId    String   @unique
+  areaId    String
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  area Area @relation(fields: [areaId], references: [id])
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  area          Area           @relation(fields: [areaId], references: [id])
+  restockOrders RestockOrder[]
 
   @@map("shops")
 }
 
 model CustomerProfile {
-  id                 String  @id @default(cuid())
-  userId             String  @unique
-  sassaId            String  @unique
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  sassaId            String   @unique
   areaId             String
-  creditScore        Int     @default(50) // 0-100
-  monthlyGrantAmount Decimal @default(350.00)
-  isActive           Boolean @default(true)
+  creditScore        Int      @default(50)
+  monthlyGrantAmount Decimal  @default(350.00)
+  isActive           Boolean  @default(true)
+  emergencyFund      Decimal  @default(0)
+  loyaltyPoints      Int      @default(0)
+  idVerified         Boolean  @default(false)
+  idImageUrl         String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -139,17 +167,18 @@ model Group {
   name        String
   areaId      String
   maxMembers  Int      @default(10)
-  rotationDay Int      @default(1) // Day of month for rotation
+  rotationDay Int      @default(1)
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  area           Area            @relation(fields: [areaId], references: [id])
-  members        GroupMember[]
-  wallet         GroupWallet?
-  rotationCycles RotationCycle[]
-  creditRequests CreditRequest[]
+  area             Area             @relation(fields: [areaId], references: [id])
+  members          GroupMember[]
+  wallet           GroupWallet?
+  rotationCycles   RotationCycle[]
+  creditRequests   CreditRequest[]
+  bulkBuyRequests  BulkBuyRequest[]
 
   @@map("groups")
 }
@@ -161,7 +190,6 @@ model GroupMember {
   role     GroupMemberRole @default(MEMBER)
   joinedAt DateTime        @default(now())
 
-  // Relations
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -175,7 +203,6 @@ model GroupWallet {
   balance  Decimal @default(0)
   currency String  @default("ZAR")
 
-  // Relations
   group   Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
   buckets GroupBucket[]
 
@@ -189,7 +216,6 @@ model GroupBucket {
   allocatedAmount Decimal        @default(0)
   spentAmount     Decimal        @default(0)
 
-  // Relations
   wallet GroupWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@unique([walletId, category])
@@ -202,12 +228,11 @@ model RotationCycle {
   month           Int
   year            Int
   recipientUserId String
-  amount          Decimal       
+  amount          Decimal
   status          RotationStatus @default(PENDING)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
-  // Relations
   group     Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
   recipient User  @relation(fields: [recipientUserId], references: [id])
 
@@ -218,14 +243,13 @@ model CreditRequest {
   id          String              @id @default(cuid())
   requesterId String
   groupId     String
-  amount      Decimal            
+  amount      Decimal
   reason      String
   status      CreditRequestStatus @default(PENDING)
   approvedBy  String?
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
 
-  // Relations
   requester User   @relation("CreditRequestRequester", fields: [requesterId], references: [id])
   group     Group  @relation(fields: [groupId], references: [id])
   approver  User?  @relation("CreditRequestApprover", fields: [approvedBy], references: [id])
@@ -234,18 +258,17 @@ model CreditRequest {
 }
 
 model GrantCycle {
-  id          String           @id @default(cuid())
-  userId      String
-  month       Int
-  year        Int
-  grantAmount Decimal         
-  spentAmount Decimal          @default(0)
-  repaidAmount Decimal         @default(0)
-  status      GrantCycleStatus @default(ACTIVE)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id           String           @id @default(cuid())
+  userId       String
+  month        Int
+  year         Int
+  grantAmount  Decimal
+  spentAmount  Decimal          @default(0)
+  repaidAmount Decimal          @default(0)
+  status       GrantCycleStatus @default(ACTIVE)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
-  // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, month, year])
@@ -255,12 +278,11 @@ model GrantCycle {
 model RepaymentSchedule {
   id      String          @id @default(cuid())
   userId  String
-  amount  Decimal        
+  amount  Decimal
   dueDate DateTime
   paidAt  DateTime?
   status  RepaymentStatus @default(PENDING)
 
-  // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("repayment_schedules")
@@ -272,7 +294,6 @@ model StoreCredit {
   balance  Decimal @default(0)
   currency String  @default("ZAR")
 
-  // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("store_credits")
@@ -286,7 +307,6 @@ model StoreCreditHistory {
   description String
   createdAt   DateTime        @default(now())
 
-  // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("store_credit_history")
@@ -297,12 +317,142 @@ model Notification {
   userId    String
   title     String
   message   String
-  type      String   // CREDIT_APPROVED | CREDIT_REJECTED | GENERAL
+  type      String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+model QRPaymentToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique @default(cuid())
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("qr_payment_tokens")
+}
+
+model LoyaltyTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  points      Int
+  description String
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("loyalty_transactions")
+}
+
+model Noticeboard {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  pinned    Boolean  @default(false)
+  areaId    String?
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author User  @relation(fields: [authorId], references: [id])
+  area   Area? @relation(fields: [areaId], references: [id])
+
+  @@map("noticeboard")
+}
+
+model BulkBuyRequest {
+  id          String        @id @default(cuid())
+  title       String
+  description String
+  category    String
+  unitPrice   Decimal
+  targetQty   Int
+  status      BulkBuyStatus @default(OPEN)
+  creatorId   String
+  groupId     String
+  expiresAt   DateTime
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  creator      User                 @relation("BulkBuyCreator", fields: [creatorId], references: [id])
+  group        Group                @relation(fields: [groupId], references: [id])
+  participants BulkBuyParticipant[]
+
+  @@map("bulk_buy_requests")
+}
+
+model BulkBuyParticipant {
+  id        String   @id @default(cuid())
+  bulkBuyId String
+  userId    String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  bulkBuy BulkBuyRequest @relation(fields: [bulkBuyId], references: [id], onDelete: Cascade)
+  user    User           @relation("BulkBuyParticipant", fields: [userId], references: [id])
+
+  @@unique([bulkBuyId, userId])
+  @@map("bulk_buy_participants")
+}
+
+model RestockOrder {
+  id        String             @id @default(cuid())
+  shopId    String
+  items     Json
+  notes     String?
+  status    RestockOrderStatus @default(PENDING)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  shop Shop @relation(fields: [shopId], references: [id])
+
+  @@map("restock_orders")
+}
+
+model FraudAlert {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  description String
+  resolved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("fraud_alerts")
+}
+
+model CreditTransfer {
+  id          String   @id @default(cuid())
+  senderId    String
+  receiverId  String
+  amount      Decimal
+  note        String?
+  createdAt   DateTime @default(now())
+
+  sender   User @relation("TransferSender", fields: [senderId], references: [id])
+  receiver User @relation("TransferReceiver", fields: [receiverId], references: [id])
+
+  @@map("credit_transfers")
+}
+
+model IDVerification {
+  id          String   @id @default(cuid())
+  userId      String
+  imageUrl    String
+  status      String   @default("PENDING")
+  reviewedBy  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("id_verifications")
 }

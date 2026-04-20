@@ -7,6 +7,7 @@ import { signOut } from 'next-auth/react'
 import {
   LayoutDashboard, Users, UsersRound, MapPin, CreditCard,
   FileText, Wallet, Home, Store, ChevronLeft, ChevronRight, LogOut, TrendingUp, Sparkles, Receipt,
+  Bell, ShoppingBasket, Package, ShieldAlert,
 } from 'lucide-react'
 import { cn, getInitials } from '@/lib/utils'
 
@@ -18,17 +19,22 @@ const adminNavItems: NavItem[] = [
   { label: 'Groups', href: '/admin/groups', icon: UsersRound },
   { label: 'Areas', href: '/admin/areas', icon: MapPin },
   { label: 'Credit Requests', href: '/admin/credit-requests', icon: FileText },
+  { label: 'Noticeboard', href: '/admin/noticeboard', icon: Bell },
+  { label: 'Fraud Detection', href: '/admin/fraud', icon: ShieldAlert },
 ]
 const memberNavItems: NavItem[] = [
   { label: 'Home', href: '/member', icon: Home },
   { label: 'Wallet', href: '/member/wallet', icon: Wallet },
   { label: 'My Group', href: '/member/group', icon: UsersRound },
   { label: 'Credit Request', href: '/member/credit-request', icon: CreditCard },
+  { label: 'Noticeboard', href: '/member/noticeboard', icon: Bell },
+  { label: 'Bulk Buy', href: '/member/bulk-buy', icon: ShoppingBasket },
 ]
 const shopNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/shop', icon: Store },
   { label: 'Transactions', href: '/shop/transactions', icon: TrendingUp },
   { label: 'AI Stock Forecast', href: '/shop/forecast', icon: Sparkles },
+  { label: 'Restock Orders', href: '/shop/restock', icon: Package },
   { label: 'Receipts', href: '/shop/receipts', icon: Receipt },
 ]
 

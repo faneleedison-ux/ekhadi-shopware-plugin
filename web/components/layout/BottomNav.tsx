@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, UsersRound, MapPin, FileText, Wallet, Home, CreditCard, Store, TrendingUp, Sparkles, Receipt } from 'lucide-react'
+import { LayoutDashboard, Users, UsersRound, MapPin, FileText, Wallet, Home, CreditCard, Store, TrendingUp, Sparkles, Receipt, Bell, ShoppingBasket, Package, ShieldAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface NavItem { label: string; href: string; icon: React.ComponentType<{ className?: string }> }
@@ -12,19 +12,21 @@ const adminNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Members', href: '/admin/members', icon: Users },
   { label: 'Groups', href: '/admin/groups', icon: UsersRound },
-  { label: 'Areas', href: '/admin/areas', icon: MapPin },
   { label: 'Credits', href: '/admin/credit-requests', icon: FileText },
+  { label: 'Fraud', href: '/admin/fraud', icon: ShieldAlert },
 ]
 const memberNavItems: NavItem[] = [
   { label: 'Home', href: '/member', icon: Home },
   { label: 'Wallet', href: '/member/wallet', icon: Wallet },
   { label: 'Group', href: '/member/group', icon: UsersRound },
   { label: 'Credit', href: '/member/credit-request', icon: CreditCard },
+  { label: 'Notice', href: '/member/noticeboard', icon: Bell },
 ]
 const shopNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/shop', icon: Store },
   { label: 'Sales', href: '/shop/transactions', icon: TrendingUp },
   { label: 'AI Forecast', href: '/shop/forecast', icon: Sparkles },
+  { label: 'Restock', href: '/shop/restock', icon: Package },
   { label: 'Receipts', href: '/shop/receipts', icon: Receipt },
 ]
 

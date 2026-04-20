@@ -12,6 +12,8 @@ export const metadata: Metadata = {
     'e-Khadi is a community-powered stokvel credit platform for SASSA grant recipients in South Africa. Access grant-backed credit at spaza shops in your area.',
   keywords: ['stokvel', 'SASSA', 'credit', 'spaza shop', 'South Africa', 'grant'],
   authors: [{ name: 'e-Khadi' }],
+  manifest: '/manifest.json',
+  themeColor: '#1877F2',
   openGraph: {
     title: 'e-Khadi',
     description: 'Community Credit for SASSA Grant Recipients',

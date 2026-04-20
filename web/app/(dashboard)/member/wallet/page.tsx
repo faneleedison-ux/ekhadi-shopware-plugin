@@ -9,6 +9,10 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
 import SmartBudgetPlanner from '@/components/member/SmartBudgetPlanner'
+import QRWallet from '@/components/member/QRWallet'
+import EmergencyFundWidget from '@/components/member/EmergencyFundWidget'
+import LoyaltyWidget from '@/components/member/LoyaltyWidget'
+import TransferCredit from '@/components/member/TransferCredit'
 
 const bucketColors: Record<string, string> = {
   FOOD: 'bg-green-500',
@@ -39,7 +43,7 @@ export default async function WalletPage() {
           orderBy: { createdAt: 'desc' },
           take: 30,
         },
-        customerProfile: { select: { monthlyGrantAmount: true } },
+        customerProfile: { select: { monthlyGrantAmount: true, emergencyFund: true, loyaltyPoints: true } },
         grantCycles: {
           where: { status: 'ACTIVE' },
           orderBy: { createdAt: 'desc' },
@@ -112,6 +116,20 @@ export default async function WalletPage() {
           </div>
         </div>
       </div>
+
+      <QRWallet memberName={user.name} />
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        <EmergencyFundWidget
+          amount={Number(user.customerProfile?.emergencyFund ?? 0)}
+          monthlyGrant={grantAmount}
+        />
+        <LoyaltyWidget
+          points={user.customerProfile?.loyaltyPoints ?? 0}
+        />
+      </div>
+
+      <TransferCredit currentBalance={balance} />
 
       {/* Smart Budget Planner */}
       <SmartBudgetPlanner
