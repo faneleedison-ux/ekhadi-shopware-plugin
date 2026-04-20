@@ -77,6 +77,14 @@
     background: var(--status-info-soft);
   }
 
+  /* Landing page navbar */
+  .glass-nav {
+    background: rgba(24, 119, 242, 0.97);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
   /* ── Scroll reveal */
   .reveal {
     opacity: 0;
