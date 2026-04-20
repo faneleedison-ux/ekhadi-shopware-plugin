@@ -1,8 +1,10 @@
-import { SmnClient } from '@huaweicloud/huaweicloud-sdk-smn'
-import { BasicCredentials } from '@huaweicloud/huaweicloud-sdk-core'
-import { PublishMessageRequest, PublishMessageRequestBody } from '@huaweicloud/huaweicloud-sdk-smn/v2'
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { SmnClient, PublishMessageRequest, PublishMessageRequestBody } = require('@huaweicloud/huaweicloud-sdk-smn')
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { BasicCredentials } = require('@huaweicloud/huaweicloud-sdk-core')
 
-function getClient() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getClient(): any {
   return SmnClient.newBuilder()
     .withCredential(
       new BasicCredentials()

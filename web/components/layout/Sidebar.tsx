@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import {
   LayoutDashboard, Users, UsersRound, MapPin, CreditCard,
-  FileText, Wallet, Home, Store, ChevronLeft, ChevronRight, LogOut, TrendingUp,
+  FileText, Wallet, Home, Store, ChevronLeft, ChevronRight, LogOut, TrendingUp, Sparkles, Receipt,
 } from 'lucide-react'
 import { cn, getInitials } from '@/lib/utils'
 
@@ -28,6 +28,8 @@ const memberNavItems: NavItem[] = [
 const shopNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/shop', icon: Store },
   { label: 'Transactions', href: '/shop/transactions', icon: TrendingUp },
+  { label: 'AI Stock Forecast', href: '/shop/forecast', icon: Sparkles },
+  { label: 'Receipts', href: '/shop/receipts', icon: Receipt },
 ]
 
 interface SidebarProps { userRole: string; userName: string; userEmail: string }
