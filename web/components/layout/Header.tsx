@@ -41,8 +41,8 @@ export default function Header({ userName, userEmail, userRole, pageTitle }: Hea
       <div className="flex-1 min-w-0">
         {pageTitle && <h1 className="text-lg font-semibold text-text-primary truncate hidden lg:block">{pageTitle}</h1>}
         <div className="flex items-center gap-2 lg:hidden">
-          <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center"><span className="text-white font-bold text-xs">eK</span></div>
-          <span className="font-bold text-primary text-base">e-Khadi</span>
+          <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center" style={{boxShadow:'0 0 14px 3px rgba(24,119,242,0.55)'}}><span className="text-white font-bold text-xs">eK</span></div>
+          <span className="font-bold text-primary text-base" style={{textShadow:'0 0 10px rgba(24,119,242,0.4)'}}>e-Khadi</span>
         </div>
       </div>
 

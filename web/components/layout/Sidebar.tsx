@@ -46,14 +46,14 @@ export default function Sidebar({ userRole, userName, userEmail }: SidebarProps)
       <div className={cn('flex items-center h-16 px-4 border-b border-white/8', collapsed && 'justify-center')}>
         {!collapsed ? (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-md shadow-primary/30">
-              <span className="text-white font-bold text-sm">eK</span>
+            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-lg shadow-white/40 ring-2 ring-white/30" style={{boxShadow:'0 0 18px 4px rgba(255,255,255,0.55), 0 0 6px 1px rgba(255,255,255,0.8)'}}>
+              <span className="text-primary font-bold text-sm">eK</span>
             </div>
-            <span className="font-bold text-lg tracking-tight text-white">e-Khadi</span>
+            <span className="font-bold text-lg tracking-tight text-white" style={{textShadow:'0 0 12px rgba(255,255,255,0.6)'}}>e-Khadi</span>
           </div>
         ) : (
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-md shadow-primary/30">
-            <span className="text-white font-bold text-sm">eK</span>
+          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center" style={{boxShadow:'0 0 18px 4px rgba(255,255,255,0.55), 0 0 6px 1px rgba(255,255,255,0.8)'}}>
+            <span className="text-primary font-bold text-sm">eK</span>
           </div>
         )}
       </div>
