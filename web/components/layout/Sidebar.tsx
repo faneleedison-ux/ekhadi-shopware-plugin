@@ -68,12 +68,30 @@ export default function Sidebar({ userRole, userName, userEmail }: SidebarProps)
           return (
             <Link key={item.href} href={item.href} title={collapsed ? item.label : undefined}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150',
-                isActive ? 'bg-primary text-white font-semibold' : 'text-white/55 hover:bg-white/8 hover:text-white',
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 relative',
+                item.href === '/shop/forecast'
+                  ? isActive
+                    ? 'text-white font-semibold'
+                    : 'text-yellow-200 hover:text-white'
+                  : isActive
+                    ? 'bg-white/20 text-white font-semibold border border-white/30'
+                    : 'text-white/65 hover:bg-white/10 hover:text-white',
                 collapsed && 'justify-center px-2'
-              )}>
-              <Icon className="h-5 w-5 flex-shrink-0" />
-              {!collapsed && <span className="text-sm">{item.label}</span>}
+              )}
+              style={item.href === '/shop/forecast' ? {
+                background: isActive
+                  ? 'linear-gradient(135deg, rgba(251,191,36,0.35), rgba(167,139,250,0.35))'
+                  : 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(167,139,250,0.15))',
+                border: '1px solid rgba(251,191,36,0.4)',
+                boxShadow: isActive ? '0 0 12px rgba(251,191,36,0.3)' : 'none',
+              } : {}}>
+              <Icon className={cn('h-5 w-5 flex-shrink-0', item.href === '/shop/forecast' && 'text-yellow-300')} />
+              {!collapsed && (
+                <span className="text-sm flex-1">{item.label}</span>
+              )}
+              {!collapsed && item.href === '/shop/forecast' && (
+                <span className="text-[9px] font-bold bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full">AI</span>
+              )}
             </Link>
           )
         })}

@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, UsersRound, MapPin, FileText, Wallet, Home, CreditCard, Store, TrendingUp } from 'lucide-react'
+import { LayoutDashboard, Users, UsersRound, MapPin, FileText, Wallet, Home, CreditCard, Store, TrendingUp, Sparkles, Receipt } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface NavItem { label: string; href: string; icon: React.ComponentType<{ className?: string }> }
@@ -23,7 +23,9 @@ const memberNavItems: NavItem[] = [
 ]
 const shopNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/shop', icon: Store },
-  { label: 'Transactions', href: '/shop/transactions', icon: TrendingUp },
+  { label: 'Sales', href: '/shop/transactions', icon: TrendingUp },
+  { label: 'AI Forecast', href: '/shop/forecast', icon: Sparkles },
+  { label: 'Receipts', href: '/shop/receipts', icon: Receipt },
 ]
 
 export default function BottomNav({ userRole }: { userRole: string }) {
