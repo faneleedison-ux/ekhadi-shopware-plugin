@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import StatsCard from '@/components/dashboard/StatsCard'
 import PeakHoursChart from '@/components/shop/PeakHoursChart'
 import CategorySpendDonut, { CategorySlice } from '@/components/shop/CategorySpendDonut'
+import StockForecastCard, { ForecastItem } from '@/components/shop/StockForecastCard'
 
 const CATEGORY_SLICES: Omit<CategorySlice, 'amount'>[] = [
   { category: 'FOOD',          label: 'Food',          color: 'bg-green-500',  hex: '#22c55e' },
@@ -45,7 +46,10 @@ export default async function ShopDashboard() {
 
   const memberFilter = areaMemberIds.length > 0 ? { userId: { in: areaMemberIds } } : {}
 
-  const [recentTransactions, allDebitTimestamps, areaGroupBuckets] = await Promise.all([
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
+
+  const [recentTransactions, allDebitTimestamps, areaGroupBuckets, last30Debits, prev30Debits] = await Promise.all([
     prisma.storeCreditHistory.findMany({
       where: { type: 'DEBIT', ...memberFilter },
       take: 20,
@@ -68,6 +72,16 @@ export default async function ShopDashboard() {
           select: { category: true, spentAmount: true },
         })
       : Promise.resolve([]),
+    // Last 30 days debits for forecast
+    prisma.storeCreditHistory.findMany({
+      where: { type: 'DEBIT', ...memberFilter, createdAt: { gte: thirtyDaysAgo } },
+      select: { description: true, createdAt: true },
+    }),
+    // Previous 30 days debits for trend comparison
+    prisma.storeCreditHistory.findMany({
+      where: { type: 'DEBIT', ...memberFilter, createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } },
+      select: { description: true },
+    }),
   ])
 
   // Build hour distribution (0–23)
@@ -88,6 +102,48 @@ export default async function ShopDashboard() {
   }))
 
   const totalVolume = recentTransactions.reduce((sum, t) => sum + Number(t.amount), 0)
+
+  // ── AI Stock Forecast ────────────────────────────────────────────────────────
+  const CATEGORY_META: Record<string, { label: string; emoji: string; suggestions: (count: number) => string[] }> = {
+    food:          { label: 'Food & Groceries', emoji: '🍞', suggestions: (n) => [`Stock ${Math.max(20, n * 2)}+ loaves of bread this week`, 'Maize meal, cooking oil, and rice move fast', 'Canned goods and long-life milk recommended'] },
+    groceries:     { label: 'Food & Groceries', emoji: '🍞', suggestions: (n) => [`Stock ${Math.max(20, n * 2)}+ loaves of bread this week`, 'Maize meal and cooking oil are top sellers'] },
+    medicine:      { label: 'Medicine', emoji: '💊', suggestions: (n) => [`Keep ${Math.max(40, n * 3)}+ headache tablets in stock`, 'Flu medication and antacids in demand', 'Baby Panado and Calpol frequently requested'] },
+    toiletries:    { label: 'Toiletries & Hygiene', emoji: '🧴', suggestions: (n) => ['Soap, toothpaste, and shampoo are essentials', `Stock ${Math.max(15, n)}+ bars of soap`, 'Sanitary products sell consistently'] },
+    electricity:   { label: 'Electricity & Airtime', emoji: '⚡', suggestions: (n) => [`Prepaid electricity tokens: expect ${Math.max(10, n)} purchases/week`, 'Airtime vouchers across all networks needed', 'Data bundles increasingly popular'] },
+    'baby products': { label: 'Baby Products', emoji: '🍼', suggestions: (n) => [`Stock ${Math.max(10, n)}+ nappy packs`, 'Baby formula and cereal high demand', 'Baby wipes and Vaseline are weekly staples'] },
+  }
+
+  const parseCat = (desc: string) => desc.split(' - ').pop()?.toLowerCase().trim() ?? ''
+
+  const countCats = (items: { description: string }[]) => {
+    const counts: Record<string, number> = {}
+    for (const item of items) {
+      const cat = parseCat(item.description)
+      if (cat) counts[cat] = (counts[cat] ?? 0) + 1
+    }
+    return counts
+  }
+
+  const current30 = countCats(last30Debits)
+  const prev30 = countCats(prev30Debits)
+  const totalCurrent = Object.values(current30).reduce((a, b) => a + b, 0)
+
+  const forecastItems: ForecastItem[] = Object.entries(current30)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([cat, count]) => {
+      const meta = CATEGORY_META[cat]
+      const prevCount = prev30[cat] ?? 0
+      const trend = prevCount > 0 ? Math.round(((count - prevCount) / prevCount) * 100) : 0
+      return {
+        category: meta?.label ?? cat.charAt(0).toUpperCase() + cat.slice(1),
+        emoji: meta?.emoji ?? '📦',
+        percent: totalCurrent > 0 ? Math.round((count / totalCurrent) * 100) : 0,
+        count,
+        trend,
+        suggestions: meta?.suggestions(count) ?? [`${count} purchases this month`],
+      }
+    })
 
   if (!shop) {
     return (
@@ -219,6 +275,13 @@ export default async function ShopDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Stock Forecast */}
+      <StockForecastCard
+        items={forecastItems}
+        totalTransactions={last30Debits.length}
+        areaName={shop.area.name}
+      />
 
       {/* Transaction history */}
       <Card>

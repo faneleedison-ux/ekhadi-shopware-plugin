@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
-import { ArrowUpRight, CalendarDays, TrendingUp } from 'lucide-react'
+import { ArrowUpRight, TrendingUp } from 'lucide-react'
+import ReceiptButton from '@/components/shop/ReceiptButton'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
@@ -106,10 +107,13 @@ export default async function ShopTransactionsPage() {
                     </div>
                   </div>
 
-                  <div className="text-right flex-shrink-0">
+                  <div className="text-right flex-shrink-0 space-y-1">
                     <p className="text-sm font-semibold text-danger">-{formatCurrency(Number(tx.amount))}</p>
                     <p className="text-xs text-text-secondary">{formatDateTime(tx.createdAt)}</p>
-                    <Badge variant="destructive" className="text-xs mt-1">DEBIT</Badge>
+                    <div className="flex items-center justify-end gap-2">
+                      <Badge variant="destructive" className="text-xs">DEBIT</Badge>
+                      <ReceiptButton transactionId={tx.id} />
+                    </div>
                   </div>
                 </li>
               ))}
