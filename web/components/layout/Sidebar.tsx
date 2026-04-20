@@ -72,7 +72,7 @@ export default function Sidebar({ userRole, userName, userEmail }: SidebarProps)
                 item.href === '/shop/forecast'
                   ? isActive
                     ? 'text-white font-semibold'
-                    : 'text-yellow-200 hover:text-white'
+                    : 'text-sky-200 hover:text-white'
                   : isActive
                     ? 'bg-white/20 text-white font-semibold border border-white/30'
                     : 'text-white/65 hover:bg-white/10 hover:text-white',
@@ -80,17 +80,17 @@ export default function Sidebar({ userRole, userName, userEmail }: SidebarProps)
               )}
               style={item.href === '/shop/forecast' ? {
                 background: isActive
-                  ? 'linear-gradient(135deg, rgba(251,191,36,0.35), rgba(167,139,250,0.35))'
-                  : 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(167,139,250,0.15))',
-                border: '1px solid rgba(251,191,36,0.4)',
-                boxShadow: isActive ? '0 0 12px rgba(251,191,36,0.3)' : 'none',
+                  ? 'linear-gradient(135deg, rgba(56,189,248,0.4), rgba(99,102,241,0.4))'
+                  : 'linear-gradient(135deg, rgba(56,189,248,0.15), rgba(99,102,241,0.15))',
+                border: '1px solid rgba(99,102,241,0.5)',
+                boxShadow: isActive ? '0 0 14px rgba(99,102,241,0.4)' : 'none',
               } : {}}>
-              <Icon className={cn('h-5 w-5 flex-shrink-0', item.href === '/shop/forecast' && 'text-yellow-300')} />
+              <Icon className={cn('h-5 w-5 flex-shrink-0', item.href === '/shop/forecast' && 'text-sky-300')} />
               {!collapsed && (
                 <span className="text-sm flex-1">{item.label}</span>
               )}
               {!collapsed && item.href === '/shop/forecast' && (
-                <span className="text-[9px] font-bold bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full">AI</span>
+                <span className="text-[9px] font-bold bg-indigo-400 text-white px-1.5 py-0.5 rounded-full">AI</span>
               )}
             </Link>
           )
