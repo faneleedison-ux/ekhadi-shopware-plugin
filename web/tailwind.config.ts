@@ -19,48 +19,48 @@ const config: Config = {
     },
     extend: {
       colors: {
-        // e-Khadi brand colors
+        // e-Khadi — Clean Slate (Capitec / Revolut)
         primary: {
-          DEFAULT: '#1877F2',
-          dark: '#166FE5',
-          light: '#E7F3FF',
+          DEFAULT: '#00C2B2',
+          dark: '#009B8D',
+          light: '#E0F9F7',
           foreground: '#FFFFFF',
         },
-        background: '#F0F2F5',
-        sidebar: '#1877F2',
+        background: '#F0F4F8',
+        sidebar: '#1A1A2E',
         card: {
           DEFAULT: '#FFFFFF',
-          foreground: '#1C1E21',
+          foreground: '#1A1A2E',
         },
-        'text-primary': '#1C1E21',
-        'text-secondary': '#65676B',
-        success: '#42B883',
-        warning: '#F7B928',
-        danger: '#FA383E',
-        border: '#E4E6EB',
-        input: '#E4E6EB',
-        ring: '#1877F2',
+        'text-primary': '#1A1A2E',
+        'text-secondary': '#64748B',
+        success: '#22C55E',
+        warning: '#F59E0B',
+        danger: '#EF4444',
+        border: '#E2E8F0',
+        input: '#FFFFFF',
+        ring: '#00C2B2',
         // shadcn compatibility
-        foreground: '#1C1E21',
+        foreground: '#1A1A2E',
         secondary: {
-          DEFAULT: '#F0F2F5',
-          foreground: '#1C1E21',
+          DEFAULT: '#F0F4F8',
+          foreground: '#1A1A2E',
         },
         muted: {
-          DEFAULT: '#F0F2F5',
-          foreground: '#65676B',
+          DEFAULT: '#F0F4F8',
+          foreground: '#64748B',
         },
         accent: {
-          DEFAULT: '#E7F3FF',
-          foreground: '#1877F2',
+          DEFAULT: '#E0F9F7',
+          foreground: '#00C2B2',
         },
         destructive: {
-          DEFAULT: '#FA383E',
+          DEFAULT: '#EF4444',
           foreground: '#FFFFFF',
         },
         popover: {
           DEFAULT: '#FFFFFF',
-          foreground: '#1C1E21',
+          foreground: '#1A1A2E',
         },
       },
       borderRadius: {

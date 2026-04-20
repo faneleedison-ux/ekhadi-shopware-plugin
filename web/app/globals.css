@@ -11,10 +11,10 @@
     --admin-space-section: 1.5rem;
     --admin-space-card: 1rem;
     --admin-title-size: 1.5rem;
-    --status-success-soft: #ecfdf3;
-    --status-warning-soft: #fff8e6;
-    --status-danger-soft: #fff1f2;
-    --status-info-soft: #e7f3ff;
+    --status-success-soft: rgba(34, 197, 94, 0.12);
+    --status-warning-soft: rgba(245, 158, 11, 0.12);
+    --status-danger-soft: rgba(239, 68, 68, 0.12);
+    --status-info-soft: rgba(0, 194, 178, 0.12);
   }
 
   body {
@@ -44,7 +44,7 @@
   }
 
   .admin-kpi-card {
-    @apply rounded-xl border border-border bg-white shadow-sm h-full;
+    @apply rounded-xl border border-border bg-card shadow-sm h-full;
     min-height: 104px;
   }
 
@@ -76,6 +76,36 @@
   .status-soft-info {
     background: var(--status-info-soft);
   }
+
+  /* ── Glass (used on dark hero sections) */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  /* Sidebar nav */
+  .glass-nav {
+    background: rgba(26, 26, 46, 0.97);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0, 194, 178, 0.15);
+  }
+
+  /* ── Scroll reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(48px) scale(0.98);
+    transition:
+      opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .reveal.in-view {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @layer utilities {
@@ -84,42 +114,23 @@
   }
 
   .animate-fade-in {
-    animation: fade-in 0.2s ease-out;
+    animation: fade-in 0.25s ease-out;
   }
 }
 
 @keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
+/* Light scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: #F0F4F8; }
+::-webkit-scrollbar-thumb  { background: #CBD5E1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #00C2B2; }
 
-::-webkit-scrollbar-track {
-  background: #F0F2F5;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #C8CDD4;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #65676B;
-}
-
-/* Focus styles */
+/* Focus ring — teal */
 :focus-visible {
-  outline: 2px solid #1877F2;
+  outline: 2px solid #00C2B2;
   outline-offset: 2px;
 }

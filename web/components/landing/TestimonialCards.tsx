@@ -2,29 +2,20 @@ const testimonials = [
   {
     quote: 'e-Khadi yasiphilisa. Ngaphandle kwayo izingane zami zizolamba.',
     translation: '"e-Khadi saved us. Without it my children would go hungry."',
-    name: 'Nomsa D.',
-    location: 'Umlazi, KwaZulu-Natal',
-    language: 'isiZulu',
-    initials: 'ND',
-    color: 'bg-blue-600',
+    name: 'Nomsa D.', location: 'Umlazi, KwaZulu-Natal',
+    language: 'isiZulu', initials: 'ND', color: 'bg-blue-500',
   },
   {
     quote: 'Ke fumane moputso ke ntse ke dula gae. Ha ho na molato.',
     translation: '"I got support without leaving home. No shame, no hassle."',
-    name: 'Thabo M.',
-    location: 'Botshabelo, Free State',
-    language: 'Sesotho',
-    initials: 'TM',
-    color: 'bg-green-600',
+    name: 'Thabo M.', location: 'Botshabelo, Free State',
+    language: 'Sesotho', initials: 'TM', color: 'bg-emerald-500',
   },
   {
     quote: 'Abafazi bethu baphila ngenxa yalo — alifundisi thina ukusolwa.',
     translation: '"Our women survive because of it — it does not teach us shame."',
-    name: 'Lungelo N.',
-    location: 'Mdantsane, Eastern Cape',
-    language: 'isiXhosa',
-    initials: 'LN',
-    color: 'bg-purple-600',
+    name: 'Lungelo N.', location: 'Mdantsane, Eastern Cape',
+    language: 'isiXhosa', initials: 'LN', color: 'bg-violet-500',
   },
 ]
 
@@ -32,30 +23,16 @@ export default function TestimonialCards() {
   return (
     <div className="grid sm:grid-cols-3 gap-4">
       {testimonials.map((t) => (
-        <div
-          key={t.name}
-          className="bg-white rounded-2xl border border-border p-5 flex flex-col shadow-sm"
-        >
-          {/* Language badge */}
-          <span className="self-start text-xs font-semibold text-text-secondary bg-background px-2.5 py-1 rounded-full mb-3">
+        <div key={t.name} className="bg-card rounded-2xl border border-border p-5 flex flex-col shadow-sm hover:shadow-md transition-shadow">
+          <span className="self-start text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full mb-4">
             {t.language}
           </span>
-
-          {/* Native quote */}
           <blockquote className="text-base font-bold text-text-primary leading-snug flex-1">
             &ldquo;{t.quote}&rdquo;
           </blockquote>
-
-          {/* Translation */}
-          <p className="text-xs text-text-secondary italic mt-2 leading-relaxed">
-            {t.translation}
-          </p>
-
-          {/* Attribution */}
+          <p className="text-xs text-text-secondary italic mt-3 leading-relaxed">{t.translation}</p>
           <div className="flex items-center gap-3 mt-4 pt-4 border-t border-border">
-            <div
-              className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${t.color}`}
-            >
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${t.color}`}>
               {t.initials}
             </div>
             <div>

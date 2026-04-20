@@ -5,10 +5,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="bg-primary py-4 px-6 flex justify-center">
+      <div className="bg-sidebar border-b border-sidebar py-4 px-6 flex justify-center">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-            <span className="text-primary font-bold text-sm">eK</span>
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-md shadow-primary/30">
+            <span className="text-white font-bold text-sm">eK</span>
           </div>
           <span className="font-bold text-xl text-white tracking-tight">e-Khadi</span>
         </Link>
@@ -22,8 +22,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       {/* Footer */}
-      <div className="py-4 text-center text-xs text-text-secondary">
-        <p>© 2024 e-Khadi. Community credit for South Africa.</p>
+      <div className="py-4 text-center text-xs text-text-secondary border-t border-border">
+        <p>© 2025 e-Khadi. Community credit for South Africa.</p>
       </div>
     </div>
   )
