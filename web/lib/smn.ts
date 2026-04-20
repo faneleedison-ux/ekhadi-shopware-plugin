@@ -1,9 +1,7 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+/* eslint-disable */
 const { SmnClient, PublishMessageRequest, PublishMessageRequestBody } = require('@huaweicloud/huaweicloud-sdk-smn')
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { BasicCredentials } = require('@huaweicloud/huaweicloud-sdk-core')
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getClient(): any {
   return SmnClient.newBuilder()
     .withCredential(
