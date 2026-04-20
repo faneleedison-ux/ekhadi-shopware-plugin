@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import Sidebar from '@/components/layout/Sidebar'
 import BottomNav from '@/components/layout/BottomNav'
 import Header from '@/components/layout/Header'
+import FinancialAdvisor from '@/components/member/FinancialAdvisor'
 
 export default async function DashboardLayout({
   children,
@@ -43,6 +44,9 @@ export default async function DashboardLayout({
 
       {/* Mobile Bottom Navigation */}
       <BottomNav userRole={session.user.role} />
+
+      {/* Financial advisor chatbot (members only) */}
+      {session.user.role === 'MEMBER' && <FinancialAdvisor />}
     </div>
   )
 }
