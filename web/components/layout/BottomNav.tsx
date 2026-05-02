@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, UsersRound, MapPin, FileText, Wallet, Home, CreditCard, Store, TrendingUp, Sparkles, Receipt, Bell, ShoppingBasket, Package, ShieldAlert } from 'lucide-react'
+import { LayoutDashboard, Users, UsersRound, FileText, Wallet, Home, CreditCard, Store, TrendingUp, Sparkles, Receipt, ShoppingBasket, Package, ShieldAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface NavItem { label: string; href: string; icon: React.ComponentType<{ className?: string }> }
@@ -20,7 +20,7 @@ const memberNavItems: NavItem[] = [
   { label: 'Wallet', href: '/member/wallet', icon: Wallet },
   { label: 'Group', href: '/member/group', icon: UsersRound },
   { label: 'Credit', href: '/member/credit-request', icon: CreditCard },
-  { label: 'Notice', href: '/member/noticeboard', icon: Bell },
+  { label: 'Bulk Buy', href: '/member/bulk-buy', icon: ShoppingBasket },
 ]
 const shopNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/shop', icon: Store },

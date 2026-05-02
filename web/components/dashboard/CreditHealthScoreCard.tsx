@@ -1,8 +1,9 @@
 'use client'
 
+import Link from 'next/link'
 import { computeCreditHealth, type CreditHealthInput } from '@/lib/creditHealthScore'
 import { formatCurrency } from '@/lib/utils'
-import { ShieldCheck, AlertTriangle, TrendingUp, Info } from 'lucide-react'
+import { ShieldCheck, AlertTriangle, TrendingUp, Info, ChevronRight } from 'lucide-react'
 
 interface CreditHealthScoreCardProps extends CreditHealthInput {}
 
@@ -71,6 +72,14 @@ export default function CreditHealthScoreCard(props: CreditHealthScoreCardProps)
   const { score, creditLimit, nextLimit, breakdown, color, advice } = result
   const cfg = colorConfig[color]
   const Icon = cfg.icon
+
+  const ctaHref = color === 'yellow' ? '/member/credit-request' : '/member/wallet'
+  const ctaText =
+    color === 'green'
+      ? 'Your credit is healthy — keep repaying on time →'
+      : color === 'yellow'
+      ? 'Build your history — request credit now →'
+      : 'Pay outstanding debt first to improve your score →'
 
   const strokeOffset = RING_CIRCUMFERENCE * (1 - score / 100)
 
@@ -187,6 +196,16 @@ export default function CreditHealthScoreCard(props: CreditHealthScoreCardProps)
           ))}
         </div>
       )}
+
+      {/* Contextual CTA */}
+      <div className="pt-2 border-t border-border mt-2">
+        <Link href={ctaHref}>
+          <div className="flex items-center justify-between p-3 rounded-xl transition-all hover:opacity-80 cursor-pointer" style={{ backgroundColor: cfg.ringBg }}>
+            <p className="text-xs font-semibold" style={{ color: cfg.ring }}>{ctaText}</p>
+            <ChevronRight className="h-4 w-4 flex-shrink-0" style={{ color: cfg.ring }} />
+          </div>
+        </Link>
+      </div>
     </div>
   )
 }

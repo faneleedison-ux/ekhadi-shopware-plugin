@@ -1,0 +1,117 @@
+name: Deploy e-Khadi to Huawei Cloud
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - '.github/workflows/deploy-ekhadi.yml'
+  workflow_dispatch:
+
+env:
+  HW_REGION: af-south-1
+  SWR_SERVER: swr.af-south-1.myhuaweicloud.com
+  SWR_ORG: ${{ secrets.HW_SWR_ORG }}
+  IMAGE_NAME: ekhadi-web
+
+jobs:
+  build-and-push:
+    name: Build & Push image to SWR
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: meta
+        run: echo "tag=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to Huawei SWR
+        uses: huaweicloud/swr-login@v2.1.0
+        with:
+          region: ${{ env.HW_REGION }}
+          access-key-id: ${{ secrets.HW_AK }}
+          access-key-secret: ${{ secrets.HW_SK }}
+
+      - name: Build Docker image
+        working-directory: ./web
+        run: |
+          docker build \
+            -t ${{ env.SWR_SERVER }}/${{ env.SWR_ORG }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }} \
+            -t ${{ env.SWR_SERVER }}/${{ env.SWR_ORG }}/${{ env.IMAGE_NAME }}:latest \
+            .
+
+      - name: Push to Huawei SWR
+        run: |
+          docker push ${{ env.SWR_SERVER }}/${{ env.SWR_ORG }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}
+          docker push ${{ env.SWR_SERVER }}/${{ env.SWR_ORG }}/${{ env.IMAGE_NAME }}:latest
+
+  deploy:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.ECS_HOST }}
+          username: ${{ secrets.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_KEY }}
+          script: |
+            set -e
+
+            SWR_SERVER="swr.af-south-1.myhuaweicloud.com"
+            IMAGE="${SWR_SERVER}/${{ secrets.HW_SWR_ORG }}/ekhadi-web:${{ needs.build-and-push.outputs.image_tag }}"
+
+            # Authenticate with SWR on the server
+            docker login \
+              -u "af-south-1@${{ secrets.HW_AK }}" \
+              -p "${{ secrets.HW_SWR_LOGIN_KEY }}" \
+              ${SWR_SERVER}
+
+            # Pull latest image
+            docker pull ${IMAGE}
+
+            # Run migrations before swapping traffic
+            docker run --rm \
+              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              -e DIRECT_URL="${{ secrets.DIRECT_URL }}" \
+              ${IMAGE} \
+              npx prisma migrate deploy
+
+            # Stop and remove existing container
+            docker stop ekhadi-web 2>/dev/null || true
+            docker rm   ekhadi-web 2>/dev/null || true
+
+            docker run -d \
+              --name ekhadi-web \
+              --restart unless-stopped \
+              -p 3000:3000 \
+              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              -e DIRECT_URL="${{ secrets.DIRECT_URL }}" \
+              -e NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET }}" \
+              -e NEXTAUTH_URL="https://e-khadi.co.za" \
+              -e NODE_ENV=production \
+              ${IMAGE}
+
+            # Health check — wait up to 30s
+            for i in $(seq 1 10); do
+              if curl -sf http://localhost:3000/api/auth/session > /dev/null; then
+                echo "Health check passed"
+                break
+              fi
+              echo "Waiting... ($i/10)"
+              sleep 3
+            done
+
+            # Reload nginx to pick up any config changes
+            sudo nginx -t && sudo systemctl reload nginx
+
+            # Clean up untagged images
+            docker image prune -f
+
+            echo "✅ Deployed ekhadi-web:${{ needs.build-and-push.outputs.image_tag }}"

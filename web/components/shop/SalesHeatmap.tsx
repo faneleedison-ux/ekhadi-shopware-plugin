@@ -71,6 +71,15 @@ export default function SalesHeatmap({ hourlyData }: Props) {
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-blue-200 inline-block" /> Moderate</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-gray-200 inline-block" /> Low</span>
       </div>
+
+      {max > 0 && (
+        <div className="mt-1 p-2.5 rounded-xl bg-primary-light flex items-center gap-2">
+          <span className="text-base">💡</span>
+          <p className="text-xs text-primary">
+            <span className="font-semibold">Tip:</span> Your busiest time is {label(peakHour)}. Make sure shelves are stocked beforehand.
+          </p>
+        </div>
+      )}
     </div>
   )
 }

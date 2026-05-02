@@ -1,12 +1,11 @@
 import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
-import { Wallet, ArrowUpRight, ArrowDownLeft, ShoppingCart, Zap, Pill, Baby, Package } from 'lucide-react'
+import { ArrowUpRight, ArrowDownLeft, Wallet } from 'lucide-react'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
 import SmartBudgetPlanner from '@/components/member/SmartBudgetPlanner'
 import QRWallet from '@/components/member/QRWallet'
@@ -14,21 +13,6 @@ import EmergencyFundWidget from '@/components/member/EmergencyFundWidget'
 import LoyaltyWidget from '@/components/member/LoyaltyWidget'
 import TransferCredit from '@/components/member/TransferCredit'
 
-const bucketColors: Record<string, string> = {
-  FOOD: 'bg-green-500',
-  MEDICINE: 'bg-blue-500',
-  TOILETRIES: 'bg-purple-500',
-  ELECTRICITY: 'bg-yellow-500',
-  BABY_PRODUCTS: 'bg-pink-500',
-}
-
-const bucketIcons: Record<string, React.ReactNode> = {
-  FOOD: <ShoppingCart className="h-4 w-4" />,
-  ELECTRICITY: <Zap className="h-4 w-4" />,
-  MEDICINE: <Pill className="h-4 w-4" />,
-  BABY_PRODUCTS: <Baby className="h-4 w-4" />,
-  TOILETRIES: <Package className="h-4 w-4" />,
-}
 
 export default async function WalletPage() {
   const session = await getServerSession(authOptions)
@@ -90,30 +74,17 @@ export default async function WalletPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold text-text-primary">My Wallet</h1>
-        <p className="text-text-secondary mt-1">Your e-Khadi store credit and transactions</p>
-      </div>
-
-      {/* Balance card */}
-      <div className="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-6 text-white shadow-lg">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-white/70 text-sm">Store Credit Balance</p>
-          <div className="bg-white/20 p-2 rounded-lg">
-            <Wallet className="h-4 w-4" />
-          </div>
-        </div>
-        <p className="text-4xl font-bold">{formatCurrency(balance)}</p>
-        <div className="flex gap-4 mt-4">
-          <div>
-            <p className="text-white/60 text-xs">Total Received</p>
-            <p className="text-sm font-semibold text-white">{formatCurrency(totalCredit)}</p>
-          </div>
-          <div className="w-px bg-white/20" />
-          <div>
-            <p className="text-white/60 text-xs">Total Spent</p>
-            <p className="text-sm font-semibold text-white">{formatCurrency(totalDebit)}</p>
-          </div>
+      {/* Compact balance header — full card lives on the home dashboard */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary">My Wallet</h1>
+          <p className="text-text-secondary mt-0.5 text-sm">
+            Balance: <span className="font-bold text-text-primary">{formatCurrency(balance)}</span>
+            <span className="mx-2 text-border">·</span>
+            Received: <span className="font-semibold text-success">{formatCurrency(totalCredit)}</span>
+            <span className="mx-2 text-border">·</span>
+            Spent: <span className="font-semibold text-danger">{formatCurrency(totalDebit)}</span>
+          </p>
         </div>
       </div>
 
@@ -142,45 +113,6 @@ export default async function WalletPage() {
           spentAmount: Number(b.spentAmount),
         }))}
       />
-
-      {/* Bucket breakdown */}
-      {buckets.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Spending Categories</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {buckets.map((bucket) => {
-              const allocated = Number(bucket.allocatedAmount)
-              const spent = Number(bucket.spentAmount)
-              const percent = allocated > 0 ? Math.min(100, Math.round((spent / allocated) * 100)) : 0
-              return (
-                <div key={bucket.id}>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <div className={cn('p-1.5 rounded-lg text-white', bucketColors[bucket.category] || 'bg-gray-400')}>
-                        {bucketIcons[bucket.category]}
-                      </div>
-                      <span className="text-sm font-medium text-text-primary">
-                        {bucket.category.replace('_', ' ')}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-sm font-semibold">{formatCurrency(spent)}</span>
-                      <span className="text-xs text-text-secondary"> / {formatCurrency(allocated)}</span>
-                    </div>
-                  </div>
-                  <Progress
-                    value={percent}
-                    indicatorClassName={bucketColors[bucket.category]}
-                  />
-                  <p className="text-xs text-text-secondary mt-1">{percent}% used</p>
-                </div>
-              )
-            })}
-          </CardContent>
-        </Card>
-      )}
 
       {/* Transaction history */}
       <Card>

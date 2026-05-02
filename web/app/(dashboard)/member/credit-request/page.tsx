@@ -150,9 +150,27 @@ export default function CreditRequestPage() {
         </CardHeader>
         <CardContent>
           {success && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-sm text-success">
-              <CheckCircle className="h-4 w-4 flex-shrink-0" />
-              Request submitted successfully! An admin will review it shortly.
+            <div className="mb-4 rounded-xl border border-green-200 bg-green-50 overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-green-200">
+                <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
+                <p className="text-sm font-bold text-success">Request submitted! Here&apos;s what happens next:</p>
+              </div>
+              <div className="p-4 space-y-3">
+                {[
+                  { n: 1, label: 'Admin reviews your request', sub: 'Usually within 24 hours' },
+                  { n: 2, label: 'Credit added to your wallet', sub: "You'll get a notification when approved" },
+                  { n: 3, label: 'Spend at approved spaza shops', sub: 'Show your QR code at checkout' },
+                  { n: 4, label: 'Repaid automatically on grant day', sub: 'Deducted from your next SASSA payment' },
+                ].map((s) => (
+                  <div key={s.n} className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-green-100 border border-green-300 flex items-center justify-center text-[10px] font-bold text-green-700 flex-shrink-0 mt-0.5">{s.n}</div>
+                    <div>
+                      <p className="text-xs font-semibold text-text-primary">{s.label}</p>
+                      <p className="text-[11px] text-text-secondary">{s.sub}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           {error && (

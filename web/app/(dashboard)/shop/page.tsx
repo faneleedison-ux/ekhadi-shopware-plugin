@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Store, MapPin, Users, TrendingUp, ArrowUpRight, Sparkles, Receipt, ArrowRight, CheckCircle } from 'lucide-react'
+import { Store, MapPin, Users, TrendingUp, ArrowUpRight, ArrowRight } from 'lucide-react'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
@@ -36,6 +36,8 @@ export default async function ShopDashboard() {
   const memberFilter = memberIds.length > 0 ? { userId: { in: memberIds } } : {}
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
 
   const [recentTx, totalTxCount, monthlyVolume, topCategory, hourlyTx] = await Promise.all([
     prisma.storeCreditHistory.findMany({
@@ -59,6 +61,16 @@ export default async function ShopDashboard() {
     }),
   ])
 
+  // Today's stats
+  const [todayTxCount, todayVolumeAgg] = await Promise.all([
+    prisma.storeCreditHistory.count({ where: { type: 'DEBIT', ...memberFilter, createdAt: { gte: todayStart } } }),
+    prisma.storeCreditHistory.aggregate({
+      where: { type: 'DEBIT', ...memberFilter, createdAt: { gte: todayStart } },
+      _sum: { amount: true },
+    }),
+  ])
+  const todayVolume = Number(todayVolumeAgg._sum.amount ?? 0)
+
   // Top category this month
   const catCounts: Record<string, number> = {}
   for (const tx of topCategory) {
@@ -72,6 +84,10 @@ export default async function ShopDashboard() {
   const hourlyData = Array.from({ length: 24 }, (_, h) =>
     hourlyTx.filter((t) => new Date(t.createdAt).getHours() === h).length
   )
+
+  // Peak hour for "Today at a Glance"
+  const peakHour = hourlyData.indexOf(Math.max(...hourlyData, 1))
+  const peakHourLabel = peakHour === 0 ? '12am' : peakHour === 12 ? '12pm' : peakHour < 12 ? `${peakHour}am` : `${peakHour - 12}pm`
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -91,37 +107,26 @@ export default async function ShopDashboard() {
         <StatsCard title="Top Category" value={topCat?.[0] ?? '—'} icon={<Store className="h-5 w-5 text-violet-500" />} description={topCat ? `${topCat[1]} purchases` : 'No data yet'} iconBg="bg-violet-50" className="col-span-2 lg:col-span-1" />
       </div>
 
-      {/* Quick links to other sections */}
-      <div className="grid sm:grid-cols-3 gap-3">
-        <Link href="/shop/forecast" className="group rounded-2xl border border-indigo-200 bg-gradient-to-br from-sky-50 to-indigo-50 p-4 hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <Sparkles className="h-5 w-5 text-indigo-500" />
-            <span className="text-[10px] font-bold bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full">AI</span>
+      {/* Today at a Glance */}
+      <div className="rounded-2xl border border-border bg-white p-4">
+        <p className="text-sm font-bold text-text-primary mb-3">Today at a Glance</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="text-center p-3 bg-background rounded-xl">
+            <p className="text-xl font-black text-text-primary">{todayTxCount}</p>
+            <p className="text-[10px] text-text-secondary uppercase tracking-wide">Sales Today</p>
           </div>
-          <p className="font-semibold text-text-primary text-sm">AI Stock Forecast</p>
-          <p className="text-xs text-text-secondary mt-0.5">See what to restock this week</p>
-          <div className="flex items-center gap-1 mt-3 text-xs text-indigo-500 font-medium">View forecast <ArrowRight className="h-3 w-3" /></div>
-        </Link>
-
-        <Link href="/shop/transactions" className="group rounded-2xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-4 hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <TrendingUp className="h-5 w-5 text-green-500" />
-            <span className="text-xs font-bold text-green-600">{totalTxCount}</span>
+          <div className="text-center p-3 bg-green-50 rounded-xl">
+            <p className="text-xl font-black text-success">{formatCurrency(todayVolume)}</p>
+            <p className="text-[10px] text-text-secondary uppercase tracking-wide">Revenue Today</p>
           </div>
-          <p className="font-semibold text-text-primary text-sm">Transactions</p>
-          <p className="text-xs text-text-secondary mt-0.5">Full sales history & details</p>
-          <div className="flex items-center gap-1 mt-3 text-xs text-green-600 font-medium">View all <ArrowRight className="h-3 w-3" /></div>
-        </Link>
-
-        <Link href="/shop/receipts" className="group rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-sky-50 p-4 hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <Receipt className="h-5 w-5 text-blue-500" />
-            <CheckCircle className="h-4 w-4 text-blue-400" />
+          <div className="text-center p-3 bg-primary-light rounded-xl">
+            <p className="text-xl font-black text-primary">{peakHourLabel}</p>
+            <p className="text-[10px] text-text-secondary uppercase tracking-wide">Peak Hour</p>
           </div>
-          <p className="font-semibold text-text-primary text-sm">Receipts</p>
-          <p className="text-xs text-text-secondary mt-0.5">Download PDF receipts (OBS)</p>
-          <div className="flex items-center gap-1 mt-3 text-xs text-blue-500 font-medium">View receipts <ArrowRight className="h-3 w-3" /></div>
-        </Link>
+        </div>
+        {todayTxCount === 0 && (
+          <p className="text-xs text-text-secondary text-center mt-3">No sales yet today. Members shop most at {peakHourLabel}.</p>
+        )}
       </div>
 
       <SalesHeatmap hourlyData={hourlyData} />

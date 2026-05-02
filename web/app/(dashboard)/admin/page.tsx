@@ -108,6 +108,7 @@ export default async function AdminDashboard() {
           icon={<FileText className="h-5 w-5 text-warning" />}
           description="Awaiting approval"
           iconBg="bg-yellow-50"
+          accentColor={pendingRequests > 0 ? '#F7B928' : undefined}
         />
         <StatsCard
           title="Credit Issued"
@@ -174,8 +175,12 @@ export default async function AdminDashboard() {
                   <TableBody>
                     {recentRequests.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-text-secondary py-8">
-                          No credit requests yet
+                        <TableCell colSpan={5}>
+                          <div className="flex flex-col items-center py-8 text-center">
+                            <FileText className="h-8 w-8 text-text-secondary mb-2 opacity-40" />
+                            <p className="text-sm font-medium text-text-secondary">No credit requests yet</p>
+                            <p className="text-xs text-text-secondary mt-0.5">Requests will appear here once members submit them</p>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -214,7 +219,11 @@ export default async function AdminDashboard() {
             </CardHeader>
             <CardContent className="p-0">
               {activeGroups.length === 0 ? (
-                <div className="text-center py-8 text-text-secondary text-sm">No groups yet</div>
+                <div className="flex flex-col items-center py-8 text-center">
+                  <UsersRound className="h-8 w-8 text-text-secondary mb-2 opacity-40" />
+                  <p className="text-sm font-medium text-text-secondary">No groups yet</p>
+                  <p className="text-xs text-text-secondary mt-0.5">Create your first stokvel group to get started</p>
+                </div>
               ) : (
                 <ul className="divide-y divide-border">
                   {activeGroups.map((group) => (

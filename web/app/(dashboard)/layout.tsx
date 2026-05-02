@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import Sidebar from '@/components/layout/Sidebar'
 import BottomNav from '@/components/layout/BottomNav'
 import Header from '@/components/layout/Header'
+import BreadcrumbNav from '@/components/layout/BreadcrumbNav'
 import FinancialAdvisor from '@/components/member/FinancialAdvisor'
 
 export default async function DashboardLayout({
@@ -33,6 +34,7 @@ export default async function DashboardLayout({
           userEmail={session.user.email}
           userRole={session.user.role}
         />
+        <BreadcrumbNav />
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">

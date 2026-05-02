@@ -9,7 +9,7 @@ import {
   FileText, Wallet, Home, Store, ChevronLeft, ChevronRight, LogOut, TrendingUp, Sparkles, Receipt,
   Bell, ShoppingBasket, Package, ShieldAlert,
 } from 'lucide-react'
-import { cn, getInitials } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 
 interface NavItem { label: string; href: string; icon: React.ComponentType<{ className?: string }> }
 
@@ -38,7 +38,7 @@ const shopNavItems: NavItem[] = [
   { label: 'Receipts', href: '/shop/receipts', icon: Receipt },
 ]
 
-interface SidebarProps { userRole: string; userName: string; userEmail: string }
+interface SidebarProps { userRole: string; userName: string; userEmail?: string }
 
 export default function Sidebar({ userRole, userName, userEmail }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
@@ -103,26 +103,15 @@ export default function Sidebar({ userRole, userName, userEmail }: SidebarProps)
         })}
       </nav>
 
-      {/* User section */}
-      <div className="border-t border-white/8 p-2">
-        {!collapsed && (
-          <div className="flex items-center gap-3 px-3 py-2 mb-1">
-            <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center flex-shrink-0">
-              <span className="text-primary text-xs font-semibold">{getInitials(userName)}</span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-white truncate">{userName}</p>
-              <p className="text-xs text-white/40 truncate">{userEmail}</p>
-            </div>
-          </div>
-        )}
+      {/* Bottom controls — sign out + collapse only (user identity is in the header) */}
+      <div className="border-t border-white/8 p-2 space-y-0.5">
         <button onClick={() => signOut({ callbackUrl: '/login' })} title={collapsed ? 'Sign Out' : undefined}
-          className={cn('flex items-center gap-3 w-full px-3 py-2 rounded-lg text-white/45 hover:bg-white/8 hover:text-white transition-colors text-sm', collapsed && 'justify-center px-2')}>
+          className={cn('flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-white/45 hover:bg-white/10 hover:text-white transition-colors text-sm', collapsed && 'justify-center px-2')}>
           <LogOut className="h-4 w-4 flex-shrink-0" />
           {!collapsed && <span>Sign Out</span>}
         </button>
         <button onClick={() => setCollapsed(!collapsed)}
-          className={cn('flex items-center gap-3 w-full px-3 py-2 rounded-lg text-white/30 hover:bg-white/8 hover:text-white/60 transition-colors text-sm mt-0.5', collapsed && 'justify-center px-2')}>
+          className={cn('flex items-center gap-3 w-full px-3 py-2 rounded-lg text-white/25 hover:bg-white/8 hover:text-white/60 transition-colors text-sm', collapsed && 'justify-center px-2')}>
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <><ChevronLeft className="h-4 w-4" /><span>Collapse</span></>}
         </button>
       </div>

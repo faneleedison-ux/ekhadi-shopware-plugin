@@ -2,6 +2,7 @@
 
 import { Wifi, ShieldCheck, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { formatCurrency } from '@/lib/utils'
 
 type Props = {
   cardHolder: string
@@ -9,9 +10,12 @@ type Props = {
   expiry: string
   cvv: string
   tierLabel: string
+  balance: number
+  creditLimit?: number
 }
 
-export default function MemberVirtualCard({ cardHolder, cardNumber, expiry, cvv, tierLabel }: Props) {
+export default function MemberVirtualCard({ cardHolder, cardNumber, expiry, cvv, tierLabel, balance, creditLimit = 300 }: Props) {
+  const usagePct = Math.min(100, Math.round((balance / creditLimit) * 100))
   const [shine, setShine] = useState(false)
 
   useEffect(() => {
@@ -89,33 +93,44 @@ export default function MemberVirtualCard({ cardHolder, cardNumber, expiry, cvv,
           </div>
         </div>
 
-        {/* Gold chip */}
-        <div className="w-10 h-7 rounded-md"
-          style={{ background: 'linear-gradient(135deg, #d4a017, #f5d060, #b8860b)', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
-          <div className="w-full h-full rounded-md border border-yellow-200/30 grid grid-cols-3 gap-px p-1 opacity-60">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-yellow-900/40 rounded-sm" />
-            ))}
+        {/* Balance — the main number */}
+        <div>
+          <p className="text-white/60 text-xs uppercase tracking-wider">Available Credit</p>
+          <p className="text-4xl font-black text-white mt-0.5 tracking-tight"
+            style={{ textShadow: '0 0 24px rgba(255,255,255,0.25)' }}>
+            {formatCurrency(balance)}
+          </p>
+          <p className="text-white/40 text-xs mt-0.5">of {formatCurrency(creditLimit)} limit</p>
+        </div>
+
+        {/* Usage bar */}
+        <div>
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.15)' }}>
+            <div
+              className="h-full rounded-full transition-all duration-700"
+              style={{
+                width: `${usagePct}%`,
+                background: usagePct > 80 ? '#ef4444' : usagePct > 60 ? '#f59e0b' : '#34d399',
+              }}
+            />
+          </div>
+          <div className="flex justify-between mt-1">
+            <span className="text-white/40 text-[10px]">{usagePct}% used</span>
+            <span className="text-white/40 text-[10px]">2% service fee</span>
           </div>
         </div>
 
-        {/* Card number */}
-        <p className="font-mono text-xl tracking-[0.22em] text-white sm:text-2xl"
-          style={{ textShadow: '0 0 20px rgba(255,255,255,0.2)' }}>
-          {cardNumber}
-        </p>
-
         {/* Details row */}
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-3 gap-2 pt-1">
           {[
             { label: 'Cardholder', value: cardHolder },
             { label: 'Expires', value: expiry },
-            { label: 'CVV', value: cvv },
+            { label: 'Card', value: `•••• ${cardNumber.replace(/\s/g, '').slice(-4)}` },
           ].map((f) => (
             <div key={f.label} className="rounded-lg p-2"
               style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}>
               <p className="text-[9px] uppercase tracking-wide text-slate-400">{f.label}</p>
-              <p className="mt-0.5 font-bold text-white truncate text-sm">{f.value}</p>
+              <p className="mt-0.5 font-bold text-white truncate text-xs">{f.value}</p>
             </div>
           ))}
         </div>

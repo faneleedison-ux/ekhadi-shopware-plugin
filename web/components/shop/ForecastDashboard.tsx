@@ -286,7 +286,7 @@ export default function ForecastDashboard({
       <div className="flex items-center justify-between px-1">
         <div>
           <h3 className="text-sm font-bold text-text-primary">Stock Demand Breakdown</h3>
-          <p className="text-xs text-text-secondary mt-0.5">Based on your area's last 30 days of purchases</p>
+          <p className="text-xs text-text-secondary mt-0.5">Based on your area&apos;s last 30 days of purchases</p>
         </div>
         <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2 py-1 rounded-full">
           {items.length} categories
