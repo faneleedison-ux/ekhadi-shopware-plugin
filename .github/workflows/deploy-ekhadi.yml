@@ -95,6 +95,7 @@ jobs:
               -e DIRECT_URL="${{ secrets.DIRECT_URL }}" \
               -e NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET }}" \
               -e NEXTAUTH_URL="https://e-khadi.co.za" \
+              -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
               -e NODE_ENV=production \
               ${IMAGE}
 

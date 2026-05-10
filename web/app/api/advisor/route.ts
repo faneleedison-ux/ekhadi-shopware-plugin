@@ -1,68 +1,97 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import Anthropic from '@anthropic-ai/sdk'
 
-const TIPS: Record<string, { answer: string; emoji: string }> = {
-  save: {
-    emoji: '🏦',
-    answer: "To save on your SASSA grant:\n\n• Set aside R50–R100 before spending anything else — pay yourself first.\n• Use your stokvel group wallet to pool savings; the group earns more together.\n• Buy dry goods (rice, maize meal) in bulk when grant day arrives — it's cheaper per unit.\n• Avoid buying on credit for non-essentials like airtime. Rather use Wi-Fi when available.",
-  },
-  budget: {
-    emoji: '📊',
-    answer: "A simple budget for a R350 grant:\n\n• Food & groceries — R180 (51%)\n• Electricity & data — R60 (17%)\n• Toiletries & hygiene — R40 (11%)\n• Medicine & health — R30 (9%)\n• Savings (stokvel) — R30 (9%)\n• Emergency buffer — R10 (3%)\n\nTrack every purchase using the Wallet tab — it shows exactly where your credit goes.",
-  },
-  debt: {
-    emoji: '💳',
-    answer: "To stay debt-free:\n\n• Only request credit for essential goods (food, medicine, electricity).\n• Repay on time — your credit health score improves with each on-time repayment.\n• Don't borrow more than you can repay from the next grant.\n• If you're struggling, speak to your stokvel group admin — repayment plans can be arranged.",
-  },
-  food: {
-    emoji: '🍞',
-    answer: "Stretching your food budget:\n\n• Buy maize meal, rice, and dried beans — they go further than processed food.\n• Check the AI Stock Forecast — it shows what's in demand, so you shop early before stock runs low.\n• Avoid buying single-serving snacks; buy larger packs and divide them.\n• Plan meals for the week before shopping so nothing goes to waste.",
-  },
-  electricity: {
-    emoji: '⚡',
-    answer: "Cutting electricity costs:\n\n• Buy prepaid electricity in smaller amounts more frequently — it helps you track usage.\n• Unplug appliances when not in use — standby power adds up.\n• Use one light bulb per room at night instead of all lights.\n• Cook in bulk — one long cooking session uses less electricity than multiple short ones.",
-  },
-  stokvel: {
-    emoji: '🤝',
-    answer: "Making the most of your stokvel:\n\n• Attend every rotation — missing one means you forfeit your turn.\n• Use your payout month to buy something that saves you money long-term (e.g., bulk food).\n• Keep your repayments on time — it builds trust and keeps the group's wallet healthy.\n• View the Group tab to see your rotation schedule and how much is in the group wallet.",
-  },
-  score: {
-    emoji: '⭐',
-    answer: "How to improve your credit health score:\n\n• Repay credit on time every month — this is the biggest factor.\n• Don't miss a grant cycle repayment.\n• Only request credit for goods you truly need.\n• Complete full repayment cycles without extensions.\n• Check your score card on the home screen — it updates with each transaction.",
-  },
-}
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-function findTopic(message: string): string | null {
-  const m = message.toLowerCase()
-  if (m.includes('save') || m.includes('saving') || m.includes('money')) return 'save'
-  if (m.includes('budget') || m.includes('spend') || m.includes('allocat')) return 'budget'
-  if (m.includes('debt') || m.includes('owe') || m.includes('repay') || m.includes('borrow')) return 'debt'
-  if (m.includes('food') || m.includes('groceri') || m.includes('bread') || m.includes('eat')) return 'food'
-  if (m.includes('electric') || m.includes('power') || m.includes('prepaid') || m.includes('light')) return 'electricity'
-  if (m.includes('stokvel') || m.includes('group') || m.includes('rotat') || m.includes('pool')) return 'stokvel'
-  if (m.includes('score') || m.includes('credit') || m.includes('health') || m.includes('rating')) return 'score'
-  return null
-}
+const SYSTEM_PROMPT = `You are a warm, practical financial advisor built into e-Khadi — a stokvel credit app for SASSA grant recipients in South Africa who shop at local spaza shops.
+
+Your role:
+- Help members manage their SASSA grant (typically R350–R500/month) wisely
+- Give advice on budgeting, saving, avoiding debt, and using the stokvel group
+- Explain e-Khadi features: store credit, credit health score, bulk buy requests, grant countdown
+- Always keep advice relevant to low-income South African households
+
+Ground rules:
+- Credit is only for essential goods: food, electricity, medicine, toiletries, baby items
+- Members repay from their next SASSA grant payment
+- Never suggest borrowing for non-essentials
+- Use simple, clear language — many users have basic literacy
+- Keep responses concise (under 200 words unless the user asks for detail)
+- Use bullet points for lists, but don't over-format
+- Be warm and encouraging, never condescending
+
+South African context:
+- Amounts are in South African Rand (R)
+- Grant day is usually the 1st–5th of each month
+- Popular essentials: maize meal, bread, cooking oil, rice, tinned fish, baby formula, prepaid electricity, airtime, painkillers, soap`
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-  const { message } = await req.json()
+  const { message, history } = await req.json()
   if (!message || typeof message !== 'string') {
     return NextResponse.json({ error: 'Missing message' }, { status: 400 })
   }
 
-  const topic = findTopic(message)
-  if (topic) {
-    const tip = TIPS[topic]
-    return NextResponse.json({ answer: tip.answer, emoji: tip.emoji })
-  }
+  // Fetch user context to personalise advice
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      name: true,
+      storeCredit: { select: { balance: true } },
+    },
+  }).catch(() => null)
 
-  // Default: show menu of topics
-  return NextResponse.json({
-    emoji: '💡',
-    answer: "I can help you with financial tips on:\n\n• **Saving money** — type \"how do I save?\"\n• **Budgeting** — type \"help me budget\"\n• **Avoiding debt** — type \"how to avoid debt\"\n• **Stretching food** — type \"food tips\"\n• **Electricity** — type \"electricity tips\"\n• **Stokvel groups** — type \"stokvel advice\"\n• **Credit score** — type \"improve my score\"\n\nWhat would you like help with?",
+  const balance = user?.storeCredit?.balance ?? 0
+  const firstName = user?.name?.split(' ')[0] ?? 'Member'
+  const contextNote = `\n\n[User context: ${firstName}, store credit balance R${balance}]`
+
+  // Build conversation history for multi-turn
+  const messages: Anthropic.MessageParam[] = [
+    ...(Array.isArray(history) ? history.slice(-8) : []),
+    { role: 'user', content: message },
+  ]
+
+  const stream = client.messages.stream({
+    model: 'claude-opus-4-7',
+    max_tokens: 512,
+    thinking: { type: 'adaptive' },
+    system: [
+      {
+        type: 'text',
+        text: SYSTEM_PROMPT + contextNote,
+        cache_control: { type: 'ephemeral' },
+      },
+    ],
+    messages,
+  })
+
+  // Return a streaming text response
+  const encoder = new TextEncoder()
+  const readable = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const event of stream) {
+          if (
+            event.type === 'content_block_delta' &&
+            event.delta.type === 'text_delta'
+          ) {
+            controller.enqueue(encoder.encode(event.delta.text))
+          }
+        }
+      } finally {
+        controller.close()
+      }
+    },
+  })
+
+  return new Response(readable, {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
   })
 }

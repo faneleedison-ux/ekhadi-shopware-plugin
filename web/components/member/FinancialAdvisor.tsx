@@ -6,7 +6,7 @@ import { MessageCircle, X, Send, Bot, Loader2, ChevronDown } from 'lucide-react'
 interface Message {
   role: 'user' | 'bot'
   text: string
-  emoji?: string
+  streaming?: boolean
 }
 
 const QUICK_PROMPTS = [
@@ -39,8 +39,7 @@ export default function FinancialAdvisor() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'bot',
-      emoji: '👋',
-      text: "Hi! I'm your e-Khadi financial advisor. I can help you save money, budget your grant, and manage your credit wisely.\n\nWhat would you like help with?",
+      text: "Hi! I'm your e-Khadi financial advisor powered by Claude AI. I can help you save money, budget your grant, and manage your credit wisely.\n\nWhat would you like help with?",
     },
   ])
   const [input, setInput] = useState('')
@@ -58,21 +57,57 @@ export default function FinancialAdvisor() {
   async function send(text: string) {
     if (!text.trim() || loading) return
     const userMsg: Message = { role: 'user', text: text.trim() }
+
+    // Build history for context (exclude the welcome message)
+    const history = messages
+      .filter((m) => !m.streaming)
+      .slice(1)
+      .map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }))
+
     setMessages((m) => [...m, userMsg])
     setInput('')
     setLoading(true)
+
+    // Add empty streaming message
+    setMessages((m) => [...m, { role: 'bot', text: '', streaming: true }])
+
     try {
       const res = await fetch('/api/advisor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, history }),
       })
-      const data = await res.json()
-      const botMsg: Message = { role: 'bot', text: data.answer, emoji: data.emoji }
-      setMessages((m) => [...m, botMsg])
+      if (!res.ok || !res.body) throw new Error('Request failed')
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let accumulated = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        accumulated += decoder.decode(value, { stream: true })
+        setMessages((m) => {
+          const copy = [...m]
+          copy[copy.length - 1] = { role: 'bot', text: accumulated, streaming: true }
+          return copy
+        })
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+      }
+
+      // Mark streaming done
+      setMessages((m) => {
+        const copy = [...m]
+        copy[copy.length - 1] = { role: 'bot', text: accumulated }
+        return copy
+      })
       if (!open) setUnread((n) => n + 1)
     } catch {
-      setMessages((m) => [...m, { role: 'bot', text: 'Sorry, something went wrong. Try again.' }])
+      setMessages((m) => {
+        const copy = [...m]
+        copy[copy.length - 1] = { role: 'bot', text: 'Sorry, something went wrong. Try again.' }
+        return copy
+      })
     } finally {
       setLoading(false)
     }
@@ -131,7 +166,7 @@ export default function FinancialAdvisor() {
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} gap-2`}>
                 {msg.role === 'bot' && (
                   <div className="w-7 h-7 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-sm">{msg.emoji ?? '🤖'}</span>
+                    <Bot className="h-3.5 w-3.5 text-primary" />
                   </div>
                 )}
                 <div
@@ -146,12 +181,15 @@ export default function FinancialAdvisor() {
                   ) : (
                     <div className="space-y-0.5">
                       {formatAnswer(msg.text)}
+                      {msg.streaming && (
+                        <span className="inline-block w-1.5 h-3.5 bg-primary/60 rounded-sm animate-pulse ml-0.5" />
+                      )}
                     </div>
                   )}
                 </div>
               </div>
             ))}
-            {loading && (
+            {loading && !messages[messages.length - 1]?.streaming && (
               <div className="flex justify-start gap-2">
                 <div className="w-7 h-7 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Bot className="h-3.5 w-3.5 text-primary" />
