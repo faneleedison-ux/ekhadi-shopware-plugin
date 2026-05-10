@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '')
 
 const SYSTEM_PROMPT = `You are a warm, practical financial advisor built into e-Khadi — a stokvel credit app for SASSA grant recipients in South Africa who shop at local spaza shops.
 
@@ -50,40 +50,33 @@ export async function POST(req: Request) {
 
   const balance = user?.storeCredit?.balance ?? 0
   const firstName = user?.name?.split(' ')[0] ?? 'Member'
-  const contextNote = `\n\n[User context: ${firstName}, store credit balance R${balance}]`
+  const systemWithContext = `${SYSTEM_PROMPT}\n\n[User context: ${firstName}, store credit balance R${balance}]`
 
-  // Build conversation history for multi-turn
-  const messages: Anthropic.MessageParam[] = [
-    ...(Array.isArray(history) ? history.slice(-8) : []),
-    { role: 'user', content: message },
-  ]
-
-  const stream = client.messages.stream({
-    model: 'claude-opus-4-7',
-    max_tokens: 512,
-    thinking: { type: 'adaptive' },
-    system: [
-      {
-        type: 'text',
-        text: SYSTEM_PROMPT + contextNote,
-        cache_control: { type: 'ephemeral' },
-      },
-    ],
-    messages,
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-1.5-flash',
+    systemInstruction: systemWithContext,
   })
 
-  // Return a streaming text response
+  // Build Gemini conversation history
+  const geminiHistory = Array.isArray(history)
+    ? history.slice(-8).map((m: { role: string; content: string }) => ({
+        role: m.role === 'user' ? 'user' : 'model',
+        parts: [{ text: m.content }],
+      }))
+    : []
+
+  const chat = model.startChat({ history: geminiHistory })
+
+  const result = await chat.sendMessageStream(message)
+
+  // Stream the response back
   const encoder = new TextEncoder()
   const readable = new ReadableStream({
     async start(controller) {
       try {
-        for await (const event of stream) {
-          if (
-            event.type === 'content_block_delta' &&
-            event.delta.type === 'text_delta'
-          ) {
-            controller.enqueue(encoder.encode(event.delta.text))
-          }
+        for await (const chunk of result.stream) {
+          const text = chunk.text()
+          if (text) controller.enqueue(encoder.encode(text))
         }
       } finally {
         controller.close()

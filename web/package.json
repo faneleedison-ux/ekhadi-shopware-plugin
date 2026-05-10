@@ -14,9 +14,9 @@
     "db:seed": "curl -X POST http://localhost:3000/api/seed"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.95.1",
     "@auth/prisma-adapter": "^2.4.2",
     "@aws-sdk/client-s3": "^3.1032.0",
+    "@google/generative-ai": "^0.24.1",
     "@huaweicloud/huaweicloud-sdk-core": "^3.1.191",
     "@huaweicloud/huaweicloud-sdk-smn": "^3.1.191",
     "@prisma/client": "^5.16.1",
