@@ -55,6 +55,67 @@ jobs:
 
           [ "$CR_CODE" = "200" ] || [ "$CR_CODE" = "201" ] && echo "Activated!" || echo "Activation returned $CR_CODE — check output above"
 
+  set_budget:
+    name: Set $100/month spending cap
+    runs-on: [self-hosted, linux, ekhadi]
+    steps:
+      - name: Apply BSS budget limit + Cloud Eye alarm
+        env:
+          HW_AK: ${{ secrets.HW_AK }}
+          HW_SK: ${{ secrets.HW_SK }}
+        run: |
+          IAM_HOST="https://iam.myhuaweicloud.com"
+          BSS_HOST="https://bss-intl.myhuaweicloud.com"
+          CES_HOST="https://ces.ap-southeast-1.myhuaweicloud.com"
+          LIMIT=100
+
+          # Global IAM token
+          curl -sf -X POST "$IAM_HOST/v3/auth/tokens" \
+            -H "Content-Type: application/json" \
+            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}}}}" \
+            -D /tmp/iam_h.txt -o /dev/null
+          TOKEN=$(grep -i x-subject-token /tmp/iam_h.txt | awk '{print $2}' | tr -d '\r')
+          [ -z "$TOKEN" ] && { echo "IAM auth failed"; exit 1; }
+
+          # Scoped token for ap-southeast-1
+          curl -sf -X POST "$IAM_HOST/v3/auth/tokens" \
+            -H "Content-Type: application/json" \
+            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}},\"scope\":{\"project\":{\"name\":\"ap-southeast-1\"}}}}" \
+            -D /tmp/iam_s.txt -o /dev/null
+          SCOPED=$(grep -i x-subject-token /tmp/iam_s.txt | awk '{print $2}' | tr -d '\r')
+          [ -z "$SCOPED" ] && SCOPED="$TOKEN"
+
+          echo "=== BSS budget alert (warn at 80% = \$80) ==="
+          BRESP=$(curl -s -w "\n%{http_code}" -X POST "$BSS_HOST/v2/budgets" \
+            -H "X-Auth-Token: $TOKEN" -H "Content-Type: application/json" \
+            -d "{\"budget_name\":\"ekhadi-ai-cap\",\"budget_type\":\"SPEND\",\"budget_amount\":$LIMIT,\"time_period\":\"MONTHLY\",\"alert_percent\":80}")
+          BCODE=$(echo "$BRESP" | tail -1)
+          BBODY=$(echo "$BRESP" | head -n -1)
+          echo "HTTP $BCODE"; echo "$BBODY" | python3 -m json.tool 2>/dev/null || echo "$BBODY"
+
+          echo ""
+          echo "=== Cloud Eye inference alarm (ap-southeast-1) ==="
+          MA_PROJ="12d4b817c74d49f2b1649d903df7cc8a"
+          ARESP=$(curl -s -w "\n%{http_code}" -X POST "$CES_HOST/V1.0/$MA_PROJ/alarms" \
+            -H "X-Auth-Token: $SCOPED" -H "Content-Type: application/json" \
+            -d "{
+              \"alarm_name\":\"ekhadi-modelarts-spend\",
+              \"alarm_description\":\"ModelArts inference count — proxy for cost vs \$$LIMIT cap\",
+              \"metric\":{\"namespace\":\"SYS.ModelArts\",\"metric_name\":\"inference_requests_total\",\"dimensions\":[{\"name\":\"workspace_id\",\"value\":\"0\"}]},
+              \"condition\":{\"period\":86400,\"filter\":\"sum\",\"comparison_operator\":\">=\",\"value\":500000,\"unit\":\"Count\",\"count\":1},
+              \"alarm_enabled\":true,\"alarm_action_enabled\":false
+            }")
+          ACODE=$(echo "$ARESP" | tail -1)
+          ABODY=$(echo "$ARESP" | head -n -1)
+          echo "HTTP $ACODE"; echo "$ABODY" | python3 -m json.tool 2>/dev/null || echo "$ABODY"
+
+          echo ""
+          echo "=== Summary ==="
+          echo "Monthly cap:    \$$LIMIT USD"
+          echo "Alert at:       \$80 (80%)"
+          echo "Budget HTTP:    $BCODE"
+          echo "CES alarm HTTP: $ACODE"
+
   check:
     runs-on: [self-hosted, linux, ekhadi]
     steps:
