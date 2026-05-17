@@ -175,9 +175,9 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
   const inputStyle: React.CSSProperties = {
     height: 40,
     borderRadius: 10,
-    border: '1px solid rgba(24,119,242,0.25)',
-    background: 'rgba(255,255,255,0.05)',
-    color: 'rgba(255,255,255,0.85)',
+    border: '1px solid rgba(24,119,242,0.3)',
+    background: '#fff',
+    color: '#1a1a2e',
     padding: '0 12px',
     fontSize: 13,
     outline: 'none',
@@ -187,20 +187,21 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
   return (
     <div style={{
       borderRadius: 24,
-      border: '1px solid rgba(24,119,242,0.2)',
-      background: '#0D1529',
+      border: '1px solid rgba(24,119,242,0.18)',
+      background: '#fff',
       overflow: 'hidden',
+      boxShadow: '0 4px 32px rgba(24,119,242,0.08)',
     }}>
       {/* ── Header ── */}
       <div style={{
         padding: '20px 24px 18px',
-        borderBottom: '1px solid rgba(24,119,242,0.15)',
-        background: 'rgba(24,119,242,0.05)',
+        borderBottom: '1px solid rgba(24,119,242,0.1)',
+        background: '#f8faff',
       }}>
-        <h3 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>
+        <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1a1a2e', margin: '0 0 4px' }}>
           South Africa Community Map
         </h3>
-        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: 0 }}>
+        <p style={{ fontSize: 13, color: 'rgba(26,26,46,0.5)', margin: 0 }}>
           Live coverage across {areaCount} areas · {totals.shop} shops · {totals.user} members · {totals.group} stokvel groups
         </p>
 
@@ -217,8 +218,8 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
                   display: 'inline-flex', alignItems: 'center', gap: 7,
                   borderRadius: 9999,
                   border: `1px solid ${isOn ? markerMeta[type].color : 'rgba(255,255,255,0.12)'}`,
-                  background: isOn ? `${markerMeta[type].color}22` : 'rgba(255,255,255,0.04)',
-                  color: isOn ? markerMeta[type].color : 'rgba(255,255,255,0.4)',
+                  background: isOn ? `${markerMeta[type].color}18` : 'rgba(0,0,0,0.04)',
+                  color: isOn ? markerMeta[type].color : 'rgba(26,26,46,0.4)',
                   padding: '5px 12px',
                   fontSize: 12, fontWeight: 600, cursor: 'pointer',
                   transition: 'all 0.2s',
@@ -250,7 +251,7 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
             style={{ ...inputStyle, minWidth: 170, cursor: 'pointer' }}
           >
             {provinces.map((p) => (
-              <option key={p} value={p} style={{ background: '#0D1529' }}>
+              <option key={p} value={p} style={{ background: '#fff', color: '#1a1a2e' }}>
                 {p === 'ALL' ? 'All provinces' : p}
               </option>
             ))}
@@ -266,9 +267,9 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
             }}
             style={{
               height: 40, borderRadius: 10,
-              border: '1px solid rgba(24,119,242,0.25)',
-              background: 'rgba(255,255,255,0.04)',
-              color: 'rgba(255,255,255,0.5)',
+              border: '1px solid rgba(24,119,242,0.3)',
+              background: '#fff',
+              color: 'rgba(26,26,46,0.6)',
               padding: '0 14px', fontSize: 12, fontWeight: 600,
               cursor: 'pointer', whiteSpace: 'nowrap',
             }}
@@ -279,16 +280,16 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
       </div>
 
       {/* ── Map ── */}
-      <div style={{ position: 'relative', background: '#060C1E' }}>
+      <div style={{ position: 'relative', background: '#e8f0fe' }}>
         <div style={{
           position: 'absolute', left: 12, top: 12, zIndex: 450,
           borderRadius: 8,
-          border: '1px solid rgba(24,119,242,0.25)',
-          background: 'rgba(13,21,41,0.88)',
+          border: '1px solid rgba(24,119,242,0.2)',
+          background: 'rgba(255,255,255,0.92)',
           backdropFilter: 'blur(8px)',
           padding: '6px 12px',
           fontSize: 11, fontWeight: 600,
-          color: 'rgba(255,255,255,0.5)',
+          color: 'rgba(26,26,46,0.5)',
         }}>
           South Africa boundary overlay
         </div>
@@ -308,7 +309,7 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
 
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           />
 
           <Polygon
@@ -356,16 +357,16 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
       {/* ── Footer ── */}
       <div style={{
         padding: '14px 24px',
-        borderTop: '1px solid rgba(24,119,242,0.12)',
-        background: 'rgba(24,119,242,0.04)',
+        borderTop: '1px solid rgba(24,119,242,0.1)',
+        background: '#f8faff',
       }}>
         {activeMarker ? (
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', margin: '0 0 10px' }}>
-            <span style={{ fontWeight: 700, color: '#fff' }}>Focused:</span>{' '}
+          <p style={{ fontSize: 13, color: 'rgba(26,26,46,0.7)', margin: '0 0 10px' }}>
+            <span style={{ fontWeight: 700, color: '#1a1a2e' }}>Focused:</span>{' '}
             {activeMarker.name} ({markerMeta[activeMarker.type].label.slice(0, -1)}) · {activeMarker.areaName}, {activeMarker.province}
           </p>
         ) : (
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', margin: '0 0 10px' }}>
+          <p style={{ fontSize: 13, color: 'rgba(26,26,46,0.4)', margin: '0 0 10px' }}>
             Select a marker to view details · Showing {filtered.length} markers
           </p>
         )}

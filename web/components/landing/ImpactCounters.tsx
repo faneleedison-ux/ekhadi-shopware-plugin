@@ -83,11 +83,13 @@ export default function ImpactCounters({ familiesHelped, totalCreditIssued, acti
   const [triggered, setTriggered] = useState(false)
 
   useEffect(() => {
+    // fallback: trigger after 800ms even if observer never fires (e.g. on mobile)
+    const fallback = setTimeout(() => setTriggered(true), 800)
     const observer = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) { setTriggered(true); observer.disconnect() }
-    }, { threshold: 0.2 })
+      if (e.isIntersecting) { setTriggered(true); clearTimeout(fallback); observer.disconnect() }
+    }, { threshold: 0 })
     if (ref.current) observer.observe(ref.current)
-    return () => observer.disconnect()
+    return () => { observer.disconnect(); clearTimeout(fallback) }
   }, [])
 
   return (
