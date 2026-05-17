@@ -68,6 +68,10 @@ jobs:
           DOMAIN_ID=$(python3 -c "import json; d=json.load(open('/tmp/iam_domain.json')); print(d['token']['user']['domain']['id'])" 2>/dev/null)
           echo "Domain ID: $DOMAIN_ID"
 
+          # Extract IAM user ID from the domain token response (needed for authorization)
+          IAM_USER_ID=$(python3 -c "import json; d=json.load(open('/tmp/iam_domain.json')); print(d['token']['user']['id'])" 2>/dev/null)
+          echo "IAM user ID: $IAM_USER_ID"
+
           if [ -n "$DOMAIN_TOKEN" ] && [ -n "$DOMAIN_ID" ]; then
             # Get existing agency or create it
             AGENCY_ID=$(curl -s "https://iam.myhuaweicloud.com/v3.0/OS-AGENCY/agencies?domain_id=$DOMAIN_ID&name=modelarts_agency" \
@@ -83,25 +87,27 @@ jobs:
             fi
 
             if [ -n "$AGENCY_ID" ]; then
-              # List all IAM roles and attach any OBS-related one (single-line python to avoid YAML block scalar issues)
+              # Find OBS role and attach via project-level endpoint (domain-level returns APIGW.0101)
               OBS_ROLE_ID=$(curl -s "https://iam.myhuaweicloud.com/v3/roles" -H "X-Auth-Token: $DOMAIN_TOKEN" | python3 -c "import json,sys; roles=json.load(sys.stdin).get('roles',[]); obs=[r['id'] for r in roles if 'obs' in (r.get('display_name','') or r.get('name','')).lower()]; print(obs[0] if obs else '')" 2>/dev/null)
               echo "OBS role ID: $OBS_ROLE_ID"
               if [ -n "$OBS_ROLE_ID" ]; then
-                curl -s -X PUT "https://iam.myhuaweicloud.com/v3.0/OS-AGENCY/agencies/$AGENCY_ID/domains/$DOMAIN_ID/roles/$OBS_ROLE_ID" \
-                  -H "X-Auth-Token: $DOMAIN_TOKEN"
-                echo "Attached OBS role $OBS_ROLE_ID to modelarts_agency"
-              else
-                echo "No OBS role found — agency trusts op_svc_modelarts directly"
+                # Try project-level assignment (workaround for domain-level APIGW.0101)
+                ATTACH_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
+                  "https://iam.myhuaweicloud.com/v3.0/OS-AGENCY/agencies/$AGENCY_ID/projects/$MA_PROJ/roles/$OBS_ROLE_ID" \
+                  -H "X-Auth-Token: $DOMAIN_TOKEN")
+                echo "Role attach HTTP: $ATTACH_CODE"
               fi
             fi
           fi
 
-          # Register the agency with ModelArts authorization API (the key step)
-          # content.[].user_id = "all" authorizes all IAM users via the agency
+          # Register the agency with ModelArts authorization API
+          # Write body to file to avoid shell escaping issues
           echo "Calling ModelArts authorization endpoint..."
+          printf '{"type":"agency","content":[{"user_id":"%s"}]}' "$IAM_USER_ID" > /tmp/ma_auth.json
+          cat /tmp/ma_auth.json
           MA_AUTH_RESP=$(curl -s -w "\n%{http_code}" -X POST "$MA_HOST/v2/$MA_PROJ/authorizations" \
             -H "X-Auth-Token: $TOKEN" -H "Content-Type: application/json" \
-            -d "{\"type\":\"agency\",\"content\":[{\"user_id\":\"all\"}]}")
+            -d @/tmp/ma_auth.json)
           MA_AUTH_CODE=$(echo "$MA_AUTH_RESP" | tail -1)
           echo "ModelArts auth HTTP $MA_AUTH_CODE"
           echo "$(echo "$MA_AUTH_RESP" | head -n -1)" | python3 -m json.tool 2>/dev/null || true
