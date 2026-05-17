@@ -1,6 +1,12 @@
 'use client'
 
-import { useEffect, useRef, ReactNode } from 'react'
+import { motion } from 'framer-motion'
+import { Children, ReactNode } from 'react'
+
+const itemVariants = {
+  hidden:  { opacity: 0, y: 36, scale: 0.97 },
+  visible: { opacity: 1, y: 0,  scale: 1    },
+}
 
 interface Props {
   children: ReactNode
@@ -17,57 +23,37 @@ export default function ScrollReveal({
   stagger = false,
   staggerDelay = 90,
 }: Props) {
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-
-    if (stagger) {
-      const kids = Array.from(el.children) as HTMLElement[]
-      kids.forEach((child, i) => {
-        child.style.opacity = '0'
-        child.style.transform = 'translateY(36px) scale(0.98)'
-        child.style.transition = `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${i * staggerDelay}ms, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${i * staggerDelay}ms`
-      })
-
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            kids.forEach((child) => {
-              child.style.opacity = '1'
-              child.style.transform = 'translateY(0) scale(1)'
-            })
-            observer.unobserve(el)
-          }
-        },
-        { threshold: 0.07, rootMargin: '0px 0px -40px 0px' }
-      )
-      observer.observe(el)
-      return () => observer.disconnect()
-    }
-
-    // Single-element reveal
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.classList.add('in-view')
-          observer.unobserve(el)
-        }
-      },
-      { threshold: 0.07, rootMargin: '0px 0px -50px 0px' }
+  if (stagger) {
+    return (
+      <motion.div
+        className={className}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0 }}
+        variants={{ visible: { transition: { staggerChildren: staggerDelay / 1000 } } }}
+      >
+        {Children.map(children, (child) => (
+          <motion.div
+            variants={itemVariants}
+            transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {child}
+          </motion.div>
+        ))}
+      </motion.div>
     )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [stagger, staggerDelay])
+  }
 
   return (
-    <div
-      ref={ref}
-      className={stagger ? className : `reveal ${className}`}
-      style={stagger ? undefined : { transitionDelay: `${delay}ms` }}
+    <motion.div
+      className={className}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0 }}
+      variants={itemVariants}
+      transition={{ duration: 0.7, delay: delay / 1000, ease: [0.16, 1, 0.3, 1] }}
     >
       {children}
-    </div>
+    </motion.div>
   )
 }

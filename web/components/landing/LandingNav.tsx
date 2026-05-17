@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Menu, X } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const SY = 'var(--font-outfit), sans-serif'
 const BLUE = '#1877F2'
@@ -31,7 +32,11 @@ export default function LandingNav() {
 
   return (
     <>
-      <nav style={{
+      <motion.nav
+        initial={{ y: -24, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+        style={{
         position: 'sticky', top: 0, zIndex: 40,
         background: scrolled ? 'rgba(6,12,30,0.97)' : 'rgba(6,12,30,0.85)',
         backdropFilter: 'blur(20px)',
@@ -113,13 +118,17 @@ export default function LandingNav() {
             <Menu size={20} />
           </button>
         </div>
-      </nav>
+      </motion.nav>
 
       {/* ── Mobile drawer ── */}
+      <AnimatePresence>
       {open && (
         <>
           {/* Backdrop */}
-          <div
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.22 }}
             onClick={() => setOpen(false)}
             style={{
               position: 'fixed', inset: 0, zIndex: 50,
@@ -129,14 +138,17 @@ export default function LandingNav() {
           />
 
           {/* Drawer panel */}
-          <div style={{
-            position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 51,
-            width: 300,
-            background: '#0A1020',
-            borderLeft: '1px solid rgba(24,119,242,0.2)',
-            display: 'flex', flexDirection: 'column',
-            animation: 'slide-in-right 0.26s cubic-bezier(0.16,1,0.3,1)',
-          }}>
+          <motion.div
+            key="drawer"
+            initial={{ x: 320 }} animate={{ x: 0 }} exit={{ x: 320 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            style={{
+              position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 51,
+              width: 300,
+              background: '#0A1020',
+              borderLeft: '1px solid rgba(24,119,242,0.2)',
+              display: 'flex', flexDirection: 'column',
+            }}>
             {/* Drawer header */}
             <div style={{
               height: 64,
@@ -195,9 +207,10 @@ export default function LandingNav() {
                 © 2025 e-Khadi · Community credit for South Africa
               </p>
             </div>
-          </div>
+          </motion.div>
         </>
       )}
+      </AnimatePresence>
     </>
   )
 }
