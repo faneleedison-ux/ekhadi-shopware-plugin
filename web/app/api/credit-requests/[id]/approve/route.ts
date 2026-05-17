@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { publishSMN } from '@/lib/smn'
+import { reportMetrics } from '@/lib/ces'
 
 export async function POST(
   req: NextRequest,
@@ -131,6 +132,10 @@ export async function POST(
       'e-Khadi: Credit Request Approved',
       `Dear ${member?.name ?? 'Member'},\n\nYour e-Khadi credit request of R${amount.toFixed(2)} has been APPROVED.\n\nReason: ${creditRequest.reason}\nFunds are now available in your wallet.\n\ne-Khadi Team`
     )
+    reportMetrics([
+      { name: 'credit_approved_count', value: 1 },
+      { name: 'credit_approved_amount', value: amount, unit: 'None' },
+    ])
 
     return NextResponse.json(result)
   } catch (error: any) {

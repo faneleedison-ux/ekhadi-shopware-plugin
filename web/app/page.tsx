@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, Shield, Zap, Globe, ChevronDown } from 'lucide-react'
+import { ArrowRight, ChevronDown } from 'lucide-react'
 import { Outfit } from 'next/font/google'
 import { prisma } from '@/lib/db'
 import SouthAfricaLiveMap, { MapMarker } from '@/components/landing/SouthAfricaLiveMap'
@@ -9,14 +9,12 @@ import TestimonialCards from '@/components/landing/TestimonialCards'
 import ScrollReveal from '@/components/landing/ScrollReveal'
 import HowItWorksSteps from '@/components/landing/HowItWorksSteps'
 import LandingNav from '@/components/landing/LandingNav'
+import PhoneHero from '@/components/landing/PhoneHero'
+import FeatureCards from '@/components/landing/FeatureCards'
+import ScrollStory from '@/components/landing/ScrollStory'
+import HeroEntrance from '@/components/landing/HeroEntrance'
 
 const outfit = Outfit({ subsets: ['latin'], weight: ['600', '700', '800'], variable: '--font-outfit', display: 'swap' })
-
-const features = [
-  { title: 'Community-Powered', text: 'Based on stokvel trust, not bank collateral.', icon: Shield },
-  { title: 'Fair Pricing', text: 'R50–R1 000 credit. Flat 2% service fee. No surprises.', icon: Zap },
-  { title: 'Local Impact', text: 'Spend at approved spaza shops in your area only.', icon: Globe },
-]
 
 
 const areaCoordinateFallbacks: Record<string, { lat: number; lng: number }> = {
@@ -216,6 +214,7 @@ export default async function LandingPage() {
 
       {/* ── Navbar ──────────────────────────────────────────────────────── */}
       <LandingNav />
+      <HeroEntrance />
 
       {/* ── Hero ────────────────────────────────────────────────────────── */}
       <section style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '80px 20px 100px' }}>
@@ -263,7 +262,7 @@ export default async function LandingPage() {
             {/* ── Left: copy ── */}
             <div>
               {/* Badge */}
-              <div style={{
+              <div id="hero-badge" style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 background: BLUE_DIM,
                 border: `1px solid rgba(24,119,242,0.3)`,
@@ -275,7 +274,7 @@ export default async function LandingPage() {
                 </span>
               </div>
 
-              <h1 style={{
+              <h1 id="hero-h1" style={{
                 fontFamily: SY, fontWeight: 800,
                 fontSize: 'clamp(2.8rem, 5.5vw, 4.4rem)',
                 lineHeight: 1.06, color: '#fff', letterSpacing: '-0.04em',
@@ -286,12 +285,12 @@ export default async function LandingPage() {
                 <span className="shimmer-text">for you.</span>
               </h1>
 
-              <p style={{ color: WHITE40, fontSize: 17, lineHeight: 1.75, maxWidth: 420, marginBottom: 36 }}>
+              <p id="hero-sub" style={{ color: WHITE40, fontSize: 17, lineHeight: 1.75, maxWidth: 420, marginBottom: 36 }}>
                 Fair micro-loans for South African households —<br className="hidden sm:block" />
                 powered by community trust, not bank collateral.
               </p>
 
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 36 }}>
+              <div id="hero-btns" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 36 }}>
                 <Link href="/register">
                   <button style={{
                     background: `linear-gradient(135deg, ${BLUE}, #0f4fa8)`,
@@ -304,7 +303,7 @@ export default async function LandingPage() {
                     Register as Member <ArrowRight size={16} />
                   </button>
                 </Link>
-r                <Link href="/register?role=SHOP">
+                <Link href="/register?role=SHOP">
                   <button style={{
                     background: 'transparent', color: WHITE60,
                     border: `1.5px solid ${WHITE20}`,
@@ -318,7 +317,7 @@ r                <Link href="/register?role=SHOP">
               </div>
 
               {/* Trust signals */}
-              <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+              <div id="hero-trust" style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
                 {[
                   { value: '2%', label: 'Flat service fee' },
                   { value: 'R1 000', label: 'Max credit' },
@@ -332,159 +331,8 @@ r                <Link href="/register?role=SHOP">
               </div>
             </div>
 
-            {/* ── Right: 3-D phone ── */}
-            <div className="relative hidden lg:flex justify-center items-center" style={{ minHeight: 480 }}>
-
-              {/* Floating metric chips */}
-              <div
-                className="animate-chip-1 hidden lg:block"
-                style={{
-                  position: 'absolute', top: '2%', right: '2%', zIndex: 10,
-                  background: 'rgba(24,119,242,0.14)', backdropFilter: 'blur(12px)',
-                  border: `1px solid rgba(24,119,242,0.3)`,
-                  borderRadius: 16, padding: '10px 14px',
-                }}
-              >
-                <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 3px' }}>Credit Score</p>
-                <p style={{ color: '#93c5fd', fontWeight: 800, fontSize: 17, margin: 0, fontFamily: SY }}>⭐ 92 / 100</p>
-              </div>
-
-              <div
-                className="animate-chip-2 hidden lg:block"
-                style={{
-                  position: 'absolute', bottom: '8%', left: '2%', zIndex: 10,
-                  background: 'rgba(245,158,11,0.1)', backdropFilter: 'blur(12px)',
-                  border: '1px solid rgba(245,158,11,0.3)',
-                  borderRadius: 16, padding: '10px 14px',
-                }}
-              >
-                <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 3px' }}>Next Payday</p>
-                <p style={{ color: '#F59E0B', fontWeight: 800, fontSize: 15, margin: 0, fontFamily: SY }}>5 Days</p>
-              </div>
-
-              <div
-                className="animate-chip-3 hidden lg:block"
-                style={{
-                  position: 'absolute', top: '42%', right: '-2%', zIndex: 10,
-                  background: 'rgba(66,184,131,0.1)', backdropFilter: 'blur(12px)',
-                  border: '1px solid rgba(66,184,131,0.3)',
-                  borderRadius: 16, padding: '10px 14px',
-                }}
-              >
-                <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 3px' }}>Last Repaid</p>
-                <p style={{ color: '#42B883', fontWeight: 800, fontSize: 15, margin: 0, fontFamily: SY }}>+R750 ✓</p>
-              </div>
-
-              {/* Phone body with 3-D float */}
-              <div className="animate-float-phone" style={{ position: 'relative' }}>
-                {/* Orbit ring */}
-                <div style={{
-                  position: 'absolute', inset: -28, borderRadius: '50%',
-                  border: '1.5px dashed rgba(24,119,242,0.35)',
-                  animation: 'spin-slow 10s linear infinite',
-                  pointerEvents: 'none',
-                }} />
-                <div style={{
-                  position: 'absolute', inset: -46, borderRadius: '50%',
-                  border: '1px solid rgba(24,119,242,0.15)',
-                  animation: 'spin-slow-reverse 16s linear infinite',
-                  pointerEvents: 'none',
-                }} />
-                {/* Glow behind phone */}
-                <div style={{
-                  position: 'absolute', inset: -40,
-                  background: 'radial-gradient(ellipse, rgba(24,119,242,0.35) 0%, transparent 65%)',
-                  filter: 'blur(30px)', pointerEvents: 'none',
-                }} />
-
-                {/* Phone shell */}
-                <div style={{
-                  width: 260,
-                  background: '#0D1529',
-                  borderRadius: 36,
-                  border: '1.5px solid rgba(24,119,242,0.35)',
-                  boxShadow: `
-                    0 0 0 1px rgba(255,255,255,0.05),
-                    0 40px 100px rgba(0,0,0,0.7),
-                    0 0 60px rgba(24,119,242,0.18),
-                    inset 0 0 0 1px rgba(255,255,255,0.03)
-                  `,
-                  overflow: 'hidden',
-                  position: 'relative',
-                }}>
-                  {/* Notch */}
-                  <div style={{ height: 24, background: '#070E1F', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ width: 60, height: 10, background: '#0D1529', borderRadius: 9999 }} />
-                  </div>
-
-                  <div style={{ padding: '12px 16px 22px' }}>
-                    {/* Balance card */}
-                    <div style={{
-                      background: `linear-gradient(135deg, ${BLUE}, #0f4fa8)`,
-                      borderRadius: 20, padding: 16, marginBottom: 12,
-                      position: 'relative', overflow: 'hidden',
-                    }}>
-                      <div style={{
-                        position: 'absolute', top: -20, right: -20, width: 80, height: 80,
-                        background: 'rgba(255,255,255,0.07)', borderRadius: '50%',
-                      }} />
-                      <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 4px' }}>Available Credit</p>
-                      <p style={{ color: '#fff', fontSize: 28, fontWeight: 800, margin: 0, fontFamily: SY }}>R 750.00</p>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.14)' }}>
-                        <div>
-                          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 8, margin: 0 }}>MEMBER</p>
-                          <p style={{ color: '#fff', fontSize: 11, fontWeight: 600, margin: 0 }}>Nomsa D.</p>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 8, margin: 0 }}>GROUP</p>
-                          <p style={{ color: '#fff', fontSize: 11, fontWeight: 600, margin: 0 }}>Umlazi</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Quick actions */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 12 }}>
-                      {['Credit', 'Wallet', 'Group'].map((a) => (
-                        <div key={a} style={{
-                          background: BLUE_DIM,
-                          border: `1px solid rgba(24,119,242,0.14)`,
-                          borderRadius: 10, padding: '8px 4px', textAlign: 'center',
-                        }}>
-                          <p style={{ color: BLUE, fontSize: 12, margin: '0 0 2px' }}>◈</p>
-                          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9 }}>{a}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Transactions */}
-                    <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Recent</p>
-                    {[
-                      { label: 'Food & Grocery', amount: '-R120', pos: false },
-                      { label: 'Credit Received', amount: '+R750', pos: true },
-                      { label: 'Toiletries', amount: '-R80', pos: false },
-                    ].map((tx, i) => (
-                      <div key={i} style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '6px 0',
-                        borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <div style={{
-                            width: 22, height: 22, borderRadius: '50%',
-                            background: tx.pos ? 'rgba(66,184,131,0.15)' : 'rgba(250,56,62,0.15)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}>
-                            <span style={{ fontSize: 8, fontWeight: 700, color: tx.pos ? '#42B883' : '#FA383E' }}>{tx.pos ? '↓' : '↑'}</span>
-                          </div>
-                          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, margin: 0 }}>{tx.label}</p>
-                        </div>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: tx.pos ? '#42B883' : '#FA383E' }}>{tx.amount}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* ── Right: 3-D phone (GSAP) ── */}
+            <PhoneHero />
           </div>
         </div>
 
@@ -523,42 +371,14 @@ r                <Link href="/register?role=SHOP">
             </div>
           </ScrollReveal>
 
-          <ScrollReveal stagger className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            {features.map((f) => {
-              const Icon = f.icon
-              return (
-                  <div
-                    key={f.title}
-                    className="card-3d"
-                    style={{
-                      background: 'rgba(255,255,255,0.03)',
-                      border: `1px solid rgba(24,119,242,0.16)`,
-                      borderRadius: 24, padding: '32px',
-                      backdropFilter: 'blur(12px)',
-                      cursor: 'default',
-                      transition: 'transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275), box-shadow 0.4s',
-                      height: '100%',
-                    }}
-                  >
-                    <div style={{
-                      width: 50, height: 50,
-                      background: BLUE_DIM,
-                      border: `1px solid rgba(24,119,242,0.25)`,
-                      borderRadius: 14,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      marginBottom: 22,
-                      boxShadow: '0 0 20px rgba(24,119,242,0.12)',
-                    }}>
-                      <Icon size={21} style={{ color: BLUE }} />
-                    </div>
-                    <h3 style={{ fontFamily: SY, color: '#fff', fontWeight: 700, fontSize: 19, marginBottom: 10 }}>{f.title}</h3>
-                    <p style={{ color: WHITE40, fontSize: 14, lineHeight: 1.75, margin: 0 }}>{f.text}</p>
-                  </div>
-              )
-            })}
+          <ScrollReveal delay={80}>
+            <FeatureCards />
           </ScrollReveal>
         </div>
       </section>
+
+      {/* ── Scroll Story (cinematic 4-chapter narrative) ─────────────────── */}
+      <ScrollStory />
 
       {/* ── How It Works ────────────────────────────────────────────────── */}
       <section style={{ padding: '110px 20px', background: D, position: 'relative', overflow: 'hidden' }}>

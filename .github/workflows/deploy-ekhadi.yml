@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'web/**'
+      - 'functions/**'
       - '.github/workflows/deploy-ekhadi.yml'
   workflow_dispatch:
 
@@ -17,41 +18,73 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Write .env
+      # ── Step 1: sync source to ECS ──────────────────────────────────────────
+      - name: Sync source
         run: |
-          cat > /root/ekhadi-shopware-plugin/web/.env.local <<'ENVEOF'
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          DIRECT_URL=${{ secrets.DIRECT_URL }}
-          NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
-          NEXTAUTH_URL=https://e-khadi.co.za
-          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          NODE_ENV=production
-          ENVEOF
-
-      - name: Sync & build
-        run: |
-          set -e
           rsync -a --delete \
             --exclude 'node_modules' --exclude '.next' \
             --exclude '.git' --exclude '*.log' \
             --exclude '.env.local' --exclude '.env' \
             $GITHUB_WORKSPACE/web/ /root/ekhadi-shopware-plugin/web/
 
+          # Sync FunctionGraph handlers
+          rsync -a $GITHUB_WORKSPACE/functions/ /root/ekhadi-shopware-plugin/functions/
+
+      # ── Step 2: install deps (needed before provisioning script) ────────────
+      - name: Install dependencies
+        run: |
           cd /root/ekhadi-shopware-plugin/web
-
           npm install --legacy-peer-deps --silent
-          npx prisma db push --accept-data-loss 2>&1 | grep -E '(sync|error|warn)' || true
-          npm run build 2>&1 | tail -10
 
+      # ── Step 3: provision Huawei Cloud services (OBS + SMN) ─────────────────
+      - name: Provision Huawei services
+        id: hw_provision
+        env:
+          HW_AK: ${{ secrets.HW_AK }}
+          HW_SK: ${{ secrets.HW_SK }}
+        run: |
+          cd /root/ekhadi-shopware-plugin/web
+          HW_VARS=$(node scripts/setup-huawei.js 2>/dev/tty)
+          echo "hw_vars<<EOF" >> $GITHUB_OUTPUT
+          echo "$HW_VARS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      # ── Step 4: write .env.local with all secrets ───────────────────────────
+      - name: Write .env.local
+        env:
+          HW_AK: ${{ secrets.HW_AK }}
+          HW_SK: ${{ secrets.HW_SK }}
+        run: |
+          # Base app secrets
+          cat > /root/ekhadi-shopware-plugin/web/.env.local <<ENVEOF
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          DIRECT_URL=${{ secrets.DIRECT_URL }}
+          NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL=https://e-khadi.co.za
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          NODE_ENV=production
+
+          # Huawei Cloud (OBS + SMN + Cloud Eye)
+          ${{ steps.hw_provision.outputs.hw_vars }}
+          ENVEOF
+
+      # ── Step 5: push DB schema + build ──────────────────────────────────────
+      - name: Build
+        run: |
+          cd /root/ekhadi-shopware-plugin/web
+          npx prisma db push --accept-data-loss 2>&1 | grep -E '(sync|error|warn)' || true
+          npm run build 2>&1 | tail -15
+
+      # ── Step 6: restart + health check ──────────────────────────────────────
       - name: Restart & health check
         run: |
           pm2 restart ekhadi --update-env || pm2 start npm --name ekhadi -- start
           pm2 save
-          for i in $(seq 1 10); do
+          for i in $(seq 1 12); do
             if curl -sf http://localhost:3000 > /dev/null 2>&1; then
               echo "✅ Live at https://e-khadi.co.za"
               exit 0
             fi
-            echo "Waiting... ($i/10)"; sleep 3
+            echo "Waiting... ($i/12)"; sleep 5
           done
           echo "⚠️ Health check timed out" && exit 1

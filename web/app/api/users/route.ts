@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { hash } from 'bcryptjs'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { subscribeToTopic } from '@/lib/smn'
+import { reportMetric } from '@/lib/ces'
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -142,6 +144,11 @@ export async function POST(req: NextRequest) {
 
       return newUser
     })
+
+    // Subscribe to SMN topic for notifications (fire and forget)
+    subscribeToTopic(user.email, 'email', user.name)
+    if (user.phone) subscribeToTopic(user.phone, 'sms', user.name)
+    reportMetric('user_registrations', 1)
 
     return NextResponse.json(
       {

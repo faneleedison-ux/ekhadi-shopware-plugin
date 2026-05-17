@@ -172,15 +172,9 @@ export default function LandingNav() {
                   <button style={{
                     width: '100%', textAlign: 'left',
                     padding: '13px 16px', borderRadius: 12,
-                    border: link.variant === 'primary' ? 'none'
-                      : link.variant === 'demo' ? '1px solid rgba(24,119,242,0.3)'
-                      : '1px solid rgba(255,255,255,0.08)',
-                    background: link.variant === 'primary' ? 'linear-gradient(135deg, #1877F2, #0f4fa8)'
-                      : link.variant === 'demo' ? 'rgba(24,119,242,0.08)'
-                      : 'rgba(255,255,255,0.04)',
-                    color: link.variant === 'primary' ? '#fff'
-                      : link.variant === 'demo' ? '#60a5fa'
-                      : 'rgba(255,255,255,0.65)',
+                    border: link.variant === 'primary' ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                    background: link.variant === 'primary' ? 'linear-gradient(135deg, #1877F2, #0f4fa8)' : 'rgba(255,255,255,0.04)',
+                    color: link.variant === 'primary' ? '#fff' : 'rgba(255,255,255,0.65)',
                     fontSize: 14, fontWeight: 600, cursor: 'pointer',
                     fontFamily: 'inherit',
                     boxShadow: link.variant === 'primary' ? '0 0 20px rgba(24,119,242,0.25)' : 'none',

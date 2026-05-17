@@ -234,11 +234,7 @@ html {
 }
 
 .animate-float-y       { animation: float-y 3.5s ease-in-out infinite; }
-.animate-chip-1        { animation: chip-bob-1 3.8s ease-in-out infinite; }
-.animate-chip-2        { animation: chip-bob-2 4.5s ease-in-out infinite; animationDelay: 1s; }
-.animate-chip-3        { animation: chip-bob-3 4.1s ease-in-out infinite; animationDelay: 2s; }
-.animate-orbit-ring    { animation: orbit-ring 8s linear infinite; }
-.animate-float-phone   { animation: float-phone 7s ease-in-out infinite; }
+l.animate-orbit-ring    { animation: orbit-ring 8s linear infinite; }
 .animate-spin-slow     { animation: spin-slow 20s linear infinite; }
 .animate-spin-slow-rev { animation: spin-slow-reverse 14s linear infinite; }
 .animate-orb-1         { animation: orb-drift-1 14s ease-in-out infinite; }
@@ -267,10 +263,6 @@ html {
   animation: shimmer-text 5s linear infinite;
 }
 
-.card-3d:hover {
-  transform: perspective(700px) rotateX(-4deg) rotateY(4deg) scale(1.02) translateY(-4px);
-  box-shadow: 0 20px 60px rgba(24,119,242,.22);
-}
 
 .particle {
   position: absolute;

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { publishSMN } from '@/lib/smn'
+import { reportMetric } from '@/lib/ces'
 
 export async function POST(
   req: NextRequest,
@@ -55,6 +56,7 @@ export async function POST(
     'e-Khadi: Credit Request Rejected',
     `Dear ${member?.name ?? 'Member'},\n\nYour e-Khadi credit request of R${Number(creditRequest.amount).toFixed(2)} has been REJECTED.\n\nPlease contact your stokvel group admin for more information.\n\ne-Khadi Team`
   )
+  reportMetric('credit_rejected_count', 1)
 
   return NextResponse.json(updated)
 }
