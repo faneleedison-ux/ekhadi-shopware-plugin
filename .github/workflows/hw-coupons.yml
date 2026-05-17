@@ -32,13 +32,14 @@ jobs:
           echo "IAM token obtained."
 
           # ── Export training data from Postgres → OBS ──────────────────────────
+          # Run from web/ so node_modules (pg, @aws-sdk/client-s3) are found
           echo "=== Exporting training data ==="
-          cd /root/ekhadi-shopware-plugin
-          node modelarts/export-training-data.js
+          cd /root/ekhadi-shopware-plugin/web
+          node ../modelarts/export-training-data.js
 
           # ── Upload train.py + customize_service.py to OBS ─────────────────────
           echo "=== Uploading scripts to OBS ==="
-          node modelarts/upload-scripts.js
+          node ../modelarts/upload-scripts.js
 
           # ── Get available training flavors ────────────────────────────────────
           echo "=== Getting training flavors ==="
