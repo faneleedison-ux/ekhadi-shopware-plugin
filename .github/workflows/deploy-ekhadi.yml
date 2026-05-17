@@ -11,79 +11,48 @@ on:
 jobs:
   deploy:
     name: Deploy to ECS (AF-Johannesburg)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, ekhadi]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Write SSH key
+      - name: Write .env
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.ECS_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.ECS_HOST }} >> ~/.ssh/known_hosts
+          cat > /root/ekhadi-shopware-plugin/web/.env.local <<'ENVEOF'
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          DIRECT_URL=${{ secrets.DIRECT_URL }}
+          NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL=http://e-khadi.co.za
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          NODE_ENV=production
+          ENVEOF
 
-      - name: Sync code to server
+      - name: Sync & build
         run: |
-          rsync -az \
-            --exclude 'node_modules' \
-            --exclude '.next' \
-            --exclude '.git' \
-            --exclude '*.log' \
-            --exclude '.env.local' \
-            --exclude '.env' \
-            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
-            ./web/ \
-            ${{ secrets.ECS_USER }}@${{ secrets.ECS_HOST }}:/root/ekhadi-shopware-plugin/web/
+          set -e
+          rsync -a --delete \
+            --exclude 'node_modules' --exclude '.next' \
+            --exclude '.git' --exclude '*.log' \
+            --exclude '.env.local' --exclude '.env' \
+            $GITHUB_WORKSPACE/web/ /root/ekhadi-shopware-plugin/web/
 
-      - name: Write .env on server
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.ECS_HOST }}
-          username: ${{ secrets.ECS_USER }}
-          key: ${{ secrets.ECS_SSH_KEY }}
-          script: |
-            cat > /root/ekhadi-shopware-plugin/web/.env.local <<'ENVEOF'
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            DIRECT_URL=${{ secrets.DIRECT_URL }}
-            NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
-            NEXTAUTH_URL=http://e-khadi.co.za
-            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-            NODE_ENV=production
-            ENVEOF
+          cd /root/ekhadi-shopware-plugin/web
+          cp .env.local /root/ekhadi-shopware-plugin/web/.env.local
 
-      - name: Build & restart on server
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.ECS_HOST }}
-          username: ${{ secrets.ECS_USER }}
-          key: ${{ secrets.ECS_SSH_KEY }}
-          command_timeout: 10m
-          script: |
-            set -e
-            cd /root/ekhadi-shopware-plugin/web
+          npm install --legacy-peer-deps --silent
+          npx prisma db push --accept-data-loss 2>&1 | grep -E '(sync|error|warn)' || true
+          npm run build 2>&1 | tail -10
 
-            echo "📦 Installing dependencies..."
-            npm install --silent --legacy-peer-deps
-
-            echo "🗄️ Running DB migrations..."
-            npx prisma db push --accept-data-loss 2>&1 | grep -E '(sync|error|Error|warn)' || true
-
-            echo "🔨 Building..."
-            npm run build 2>&1 | tail -10
-
-            echo "🔄 Restarting app..."
-            pm2 restart ekhadi --update-env || pm2 start npm --name ekhadi -- start
-
-            echo "⏳ Health check..."
-            for i in $(seq 1 10); do
-              if curl -sf http://localhost:3000 > /dev/null 2>&1; then
-                echo "✅ Live at http://e-khadi.co.za"
-                break
-              fi
-              echo "Waiting... ($i/10)"
-              sleep 3
-            done
-
-            pm2 save
+      - name: Restart & health check
+        run: |
+          pm2 restart ekhadi --update-env || pm2 start npm --name ekhadi -- start
+          pm2 save
+          for i in $(seq 1 10); do
+            if curl -sf http://localhost:3000 > /dev/null 2>&1; then
+              echo "✅ Live at http://e-khadi.co.za"
+              exit 0
+            fi
+            echo "Waiting... ($i/10)"; sleep 3
+          done
+          echo "⚠️ Health check timed out" && exit 1
