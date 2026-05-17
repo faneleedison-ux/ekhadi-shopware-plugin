@@ -1,0 +1,29 @@
+name: HW Coupons Check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: [self-hosted, linux, ekhadi]
+    steps:
+      - name: Query IAM + BSS
+        env:
+          HW_AK: ${{ secrets.HW_AK }}
+          HW_SK: ${{ secrets.HW_SK }}
+        run: |
+          curl -s -X POST https://iam.myhuaweicloud.com/v3/auth/tokens \
+            -H "Content-Type: application/json" \
+            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}}}}" \
+            -D /tmp/iam_h.txt -o /tmp/iam_b.txt
+
+          TOKEN=$(grep -i x-subject-token /tmp/iam_h.txt | awk '{print $2}' | tr -d '\r')
+          echo "Token obtained: ${TOKEN:0:20}..."
+
+          echo "=== COUPONS ==="
+          curl -s "https://bss.myhuaweicloud.com/v2/promotions/benefits/coupons" \
+            -H "X-Auth-Token: $TOKEN" | python3 -m json.tool 2>/dev/null || echo "no output"
+
+          echo "=== BALANCE ==="
+          curl -s "https://bss.myhuaweicloud.com/v2/accounts/customer-accounts/balances" \
+            -H "X-Auth-Token: $TOKEN" | python3 -m json.tool 2>/dev/null || echo "no output"
