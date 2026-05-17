@@ -4,6 +4,57 @@ on:
   workflow_dispatch:
 
 jobs:
+  activate_modelarts:
+    name: Activate ModelArts (ap-southeast-1)
+    runs-on: [self-hosted, linux, ekhadi]
+    steps:
+      - name: Activate ModelArts workspace
+        env:
+          HW_AK: ${{ secrets.HW_AK }}
+          HW_SK: ${{ secrets.HW_SK }}
+        run: |
+          MA_HOST="https://modelarts.ap-southeast-1.myhuaweicloud.com"
+          IAM_HOST="https://iam.myhuaweicloud.com"
+
+          # Global token
+          curl -sf -X POST "$IAM_HOST/v3/auth/tokens" \
+            -H "Content-Type: application/json" \
+            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}}}}" \
+            -D /tmp/iam_h.txt -o /tmp/iam_b.txt
+          TOKEN=$(grep -i x-subject-token /tmp/iam_h.txt | awk '{print $2}' | tr -d '\r')
+          [ -z "$TOKEN" ] && { echo "IAM auth failed"; cat /tmp/iam_b.txt; exit 1; }
+
+          # Project ID
+          PROJ=$(curl -sf "$IAM_HOST/v3/projects" -H "X-Auth-Token: $TOKEN" \
+            | python3 -c "import json,sys; ps=[p for p in json.load(sys.stdin).get('projects',[]) if 'ap-southeast-1' in p.get('name','')]; print(ps[0]['id'] if ps else '')")
+          echo "Project: $PROJ"
+
+          # Scoped token
+          curl -sf -X POST "$IAM_HOST/v3/auth/tokens" \
+            -H "Content-Type: application/json" \
+            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}},\"scope\":{\"project\":{\"name\":\"ap-southeast-1\"}}}}" \
+            -D /tmp/iam_s.txt -o /tmp/iam_sb.txt
+          SCOPED=$(grep -i x-subject-token /tmp/iam_s.txt | awk '{print $2}' | tr -d '\r')
+          [ -z "$SCOPED" ] && SCOPED="$TOKEN" && echo "Using global token"
+
+          # Try existing workspaces
+          echo "=== GET workspaces ==="
+          WS=$(curl -s -w "\n%{http_code}" "$MA_HOST/v1/$PROJ/workspaces" -H "X-Auth-Token: $SCOPED")
+          WS_CODE=$(echo "$WS" | tail -1); WS_BODY=$(echo "$WS" | head -n -1)
+          echo "HTTP $WS_CODE"; echo "$WS_BODY" | python3 -m json.tool 2>/dev/null || echo "$WS_BODY"
+
+          if [ "$WS_CODE" = "200" ]; then echo "ModelArts already active!"; exit 0; fi
+
+          # Create default workspace → activates the service
+          echo "=== POST workspaces (activate) ==="
+          CR=$(curl -s -w "\n%{http_code}" -X POST "$MA_HOST/v1/$PROJ/workspaces" \
+            -H "X-Auth-Token: $SCOPED" -H "Content-Type: application/json" \
+            -d '{"name":"default","description":"e-Khadi ModelArts workspace"}')
+          CR_CODE=$(echo "$CR" | tail -1); CR_BODY=$(echo "$CR" | head -n -1)
+          echo "HTTP $CR_CODE"; echo "$CR_BODY" | python3 -m json.tool 2>/dev/null || echo "$CR_BODY"
+
+          [ "$CR_CODE" = "200" ] || [ "$CR_CODE" = "201" ] && echo "Activated!" || echo "Activation returned $CR_CODE — check output above"
+
   check:
     runs-on: [self-hosted, linux, ekhadi]
     steps:
