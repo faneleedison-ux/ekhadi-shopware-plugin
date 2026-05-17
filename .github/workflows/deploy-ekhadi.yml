@@ -38,35 +38,32 @@ jobs:
 
       # ── Step 3: provision Huawei Cloud services (OBS + SMN) ─────────────────
       - name: Provision Huawei services
-        id: hw_provision
         env:
           HW_AK: ${{ secrets.HW_AK }}
           HW_SK: ${{ secrets.HW_SK }}
         run: |
           cd /root/ekhadi-shopware-plugin/web
-          HW_VARS=$(node scripts/setup-huawei.js 2>/dev/tty)
-          echo "hw_vars<<EOF" >> $GITHUB_OUTPUT
-          echo "$HW_VARS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          node scripts/setup-huawei.js > /tmp/hw_vars.txt
+          echo "--- Provisioned vars (keys only) ---"
+          grep -o '^[A-Z_]*' /tmp/hw_vars.txt
 
       # ── Step 4: write .env.local with all secrets ───────────────────────────
       - name: Write .env.local
         env:
-          HW_AK: ${{ secrets.HW_AK }}
-          HW_SK: ${{ secrets.HW_SK }}
+          _DB:     ${{ secrets.DATABASE_URL }}
+          _DIRECT: ${{ secrets.DIRECT_URL }}
+          _SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          _GEMINI: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          # Base app secrets
-          cat > /root/ekhadi-shopware-plugin/web/.env.local <<ENVEOF
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          DIRECT_URL=${{ secrets.DIRECT_URL }}
-          NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
-          NEXTAUTH_URL=https://e-khadi.co.za
-          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          NODE_ENV=production
-
-          # Huawei Cloud (OBS + SMN + Cloud Eye)
-          ${{ steps.hw_provision.outputs.hw_vars }}
-          ENVEOF
+          ENV_FILE=/root/ekhadi-shopware-plugin/web/.env.local
+          printf 'DATABASE_URL="%s"\n'    "$_DB"     >  "$ENV_FILE"
+          printf 'DIRECT_URL="%s"\n'      "$_DIRECT" >> "$ENV_FILE"
+          printf 'NEXTAUTH_SECRET="%s"\n' "$_SECRET" >> "$ENV_FILE"
+          printf 'NEXTAUTH_URL="https://e-khadi.co.za"\n'  >> "$ENV_FILE"
+          printf 'GEMINI_API_KEY="%s"\n'  "$_GEMINI" >> "$ENV_FILE"
+          printf 'NODE_ENV="production"\n'             >> "$ENV_FILE"
+          # Append provisioned Huawei vars (already KEY="VALUE" format)
+          cat /tmp/hw_vars.txt >> "$ENV_FILE"
 
       # ── Step 5: push DB schema + build ──────────────────────────────────────
       - name: Build
