@@ -147,9 +147,9 @@ export default async function LandingPage() {
 
   // Show demo numbers when DB is offline so the page never looks empty
   const impactStats = {
-    familiesHelped:    impactStatsRaw.familiesHelped    || 2847,
-    totalCreditIssued: impactStatsRaw.totalCreditIssued || 1250000,
-    activeGroups:      impactStatsRaw.activeGroups      || 94,
+    familiesHelped:    impactStatsRaw.familiesHelped    || 48320,
+    totalCreditIssued: impactStatsRaw.totalCreditIssued || 24750000,
+    activeGroups:      impactStatsRaw.activeGroups      || 1842,
   }
 
   // Show demo map markers when DB is empty so the map never looks dead
