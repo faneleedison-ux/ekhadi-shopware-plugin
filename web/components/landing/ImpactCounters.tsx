@@ -10,10 +10,11 @@ interface ImpactCountersProps {
   activeGroups: number
 }
 
-function useCountUp(target: number, duration = 1800) {
+function useCountUp(target: number, duration = 3000) {
   const [value, setValue] = useState(0)
   useEffect(() => {
     if (target === 0) return
+    setValue(0)
     let startTime: number | null = null
     const easeOut = (t: number) => 1 - Math.pow(1 - t, 3)
     const tick = (ts: number) => {
@@ -22,11 +23,17 @@ function useCountUp(target: number, duration = 1800) {
       setValue(Math.round(easeOut(progress) * target))
       if (progress < 1) requestAnimationFrame(tick)
     }
-    // short delay so the number is visible before it starts counting
-    const t = setTimeout(() => requestAnimationFrame(tick), 300)
+    const t = setTimeout(() => requestAnimationFrame(tick), 400)
     return () => clearTimeout(t)
   }, [target, duration])
   return value
+}
+
+function formatCompact(val: number, prefix: string, suffix: string): string {
+  if (val >= 1_000_000_000) return `${prefix}${(val / 1_000_000_000).toFixed(1)}B${suffix}`
+  if (val >= 1_000_000)     return `${prefix}${(val / 1_000_000).toFixed(1)}M${suffix}`
+  if (val >= 1_000)         return `${prefix}${(val / 1_000).toFixed(1)}K${suffix}`
+  return `${prefix}${val.toLocaleString('en-ZA')}${suffix}`
 }
 
 const cardVariants = {
@@ -39,8 +46,8 @@ function Counter({ target, prefix = '', suffix = '', label, sublabel, icon: Icon
   label: string; sublabel?: string
   icon: React.ElementType; index: number
 }) {
-  const value = useCountUp(target, 1800)
-  const display = prefix + (target >= 1000 ? value.toLocaleString('en-ZA') : value.toString()) + suffix
+  const value = useCountUp(target, 3000)
+  const display = formatCompact(value, prefix, suffix)
 
   return (
     <motion.div
@@ -76,7 +83,6 @@ function Counter({ target, prefix = '', suffix = '', label, sublabel, icon: Icon
       </motion.div>
 
       <motion.p
-        key={value}
         style={{
           fontSize: 'clamp(2rem, 4vw, 2.6rem)',
           fontWeight: 800,
