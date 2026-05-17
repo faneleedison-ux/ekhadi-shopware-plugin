@@ -1,62 +1,80 @@
-name: Check Huawei Cloud Billing (one-off)
+name: Check Huawei Cloud Billing
 
 on:
   workflow_dispatch:
 
 jobs:
   billing:
-    name: Query BSS coupons
+    name: Query BSS coupons & balance
     runs-on: [self-hosted, linux, ekhadi]
 
     steps:
-      - name: Get IAM token and query BSS coupons
+      - name: Fetch coupon balance via IAM + BSS API
         env:
           HW_AK: ${{ secrets.HW_AK }}
           HW_SK: ${{ secrets.HW_SK }}
         run: |
-          cd /root/ekhadi-shopware-plugin/web
-          npm install @huaweicloud/huaweicloud-sdk-bssintl --legacy-peer-deps --silent 2>/dev/null || true
-
-          node - <<'NODEJS'
-          const { BssintlClient, ListCouponsRequest } = require('@huaweicloud/huaweicloud-sdk-bssintl')
-          const { GlobalCredentials } = require('@huaweicloud/huaweicloud-sdk-core')
-
-          async function main() {
-            const client = BssintlClient.newBuilder()
-              .withCredential(
-                new GlobalCredentials()
-                  .withAk(process.env.HW_AK)
-                  .withSk(process.env.HW_SK)
-              )
-              .withEndpoint('https://bss-intl.myhuaweicloud.com')
-              .build()
-
-            try {
-              const req = new ListCouponsRequest()
-              const resp = await client.listCoupons(req)
-              const coupons = resp.couponInfos || resp.coupon_infos || []
-              if (!coupons.length) {
-                console.log('No coupons found.')
-              } else {
-                coupons.forEach(c => {
-                  console.log(`Name:    ${c.couponType || c.coupon_type || c.name || 'Coupon'}`)
-                  console.log(`Balance: ${c.balance} ${c.currency || 'USD'}`)
-                  console.log(`Expires: ${c.effectiveTime || c.expireTime || c.expire_time || 'N/A'}`)
-                  console.log('---')
-                })
+          # ── Step 1: exchange AK/SK for IAM token ────────────────────────────
+          curl -sf -X POST \
+            https://iam.myhuaweicloud.com/v3/auth/tokens \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"auth\": {
+                \"identity\": {
+                  \"methods\": [\"hw_ak_sk\"],
+                  \"hw_ak_sk\": {
+                    \"access\": {\"key\": \"$HW_AK\"},
+                    \"secret\": {\"key\": \"$HW_SK\"}
+                  }
+                }
               }
-            } catch(e) {
-              console.error('BSS error:', e.message || e)
-              // Try alternative endpoint
-              try {
-                const res = await fetch('https://bss.myhuaweicloud.com/v2/promotions/benefits/coupons', {
-                  headers: { 'X-Auth-Token': process.env.IAM_TOKEN || '' }
-                })
-                console.log('Alt response status:', res.status)
-                const text = await res.text()
-                console.log(text.slice(0, 500))
-              } catch(e2) { console.error('Alt also failed:', e2.message) }
-            }
-          }
-          main()
-          NODEJS
+            }" \
+            -D /tmp/iam_headers.txt \
+            -o /tmp/iam_body.txt
+
+          IAM_TOKEN=$(grep -i 'x-subject-token' /tmp/iam_headers.txt | awk '{print $2}' | tr -d '\r')
+
+          if [ -z "$IAM_TOKEN" ]; then
+            echo "IAM token not found. IAM response:"
+            cat /tmp/iam_body.txt | python3 -m json.tool 2>/dev/null || cat /tmp/iam_body.txt
+            exit 1
+          fi
+
+          echo "IAM token obtained."
+
+          # ── Step 2: query coupon list ────────────────────────────────────────
+          echo ""
+          echo "=== COUPONS ==="
+          curl -sf -X GET \
+            "https://bss.myhuaweicloud.com/v2/promotions/benefits/coupons" \
+            -H "X-Auth-Token: $IAM_TOKEN" \
+            -H "Content-Type: application/json" \
+            | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+coupons = data.get('coupon_infos') or data.get('coupons') or []
+if not coupons:
+    print('No coupons found.')
+    print('Raw:', json.dumps(data, indent=2)[:500])
+else:
+    for c in coupons:
+        print(f\"Name:     {c.get('coupon_name') or c.get('name') or 'N/A'}\")
+        print(f\"Balance:  {c.get('balance')} {c.get('currency','USD')}\")
+        print(f\"Face val: {c.get('face_value') or c.get('original_value')}\")
+        print(f\"Expires:  {c.get('expire_time') or c.get('effective_time') or 'N/A'}\")
+        print(f\"Status:   {c.get('status')}\")
+        print('---')
+" || echo "BSS coupon query failed"
+
+          # ── Step 3: query account balance ────────────────────────────────────
+          echo ""
+          echo "=== ACCOUNT BALANCE ==="
+          curl -sf -X GET \
+            "https://bss.myhuaweicloud.com/v2/accounts/customer-accounts/balances" \
+            -H "X-Auth-Token: $IAM_TOKEN" \
+            -H "Content-Type: application/json" \
+            | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+print(json.dumps(data, indent=2)[:800])
+" || echo "Balance query failed"
