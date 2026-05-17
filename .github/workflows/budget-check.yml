@@ -1,0 +1,53 @@
+name: Monthly Budget Check
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'   # every Monday 08:00 UTC
+  workflow_dispatch:
+
+jobs:
+  budget:
+    name: Check AI spend vs $100 cap
+    runs-on: [self-hosted, linux, ekhadi]
+
+    steps:
+      - name: Check BSS balance + coupon remaining
+        env:
+          HW_AK: ${{ secrets.HW_AK }}
+          HW_SK: ${{ secrets.HW_SK }}
+        run: |
+          # Get IAM token
+          curl -sf -X POST https://iam.myhuaweicloud.com/v3/auth/tokens \
+            -H "Content-Type: application/json" \
+            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}}}}" \
+            -D /tmp/iam.txt -o /tmp/iam_body.txt
+
+          TOKEN=$(grep -i 'x-subject-token' /tmp/iam.txt | awk '{print $2}' | tr -d '\r')
+          if [ -z "$TOKEN" ]; then echo "IAM auth failed"; exit 1; fi
+
+          # Get balance
+          BALANCE=$(curl -sf "https://bss-intl.myhuaweicloud.com/v2/accounts/customer-accounts/balances" \
+            -H "X-Auth-Token: $TOKEN" \
+            | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+total=sum(float(a.get('amount',0)) for a in d.get('account_balances',[]))
+print(f'{total:.2f}')
+")
+
+          echo "=== BUDGET REPORT ==="
+          echo "Current balance: \$$BALANCE USD"
+
+          python3 -c "
+balance=float('$BALANCE')
+cap=100.0
+used=cap-balance if balance<cap else 0
+pct=used/cap*100
+print(f'Budget used this cycle: \${used:.2f} / \${cap:.2f} ({pct:.0f}%)')
+if balance < 20:
+    print('🔴 WARNING: Less than \$20 remaining — approaching monthly cap!')
+elif balance < 50:
+    print('🟡 CAUTION: Less than \$50 remaining')
+else:
+    print('🟢 Budget healthy')
+"

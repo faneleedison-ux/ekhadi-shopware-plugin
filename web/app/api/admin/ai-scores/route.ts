@@ -3,12 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { computeRecommendation, type RecommendationInput } from '@/lib/aiRecommendation'
+import { geminiScore } from '@/lib/geminiScorer'
 
-/**
- * GET /api/admin/ai-scores
- * Returns AI recommendation badges for all PENDING credit requests.
- * Admin only.
- */
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session || session.user.role !== 'ADMIN') {
@@ -24,9 +20,7 @@ export async function GET() {
 
   if (pendingRequests.length === 0) return NextResponse.json([])
 
-  const requesterIds = pendingRequests
-    .map((r) => r.requesterId)
-    .filter((id, index, arr) => arr.indexOf(id) === index)
+  const requesterIds = [...new Set(pendingRequests.map((r) => r.requesterId))]
 
   const [profiles, paidRepayments, approvedRequests, pendingDebt, monthlyRequests] =
     await Promise.all([
@@ -62,17 +56,25 @@ export async function GET() {
   const debtMap = new Map(pendingDebt.map((r) => [r.userId, Number(r._sum.amount ?? 0)]))
   const monthlyMap = new Map(monthlyRequests.map((r) => [r.requesterId, r._count.id]))
 
-  const scores = pendingRequests.map((req) => {
-    const input: RecommendationInput = {
-      paidRepaymentsCount: paidMap.get(req.requesterId) ?? 0,
-      approvedRequestsCount: approvedMap.get(req.requesterId) ?? 0,
-      creditScore: creditScoreMap.get(req.requesterId) ?? 50,
-      outstandingDebt: debtMap.get(req.requesterId) ?? 0,
-      requestsThisMonth: monthlyMap.get(req.requesterId) ?? 0,
-      requestAmount: Number(req.amount),
-    }
-    return { requestId: req.id, ...computeRecommendation(input) }
-  })
+  const scores = await Promise.all(
+    pendingRequests.map(async (req) => {
+      const input: RecommendationInput = {
+        paidRepaymentsCount: paidMap.get(req.requesterId) ?? 0,
+        approvedRequestsCount: approvedMap.get(req.requesterId) ?? 0,
+        creditScore: creditScoreMap.get(req.requesterId) ?? 50,
+        outstandingDebt: debtMap.get(req.requesterId) ?? 0,
+        requestsThisMonth: monthlyMap.get(req.requesterId) ?? 0,
+        requestAmount: Number(req.amount),
+      }
+
+      const aiResult = await geminiScore(input)
+      if (aiResult) {
+        return { requestId: req.id, ...aiResult }
+      }
+
+      return { requestId: req.id, ...computeRecommendation(input), confidence: null, source: 'rules' }
+    })
+  )
 
   return NextResponse.json(scores)
 }

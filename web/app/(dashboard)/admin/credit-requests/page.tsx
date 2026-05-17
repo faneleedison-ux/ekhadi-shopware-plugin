@@ -32,6 +32,10 @@ interface AiScore {
   requestId: string
   level: RecommendationLevel
   reason: string
+  confidence: number | null
+  riskFactors?: string[]
+  positiveSignals?: string[]
+  source?: 'gemini' | 'rules'
 }
 
 const aiBadgeConfig: Record<RecommendationLevel, { label: string; icon: React.ElementType; classes: string }> = {
@@ -56,10 +60,16 @@ function AiRecommendationBadge({ score }: { score: AiScore | undefined }) {
   if (!score) return <span className="text-xs text-text-secondary">—</span>
   const cfg = aiBadgeConfig[score.level]
   const Icon = cfg.icon
+  const label = score.source === 'gemini' && score.confidence != null
+    ? `${cfg.label} · ${score.confidence}%`
+    : cfg.label
   return (
     <div className={`inline-flex items-center gap-1 border rounded-lg px-2 py-1 ${cfg.classes}`} title={score.reason}>
       <Icon className="h-3 w-3 flex-shrink-0" />
-      <span className="text-xs font-semibold whitespace-nowrap">{cfg.label}</span>
+      <span className="text-xs font-semibold whitespace-nowrap">{label}</span>
+      {score.source === 'gemini' && (
+        <span className="text-xs opacity-60 ml-0.5">✦</span>
+      )}
     </div>
   )
 }
@@ -343,11 +353,34 @@ export default function CreditRequestsPage() {
               </div>
               {selectedRequest.status === 'PENDING' && aiScores[selectedRequest.id] && (
                 <div>
-                  <p className="text-xs text-text-secondary font-medium uppercase tracking-wide">AI Recommendation</p>
+                  <p className="text-xs text-text-secondary font-medium uppercase tracking-wide">
+                    AI Recommendation
+                    {aiScores[selectedRequest.id].source === 'gemini' && (
+                      <span className="ml-1 text-purple-500">✦ Gemini</span>
+                    )}
+                  </p>
                   <div className="flex items-center gap-2 mt-1">
                     <AiRecommendationBadge score={aiScores[selectedRequest.id]} />
                     <p className="text-xs text-text-secondary">{aiScores[selectedRequest.id].reason}</p>
                   </div>
+                  {aiScores[selectedRequest.id].riskFactors?.length ? (
+                    <div className="mt-2 space-y-1">
+                      {aiScores[selectedRequest.id].riskFactors!.map((f, i) => (
+                        <p key={i} className="text-xs text-red-600 flex items-start gap-1">
+                          <span>⚠</span><span>{f}</span>
+                        </p>
+                      ))}
+                    </div>
+                  ) : null}
+                  {aiScores[selectedRequest.id].positiveSignals?.length ? (
+                    <div className="mt-1 space-y-1">
+                      {aiScores[selectedRequest.id].positiveSignals!.map((s, i) => (
+                        <p key={i} className="text-xs text-green-600 flex items-start gap-1">
+                          <span>✓</span><span>{s}</span>
+                        </p>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               )}
               {selectedRequest.approver && (
