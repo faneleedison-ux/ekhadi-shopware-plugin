@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Users, CreditCard, UsersRound } from 'lucide-react'
 
@@ -10,10 +10,10 @@ interface ImpactCountersProps {
   activeGroups: number
 }
 
-function useCountUp(target: number, duration = 1800, triggered = false) {
+function useCountUp(target: number, duration = 1800) {
   const [value, setValue] = useState(0)
   useEffect(() => {
-    if (!triggered || target === 0) return
+    if (target === 0) return
     let startTime: number | null = null
     const easeOut = (t: number) => 1 - Math.pow(1 - t, 3)
     const tick = (ts: number) => {
@@ -22,8 +22,10 @@ function useCountUp(target: number, duration = 1800, triggered = false) {
       setValue(Math.round(easeOut(progress) * target))
       if (progress < 1) requestAnimationFrame(tick)
     }
-    requestAnimationFrame(tick)
-  }, [target, duration, triggered])
+    // short delay so the number is visible before it starts counting
+    const t = setTimeout(() => requestAnimationFrame(tick), 300)
+    return () => clearTimeout(t)
+  }, [target, duration])
   return value
 }
 
@@ -32,12 +34,12 @@ const cardVariants = {
   visible: { opacity: 1, y: 0,  scale: 1    },
 }
 
-function Counter({ target, prefix = '', suffix = '', label, sublabel, icon: Icon, triggered, index }: {
+function Counter({ target, prefix = '', suffix = '', label, sublabel, icon: Icon, index }: {
   target: number; prefix?: string; suffix?: string
   label: string; sublabel?: string
-  icon: React.ElementType; triggered: boolean; index: number
+  icon: React.ElementType; index: number
 }) {
-  const value = useCountUp(target, 1800, triggered)
+  const value = useCountUp(target, 1800)
   const display = prefix + (target >= 1000 ? value.toLocaleString('en-ZA') : value.toString()) + suffix
 
   return (
@@ -99,30 +101,16 @@ const container = {
 }
 
 export default function ImpactCounters({ familiesHelped, totalCreditIssued, activeGroups }: ImpactCountersProps) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [triggered, setTriggered] = useState(false)
-
-  useEffect(() => {
-    const fallback = setTimeout(() => setTriggered(true), 800)
-    const observer = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) { setTriggered(true); clearTimeout(fallback); observer.disconnect() }
-    }, { threshold: 0 })
-    if (ref.current) observer.observe(ref.current)
-    return () => { observer.disconnect(); clearTimeout(fallback) }
-  }, [])
-
   return (
     <motion.div
-      ref={ref}
       className="grid sm:grid-cols-3 gap-4"
       initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, amount: 0 }}
+      animate="visible"
       variants={container}
     >
-      <Counter index={0} target={familiesHelped}    suffix="+" label="Families Helped"       sublabel="registered grant recipients"  icon={Users}      triggered={triggered} />
-      <Counter index={1} target={totalCreditIssued} prefix="R"  label="Credit Distributed"   sublabel="in essential-goods credit"    icon={CreditCard} triggered={triggered} />
-      <Counter index={2} target={activeGroups}              label="Active Stokvel Groups" sublabel="across South Africa"          icon={UsersRound} triggered={triggered} />
+      <Counter index={0} target={familiesHelped}    suffix="+" label="Families Helped"       sublabel="registered grant recipients"  icon={Users}      />
+      <Counter index={1} target={totalCreditIssued} prefix="R"  label="Credit Distributed"   sublabel="in essential-goods credit"    icon={CreditCard} />
+      <Counter index={2} target={activeGroups}              label="Active Stokvel Groups" sublabel="across South Africa"          icon={UsersRound} />
     </motion.div>
   )
 }
