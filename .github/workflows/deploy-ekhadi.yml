@@ -38,7 +38,6 @@ jobs:
             $GITHUB_WORKSPACE/web/ /root/ekhadi-shopware-plugin/web/
 
           cd /root/ekhadi-shopware-plugin/web
-          cp .env.local /root/ekhadi-shopware-plugin/web/.env.local
 
           npm install --legacy-peer-deps --silent
           npx prisma db push --accept-data-loss 2>&1 | grep -E '(sync|error|warn)' || true
