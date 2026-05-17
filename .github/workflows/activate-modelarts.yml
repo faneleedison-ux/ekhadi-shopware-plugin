@@ -1,0 +1,115 @@
+name: Activate ModelArts
+
+on:
+  workflow_dispatch:
+
+jobs:
+  activate:
+    name: Activate ModelArts in ap-southeast-1
+    runs-on: [self-hosted, linux, ekhadi]
+
+    steps:
+      - name: Get project-scoped IAM token + activate ModelArts
+        env:
+          HW_AK: ${{ secrets.HW_AK }}
+          HW_SK: ${{ secrets.HW_SK }}
+        run: |
+          REGION="ap-southeast-1"
+          MA_HOST="https://modelarts.ap-southeast-1.myhuaweicloud.com"
+          IAM_HOST="https://iam.myhuaweicloud.com"
+
+          # ── Step 1: get global token ──────────────────────────────────────────
+          curl -sf -X POST "$IAM_HOST/v3/auth/tokens" \
+            -H "Content-Type: application/json" \
+            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}}}}" \
+            -D /tmp/iam_h.txt -o /tmp/iam_b.txt
+          GLOBAL_TOKEN=$(grep -i x-subject-token /tmp/iam_h.txt | awk '{print $2}' | tr -d '\r')
+          if [ -z "$GLOBAL_TOKEN" ]; then echo "IAM auth failed"; cat /tmp/iam_b.txt; exit 1; fi
+          echo "Global IAM token obtained."
+
+          # ── Step 2: look up project ID for ap-southeast-1 ────────────────────
+          PROJ=$(curl -sf "$IAM_HOST/v3/projects" -H "X-Auth-Token: $GLOBAL_TOKEN" \
+            | python3 -c "
+import json,sys
+data=json.load(sys.stdin)
+ps=[p for p in data.get('projects',[]) if 'ap-southeast-1' in p.get('name','')]
+print(ps[0]['id'] if ps else '')
+")
+          echo "Project ID (ap-southeast-1): $PROJ"
+          if [ -z "$PROJ" ]; then echo "No project found for $REGION"; exit 1; fi
+
+          # ── Step 3: get project-scoped token for ap-southeast-1 ──────────────
+          curl -sf -X POST "$IAM_HOST/v3/auth/tokens" \
+            -H "Content-Type: application/json" \
+            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}},\"scope\":{\"project\":{\"name\":\"$REGION\"}}}}" \
+            -D /tmp/iam_scoped_h.txt -o /tmp/iam_scoped_b.txt
+          SCOPED_TOKEN=$(grep -i x-subject-token /tmp/iam_scoped_h.txt | awk '{print $2}' | tr -d '\r')
+          if [ -z "$SCOPED_TOKEN" ]; then
+            echo "Scoped token failed — using global token"
+            SCOPED_TOKEN="$GLOBAL_TOKEN"
+          else
+            echo "Scoped token obtained."
+          fi
+
+          # ── Step 4: check current ModelArts state ────────────────────────────
+          echo ""
+          echo "=== Current ModelArts workspaces ==="
+          WS_RESP=$(curl -s -w "\n%{http_code}" \
+            "$MA_HOST/v1/$PROJ/workspaces" \
+            -H "X-Auth-Token: $SCOPED_TOKEN")
+          WS_CODE=$(echo "$WS_RESP" | tail -1)
+          WS_BODY=$(echo "$WS_RESP" | head -n -1)
+          echo "HTTP $WS_CODE"
+          echo "$WS_BODY" | python3 -m json.tool 2>/dev/null || echo "$WS_BODY"
+
+          if [ "$WS_CODE" = "200" ]; then
+            echo ""
+            echo "ModelArts already active!"
+            WS_COUNT=$(echo "$WS_BODY" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('total_count',len(d.get('workspaces',[]))))" 2>/dev/null || echo "?")
+            echo "Workspaces: $WS_COUNT"
+            exit 0
+          fi
+
+          # ── Step 5: create default workspace (activates the service) ─────────
+          echo ""
+          echo "=== Creating default ModelArts workspace ==="
+          CREATE_RESP=$(curl -s -w "\n%{http_code}" -X POST \
+            "$MA_HOST/v1/$PROJ/workspaces" \
+            -H "X-Auth-Token: $SCOPED_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"name\":\"default\",\"description\":\"e-Khadi ModelArts workspace\"}")
+          CREATE_CODE=$(echo "$CREATE_RESP" | tail -1)
+          CREATE_BODY=$(echo "$CREATE_RESP" | head -n -1)
+          echo "HTTP $CREATE_CODE"
+          echo "$CREATE_BODY" | python3 -m json.tool 2>/dev/null || echo "$CREATE_BODY"
+
+          if [ "$CREATE_CODE" = "200" ] || [ "$CREATE_CODE" = "201" ]; then
+            echo ""
+            echo "ModelArts workspace created — service is now active!"
+            echo "WS_ID=$(echo "$CREATE_BODY" | python3 -c "import json,sys;d=json.load(sys.stdin);print(d.get('id',''))" 2>/dev/null)"
+            exit 0
+          fi
+
+          # ── Step 6: try v2 training-jobs list (alternate service probe) ───────
+          echo ""
+          echo "=== Trying v2 training-jobs probe ==="
+          TJ_RESP=$(curl -s -w "\n%{http_code}" \
+            "$MA_HOST/v2/$PROJ/training-jobs?limit=1" \
+            -H "X-Auth-Token: $SCOPED_TOKEN")
+          TJ_CODE=$(echo "$TJ_RESP" | tail -1)
+          TJ_BODY=$(echo "$TJ_RESP" | head -n -1)
+          echo "HTTP $TJ_CODE"
+          echo "$TJ_BODY" | python3 -m json.tool 2>/dev/null || echo "$TJ_BODY"
+
+          if [ "$TJ_CODE" = "200" ]; then
+            echo "ModelArts v2 API is accessible!"
+            exit 0
+          fi
+
+          echo ""
+          echo "=== Result ==="
+          echo "Workspace create returned HTTP $CREATE_CODE"
+          echo "If the error is 'service not enabled' or 'agreement not signed',"
+          echo "the Huawei Cloud console requires a one-click TOS acceptance:"
+          echo "  console.huaweicloud.com → search ModelArts → Enable Service"
+          exit 1
