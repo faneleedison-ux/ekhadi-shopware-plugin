@@ -83,26 +83,34 @@ jobs:
             fi
 
             if [ -n "$AGENCY_ID" ]; then
-              # Try multiple possible OBS role names (Huawei Cloud regions vary)
-              for ROLE_NAME in "OBS OperateAccess" "obs_op_access" "Tenant Guest" "OBS Administrator"; do
-                ENCODED=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$ROLE_NAME'))")
-                ROLE_ID=$(curl -s "https://iam.myhuaweicloud.com/v3/roles?name=$ENCODED" \
-                  -H "X-Auth-Token: $DOMAIN_TOKEN" | python3 -c "import json,sys; r=json.load(sys.stdin).get('roles',[]); print(r[0]['id'] if r else '')" 2>/dev/null)
-                if [ -n "$ROLE_ID" ]; then
-                  curl -s -X PUT "https://iam.myhuaweicloud.com/v3.0/OS-AGENCY/agencies/$AGENCY_ID/domains/$DOMAIN_ID/roles/$ROLE_ID" \
-                    -H "X-Auth-Token: $DOMAIN_TOKEN"
-                  echo "Attached role '$ROLE_NAME' ($ROLE_ID) to modelarts_agency"
-                  break
-                fi
-              done
+              # List all IAM roles and attach any OBS-related one
+              ALL_ROLES=$(curl -s "https://iam.myhuaweicloud.com/v3/roles" \
+                -H "X-Auth-Token: $DOMAIN_TOKEN" | python3 -c "
+import json,sys
+roles = json.load(sys.stdin).get('roles', [])
+for r in roles:
+  n = r.get('display_name','') or r.get('name','')
+  if 'obs' in n.lower() or 'OBS' in n:
+    print(r['id'], n)
+" 2>/dev/null || true)
+              echo "OBS roles found: $ALL_ROLES"
+              OBS_ROLE_ID=$(echo "$ALL_ROLES" | head -1 | awk '{print $1}')
+              if [ -n "$OBS_ROLE_ID" ]; then
+                curl -s -X PUT "https://iam.myhuaweicloud.com/v3.0/OS-AGENCY/agencies/$AGENCY_ID/domains/$DOMAIN_ID/roles/$OBS_ROLE_ID" \
+                  -H "X-Auth-Token: $DOMAIN_TOKEN"
+                echo "Attached OBS role $OBS_ROLE_ID to modelarts_agency"
+              else
+                echo "No OBS role found via listing — agency trusts op_svc_modelarts directly"
+              fi
             fi
           fi
 
           # Register the agency with ModelArts authorization API (the key step)
+          # content.[].user_id = "all" authorizes all IAM users via the agency
           echo "Calling ModelArts authorization endpoint..."
           MA_AUTH_RESP=$(curl -s -w "\n%{http_code}" -X POST "$MA_HOST/v2/$MA_PROJ/authorizations" \
             -H "X-Auth-Token: $TOKEN" -H "Content-Type: application/json" \
-            -d "{\"type\":\"agency\",\"agency_names\":[\"modelarts_agency\"]}")
+            -d "{\"type\":\"agency\",\"content\":[{\"user_id\":\"all\"}]}")
           MA_AUTH_CODE=$(echo "$MA_AUTH_RESP" | tail -1)
           echo "ModelArts auth HTTP $MA_AUTH_CODE"
           echo "$(echo "$MA_AUTH_RESP" | head -n -1)" | python3 -m json.tool 2>/dev/null || true
