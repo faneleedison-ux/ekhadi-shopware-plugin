@@ -273,7 +273,7 @@ export async function POST(req: NextRequest) {
     await prisma.storeCredit.deleteMany()
     await prisma.repaymentSchedule.deleteMany()
     await prisma.fraudAlert.deleteMany()
-    await prisma.idVerification.deleteMany()
+    await prisma.iDVerification.deleteMany()
     await prisma.loyaltyTransaction.deleteMany()
     await prisma.qRPaymentToken.deleteMany()
     await prisma.creditTransfer.deleteMany()
