@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { publishSMN } from '@/lib/smn'
 import { reportMetrics } from '@/lib/ces'
+import { sendCreditApproved } from '@/lib/whatsapp'
 
 export async function POST(
   req: NextRequest,
@@ -126,12 +127,13 @@ export async function POST(
       return updated
     })
 
-    // Notify via Huawei Cloud SMN (fire and forget)
-    const member = await prisma.user.findUnique({ where: { id: creditRequest.requesterId }, select: { name: true, email: true } })
+    // Notify via SMN + WhatsApp (fire and forget)
+    const member = await prisma.user.findUnique({ where: { id: creditRequest.requesterId }, select: { name: true, email: true, phone: true } })
     publishSMN(
       'e-Khadi: Credit Request Approved',
       `Dear ${member?.name ?? 'Member'},\n\nYour e-Khadi credit request of R${amount.toFixed(2)} has been APPROVED.\n\nReason: ${creditRequest.reason}\nFunds are now available in your wallet.\n\ne-Khadi Team`
     )
+    sendCreditApproved(member?.phone, member?.name ?? 'Member', amount)
     reportMetrics([
       { name: 'credit_approved_count', value: 1 },
       { name: 'credit_approved_amount', value: amount, unit: 'None' },

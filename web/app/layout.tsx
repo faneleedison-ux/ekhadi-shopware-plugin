@@ -14,6 +14,11 @@ export const metadata: Metadata = {
   authors: [{ name: 'e-Khadi' }],
   manifest: '/manifest.json',
   themeColor: '#1877F2',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'e-Khadi',
+  },
   openGraph: {
     title: 'e-Khadi',
     description: 'Community Credit for SASSA Grant Recipients',

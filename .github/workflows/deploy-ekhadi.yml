@@ -50,19 +50,24 @@ jobs:
       # ── Step 4: write .env.local with all secrets ───────────────────────────
       - name: Write .env.local
         env:
-          _DB:     ${{ secrets.DATABASE_URL }}
-          _DIRECT: ${{ secrets.DIRECT_URL }}
-          _SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-          _GEMINI: ${{ secrets.GEMINI_API_KEY }}
+          _DB:        ${{ secrets.DATABASE_URL }}
+          _DIRECT:    ${{ secrets.DIRECT_URL }}
+          _SECRET:    ${{ secrets.NEXTAUTH_SECRET }}
+          _GEMINI:    ${{ secrets.GEMINI_API_KEY }}
+          _SEED:      ${{ secrets.SEED_SECRET }}
+          _WA_PHONE:  ${{ secrets.WHATSAPP_PHONE_ID }}
+          _WA_TOKEN:  ${{ secrets.WHATSAPP_TOKEN }}
         run: |
           ENV_FILE=/root/ekhadi-shopware-plugin/web/.env.local
-          printf 'DATABASE_URL="%s"\n'    "$_DB"     >  "$ENV_FILE"
-          printf 'DIRECT_URL="%s"\n'      "$_DIRECT" >> "$ENV_FILE"
-          printf 'NEXTAUTH_SECRET="%s"\n' "$_SECRET" >> "$ENV_FILE"
-          printf 'NEXTAUTH_URL="https://e-khadi.co.za"\n'  >> "$ENV_FILE"
-          printf 'GEMINI_API_KEY="%s"\n'  "$_GEMINI" >> "$ENV_FILE"
-          printf 'NODE_ENV="production"\n'             >> "$ENV_FILE"
-          # Append provisioned Huawei vars (already KEY="VALUE" format)
+          printf 'DATABASE_URL="%s"\n'      "$_DB"       >  "$ENV_FILE"
+          printf 'DIRECT_URL="%s"\n'        "$_DIRECT"   >> "$ENV_FILE"
+          printf 'NEXTAUTH_SECRET="%s"\n'   "$_SECRET"   >> "$ENV_FILE"
+          printf 'NEXTAUTH_URL="https://e-khadi.co.za"\n' >> "$ENV_FILE"
+          printf 'GEMINI_API_KEY="%s"\n'    "$_GEMINI"   >> "$ENV_FILE"
+          printf 'SEED_SECRET="%s"\n'       "$_SEED"     >> "$ENV_FILE"
+          printf 'WHATSAPP_PHONE_ID="%s"\n' "$_WA_PHONE" >> "$ENV_FILE"
+          printf 'WHATSAPP_TOKEN="%s"\n'    "$_WA_TOKEN" >> "$ENV_FILE"
+          printf 'NODE_ENV="production"\n'               >> "$ENV_FILE"
           cat /tmp/hw_vars.txt >> "$ENV_FILE"
 
       # ── Step 5: push DB schema + build ──────────────────────────────────────
