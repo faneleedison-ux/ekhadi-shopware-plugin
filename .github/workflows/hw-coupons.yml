@@ -7,7 +7,7 @@ jobs:
   check:
     runs-on: [self-hosted, linux, ekhadi]
     steps:
-      - name: Query IAM + BSS
+      - name: Query IAM + BSS International
         env:
           HW_AK: ${{ secrets.HW_AK }}
           HW_SK: ${{ secrets.HW_SK }}
@@ -18,12 +18,16 @@ jobs:
             -D /tmp/iam_h.txt -o /tmp/iam_b.txt
 
           TOKEN=$(grep -i x-subject-token /tmp/iam_h.txt | awk '{print $2}' | tr -d '\r')
-          echo "Token obtained: ${TOKEN:0:20}..."
+          echo "Token: ${TOKEN:0:20}..."
 
           echo "=== COUPONS ==="
-          curl -s "https://bss.myhuaweicloud.com/v2/promotions/benefits/coupons" \
-            -H "X-Auth-Token: $TOKEN" | python3 -m json.tool 2>/dev/null || echo "no output"
+          curl -s "https://bss-intl.myhuaweicloud.com/v2/promotions/benefits/coupons" \
+            -H "X-Auth-Token: $TOKEN" | python3 -m json.tool 2>/dev/null
 
           echo "=== BALANCE ==="
-          curl -s "https://bss.myhuaweicloud.com/v2/accounts/customer-accounts/balances" \
-            -H "X-Auth-Token: $TOKEN" | python3 -m json.tool 2>/dev/null || echo "no output"
+          curl -s "https://bss-intl.myhuaweicloud.com/v2/accounts/customer-accounts/balances" \
+            -H "X-Auth-Token: $TOKEN" | python3 -m json.tool 2>/dev/null
+
+          echo "=== CASH COUPONS ==="
+          curl -s "https://bss-intl.myhuaweicloud.com/v2/promotions/benefits/cash-coupons" \
+            -H "X-Auth-Token: $TOKEN" | python3 -m json.tool 2>/dev/null
