@@ -152,6 +152,28 @@ export default async function LandingPage() {
     activeGroups:      impactStatsRaw.activeGroups      || 94,
   }
 
+  // Show demo map markers when DB is empty so the map never looks dead
+  const DEMO_MARKERS: import('@/components/landing/SouthAfricaLiveMap').MapMarker[] = [
+    { id: 'd-s1', name: 'Umlazi Spaza', type: 'shop', areaName: 'Umlazi', province: 'KwaZulu-Natal', lat: -29.974, lng: 30.882 },
+    { id: 'd-s2', name: 'Soweto Fresh', type: 'shop', areaName: 'Soweto', province: 'Gauteng', lat: -26.261, lng: 27.851 },
+    { id: 'd-s3', name: 'Khayelitsha Corner', type: 'shop', areaName: 'Khayelitsha', province: 'Western Cape', lat: -34.042, lng: 18.672 },
+    { id: 'd-s4', name: 'Mdantsane Store', type: 'shop', areaName: 'Mdantsane', province: 'Eastern Cape', lat: -32.955, lng: 27.738 },
+    { id: 'd-s5', name: 'Botshabelo Shop', type: 'shop', areaName: 'Botshabelo', province: 'Free State', lat: -29.242, lng: 26.721 },
+    { id: 'd-u1', name: 'Nomsa D.', type: 'user', areaName: 'Umlazi', province: 'KwaZulu-Natal', lat: -29.968, lng: 30.877 },
+    { id: 'd-u2', name: 'Thabo M.', type: 'user', areaName: 'Botshabelo', province: 'Free State', lat: -29.231, lng: 26.731 },
+    { id: 'd-u3', name: 'Zanele K.', type: 'user', areaName: 'Soweto', province: 'Gauteng', lat: -26.255, lng: 27.862 },
+    { id: 'd-u4', name: 'Lungelo N.', type: 'user', areaName: 'Mdantsane', province: 'Eastern Cape', lat: -32.948, lng: 27.742 },
+    { id: 'd-u5', name: 'Sipho G.', type: 'user', areaName: 'Khayelitsha', province: 'Western Cape', lat: -34.038, lng: 18.679 },
+    { id: 'd-u6', name: 'Lindiwe P.', type: 'user', areaName: 'Tembisa', province: 'Gauteng', lat: -25.999, lng: 28.225 },
+    { id: 'd-u7', name: 'Bongani S.', type: 'user', areaName: 'KwaMashu', province: 'KwaZulu-Natal', lat: -29.748, lng: 30.971 },
+    { id: 'd-g1', name: 'Umlazi Stokvel', type: 'group', areaName: 'Umlazi', province: 'KwaZulu-Natal', lat: -29.971, lng: 30.886 },
+    { id: 'd-g2', name: 'Soweto Solidarity', type: 'group', areaName: 'Soweto', province: 'Gauteng', lat: -26.249, lng: 27.857 },
+    { id: 'd-g3', name: 'Cape Mothers', type: 'group', areaName: 'Khayelitsha', province: 'Western Cape', lat: -34.035, lng: 18.682 },
+  ]
+  const mapData = markers.length > 0
+    ? { markers, areaCount }
+    : { markers: DEMO_MARKERS, areaCount: 5 }
+
   const D = '#060C1E'   // deep navy
   const D2 = '#0A1020'  // mid navy
   const D3 = '#0D1529'  // slightly lighter navy
@@ -566,13 +588,11 @@ export default async function LandingPage() {
               </h2>
             </div>
           </ScrollReveal>
-          <ScrollReveal stagger>
-            <ImpactCounters
-              familiesHelped={impactStats.familiesHelped}
-              totalCreditIssued={impactStats.totalCreditIssued}
-              activeGroups={impactStats.activeGroups}
-            />
-          </ScrollReveal>
+          <ImpactCounters
+            familiesHelped={impactStats.familiesHelped}
+            totalCreditIssued={impactStats.totalCreditIssued}
+            activeGroups={impactStats.activeGroups}
+          />
         </div>
       </section>
 
@@ -609,7 +629,7 @@ export default async function LandingPage() {
             </div>
           </ScrollReveal>
           <ScrollReveal delay={80}>
-            <SouthAfricaLiveMap markers={markers} areaCount={areaCount} />
+            <SouthAfricaLiveMap markers={mapData.markers} areaCount={mapData.areaCount} />
           </ScrollReveal>
         </div>
       </section>
