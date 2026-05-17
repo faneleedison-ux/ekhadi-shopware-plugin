@@ -1,4 +1,4 @@
-name: Deploy e-Khadi to Huawei Cloud
+name: Deploy e-Khadi to http://e-khadi.co.za
 
 on:
   push:
@@ -8,111 +8,82 @@ on:
       - '.github/workflows/deploy-ekhadi.yml'
   workflow_dispatch:
 
-env:
-  HW_REGION: af-south-1
-  SWR_SERVER: swr.af-south-1.myhuaweicloud.com
-  SWR_ORG: ${{ secrets.HW_SWR_ORG }}
-  IMAGE_NAME: ekhadi-web
-
 jobs:
-  build-and-push:
-    name: Build & Push image to SWR
+  deploy:
+    name: Deploy to ECS (AF-Johannesburg)
     runs-on: ubuntu-latest
-    outputs:
-      image_tag: ${{ steps.meta.outputs.tag }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set image tag
-        id: meta
-        run: echo "tag=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
-
-      - name: Log in to Huawei SWR
-        uses: huaweicloud/swr-login@v2.1.0
-        with:
-          region: ${{ env.HW_REGION }}
-          access-key-id: ${{ secrets.HW_AK }}
-          access-key-secret: ${{ secrets.HW_SK }}
-
-      - name: Build Docker image
-        working-directory: ./web
+      - name: Write SSH key
         run: |
-          docker build \
-            -t ${{ env.SWR_SERVER }}/${{ env.SWR_ORG }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }} \
-            -t ${{ env.SWR_SERVER }}/${{ env.SWR_ORG }}/${{ env.IMAGE_NAME }}:latest \
-            .
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ECS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.ECS_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Push to Huawei SWR
+      - name: Sync code to server
         run: |
-          docker push ${{ env.SWR_SERVER }}/${{ env.SWR_ORG }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}
-          docker push ${{ env.SWR_SERVER }}/${{ env.SWR_ORG }}/${{ env.IMAGE_NAME }}:latest
+          rsync -az \
+            --exclude 'node_modules' \
+            --exclude '.next' \
+            --exclude '.git' \
+            --exclude '*.log' \
+            --exclude '.env.local' \
+            --exclude '.env' \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            ./web/ \
+            ${{ secrets.ECS_USER }}@${{ secrets.ECS_HOST }}:/root/ekhadi-shopware-plugin/web/
 
-  deploy:
-    name: Deploy to ECS
-    runs-on: ubuntu-latest
-    needs: build-and-push
-
-    steps:
-      - name: Deploy via SSH
+      - name: Write .env on server
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.ECS_HOST }}
           username: ${{ secrets.ECS_USER }}
           key: ${{ secrets.ECS_SSH_KEY }}
           script: |
+            cat > /root/ekhadi-shopware-plugin/web/.env.local <<'ENVEOF'
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            DIRECT_URL=${{ secrets.DIRECT_URL }}
+            NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+            NEXTAUTH_URL=http://e-khadi.co.za
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            NODE_ENV=production
+            ENVEOF
+
+      - name: Build & restart on server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.ECS_HOST }}
+          username: ${{ secrets.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_KEY }}
+          command_timeout: 10m
+          script: |
             set -e
+            cd /root/ekhadi-shopware-plugin/web
 
-            SWR_SERVER="swr.af-south-1.myhuaweicloud.com"
-            IMAGE="${SWR_SERVER}/${{ secrets.HW_SWR_ORG }}/ekhadi-web:${{ needs.build-and-push.outputs.image_tag }}"
+            echo "📦 Installing dependencies..."
+            npm install --silent --legacy-peer-deps
 
-            # Authenticate with SWR on the server
-            docker login \
-              -u "af-south-1@${{ secrets.HW_AK }}" \
-              -p "${{ secrets.HW_SWR_LOGIN_KEY }}" \
-              ${SWR_SERVER}
+            echo "🗄️ Running DB migrations..."
+            npx prisma db push --accept-data-loss 2>&1 | grep -E '(sync|error|Error|warn)' || true
 
-            # Pull latest image
-            docker pull ${IMAGE}
+            echo "🔨 Building..."
+            npm run build 2>&1 | tail -10
 
-            # Run migrations before swapping traffic
-            docker run --rm \
-              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-              -e DIRECT_URL="${{ secrets.DIRECT_URL }}" \
-              ${IMAGE} \
-              npx prisma migrate deploy
+            echo "🔄 Restarting app..."
+            pm2 restart ekhadi --update-env || pm2 start npm --name ekhadi -- start
 
-            # Stop and remove existing container
-            docker stop ekhadi-web 2>/dev/null || true
-            docker rm   ekhadi-web 2>/dev/null || true
-
-            docker run -d \
-              --name ekhadi-web \
-              --restart unless-stopped \
-              -p 3000:3000 \
-              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-              -e DIRECT_URL="${{ secrets.DIRECT_URL }}" \
-              -e NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET }}" \
-              -e NEXTAUTH_URL="https://e-khadi.co.za" \
-              -e GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
-              -e NODE_ENV=production \
-              ${IMAGE}
-
-            # Health check — wait up to 30s
+            echo "⏳ Health check..."
             for i in $(seq 1 10); do
-              if curl -sf http://localhost:3000/api/auth/session > /dev/null; then
-                echo "Health check passed"
+              if curl -sf http://localhost:3000 > /dev/null 2>&1; then
+                echo "✅ Live at http://e-khadi.co.za"
                 break
               fi
               echo "Waiting... ($i/10)"
               sleep 3
             done
 
-            # Reload nginx to pick up any config changes
-            sudo nginx -t && sudo systemctl reload nginx
-
-            # Clean up untagged images
-            docker image prune -f
-
-            echo "✅ Deployed ekhadi-web:${{ needs.build-and-push.outputs.image_tag }}"
+            pm2 save
