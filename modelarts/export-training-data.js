@@ -89,14 +89,18 @@ async function exportData() {
     forcePathStyle: false,
   })
 
-  await s3.send(new PutObjectCommand({
-    Bucket: OBS_BUCKET,
-    Key: key,
-    Body: csv,
-    ContentType: 'text/csv',
-  }))
+  // Upload dated file + overwrite latest.csv (used by training job)
+  for (const k of [key, 'modelarts/training-data/latest.csv']) {
+    await s3.send(new PutObjectCommand({
+      Bucket: OBS_BUCKET,
+      Key: k,
+      Body: csv,
+      ContentType: 'text/csv',
+    }))
+  }
 
   console.log(`Exported ${rows.length} members → obs://${OBS_BUCKET}/${key}`)
+  console.log(`Also written to obs://${OBS_BUCKET}/modelarts/training-data/latest.csv`)
   console.log(`Positive labels (repaid): ${rows.filter(r => r.repaid_on_time === 1).length}`)
   console.log(`Negative labels (not repaid): ${rows.filter(r => r.repaid_on_time === 0).length}`)
 }
