@@ -39,8 +39,11 @@ jobs:
           echo "IAM token obtained."
 
           # ── Export training data from Postgres → OBS ──────────────────────────
-          # Run from web/ so node_modules (pg, @aws-sdk/client-s3) are found
+          # NODE_PATH lets node find @prisma/client from web/node_modules even
+          # though the script file lives in modelarts/ (Node resolves modules
+          # relative to the file, not CWD).
           echo "=== Exporting training data ==="
+          export NODE_PATH=/root/ekhadi-shopware-plugin/web/node_modules
           cd /root/ekhadi-shopware-plugin/web
           node ../modelarts/export-training-data.js
 
