@@ -30,6 +30,9 @@ jobs:
           # Sync FunctionGraph handlers
           rsync -a $GITHUB_WORKSPACE/functions/ /root/ekhadi-shopware-plugin/functions/
 
+          # Sync ModelArts training scripts
+          rsync -a $GITHUB_WORKSPACE/modelarts/ /root/ekhadi-shopware-plugin/modelarts/
+
       # ── Step 2: install deps (needed before provisioning script) ────────────
       - name: Install dependencies
         run: |

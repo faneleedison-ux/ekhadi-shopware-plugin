@@ -13,6 +13,13 @@ jobs:
     name: Train + Deploy ModelArts credit scorer
     runs-on: [self-hosted, linux, ekhadi]
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sync modelarts scripts to ECS
+        run: |
+          rsync -a $GITHUB_WORKSPACE/modelarts/ /root/ekhadi-shopware-plugin/modelarts/
+
       - name: Export data, train, deploy, set endpoint
         env:
           HW_AK:        ${{ secrets.HW_AK }}
