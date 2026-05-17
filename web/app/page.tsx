@@ -184,12 +184,14 @@ export default async function LandingPage() {
     { area: 'Tzaneen',         province: 'Limpopo',         lat: -23.83, lng: 30.17 },
     { area: 'Roodepan',        province: 'Northern Cape',   lat: -28.68, lng: 24.72 },
   ]
-  const dj = (base: number, seed: number, spread = 0.025) =>
+  const dj = (base: number, seed: number, spread: number) =>
     base + ((((seed * 2654435761) >>> 0) % 1000) / 1000 - 0.5) * spread
+  const clampLat = (v: number) => Math.max(-34.8, Math.min(-22.2, v))
+  const clampLng = (v: number) => Math.max(16.6, Math.min(33.0, v))
   const DEMO_MARKERS: import('@/components/landing/SouthAfricaLiveMap').MapMarker[] = [
-    ...Array.from({ length: 200 }, (_, i) => { const l = DEMO_LOCS[i % DEMO_LOCS.length]; return { id: `ds${i}`, name: `${l.area} Spaza ${i + 1}`, type: 'shop' as const, areaName: l.area, province: l.province, lat: dj(l.lat, i * 3), lng: dj(l.lng, i * 7) } }),
-    ...Array.from({ length: 500 }, (_, i) => { const l = DEMO_LOCS[i % DEMO_LOCS.length]; return { id: `du${i}`, name: `Member ${i + 1}`, type: 'user' as const, areaName: l.area, province: l.province, lat: dj(l.lat, i * 11), lng: dj(l.lng, i * 13) } }),
-    ...Array.from({ length: 150 }, (_, i) => { const l = DEMO_LOCS[i % DEMO_LOCS.length]; return { id: `dg${i}`, name: `${l.area} Stokvel ${i + 1}`, type: 'group' as const, areaName: l.area, province: l.province, lat: dj(l.lat, i * 17), lng: dj(l.lng, i * 19) } }),
+    ...Array.from({ length: 200 }, (_, i) => { const l = DEMO_LOCS[i % DEMO_LOCS.length]; return { id: `ds${i}`, name: `${l.area} Spaza ${i + 1}`, type: 'shop' as const, areaName: l.area, province: l.province, lat: clampLat(dj(l.lat, i * 3, 0.9)), lng: clampLng(dj(l.lng, i * 7, 1.1)) } }),
+    ...Array.from({ length: 500 }, (_, i) => { const l = DEMO_LOCS[i % DEMO_LOCS.length]; return { id: `du${i}`, name: `Member ${i + 1}`, type: 'user' as const, areaName: l.area, province: l.province, lat: clampLat(dj(l.lat, i * 11, 1.1)), lng: clampLng(dj(l.lng, i * 13, 1.3)) } }),
+    ...Array.from({ length: 150 }, (_, i) => { const l = DEMO_LOCS[i % DEMO_LOCS.length]; return { id: `dg${i}`, name: `${l.area} Stokvel ${i + 1}`, type: 'group' as const, areaName: l.area, province: l.province, lat: clampLat(dj(l.lat, i * 17, 0.8)), lng: clampLng(dj(l.lng, i * 19, 1.0)) } }),
   ]
   const mapData = markers.length > 0
     ? { markers, areaCount }
@@ -302,19 +304,7 @@ export default async function LandingPage() {
                     Register as Member <ArrowRight size={16} />
                   </button>
                 </Link>
-                <Link href="/register?demo=true">
-                  <button style={{
-                    background: 'rgba(24,119,242,0.1)',
-                    color: '#60a5fa',
-                    border: '1.5px solid rgba(24,119,242,0.35)',
-                    borderRadius: 9999, padding: '14px 24px',
-                    fontWeight: 600, fontSize: 15, cursor: 'pointer',
-                    fontFamily: 'inherit',
-                  }}>
-                    View Demo
-                  </button>
-                </Link>
-                <Link href="/register?role=SHOP">
+r                <Link href="/register?role=SHOP">
                   <button style={{
                     background: 'transparent', color: WHITE60,
                     border: `1.5px solid ${WHITE20}`,

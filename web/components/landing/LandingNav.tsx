@@ -81,15 +81,6 @@ export default function LandingNav() {
                 cursor: 'pointer', fontSize: 14, fontWeight: 600,
               }}>Sign In</button>
             </Link>
-            <Link href="/register?demo=true">
-              <button style={{
-                background: 'rgba(24,119,242,0.08)',
-                border: '1px solid rgba(24,119,242,0.35)',
-                color: '#60a5fa',
-                padding: '8px 16px', borderRadius: 8,
-                cursor: 'pointer', fontSize: 14, fontWeight: 600,
-              }}>View Demo</button>
-            </Link>
             <Link href="/register">
               <button style={{
                 background: 'linear-gradient(135deg, #1877F2, #0f4fa8)',
@@ -174,7 +165,6 @@ export default function LandingNav() {
             <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
               {[
                 { label: 'Sign In',              href: '/login',              variant: 'ghost' as const },
-                { label: 'View Demo',            href: '/register?demo=true', variant: 'demo'  as const },
                 { label: 'Register as Member',   href: '/register',           variant: 'primary' as const },
                 { label: 'Register Your Shop',   href: '/register?role=SHOP', variant: 'ghost' as const },
               ].map((link) => (

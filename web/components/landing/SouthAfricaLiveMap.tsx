@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import type { LatLngExpression } from 'leaflet'
 
@@ -82,8 +82,8 @@ const Polygon = dynamic(
   () => import('react-leaflet').then((module) => module.Polygon),
   { ssr: false }
 )
-const CircleMarker = dynamic(
-  () => import('react-leaflet').then((module) => module.CircleMarker),
+const Marker = dynamic(
+  () => import('react-leaflet').then((module) => module.Marker),
   { ssr: false }
 )
 const Tooltip = dynamic(
@@ -101,7 +101,52 @@ const markerMeta: Record<MapMarkerType, { label: string; color: string; ring: st
   group: { label: 'Stokvel Groups', color: '#10B981', ring: '#6EE7B7' },
 }
 
+// Pin HTML for each marker type — square (shop), teardrop (user), diamond (group)
+const PIN_HTML: Record<MapMarkerType, string> = {
+  shop: `<div style="display:flex;flex-direction:column;align-items:center">
+    <div style="width:30px;height:30px;background:#F97316;border-radius:7px;border:2.5px solid white;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(249,115,22,0.6)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+        <path d="M3 9l2.45-4.9A2 2 0 017.24 3h9.52a2 2 0 011.8 1.1L21 9"/>
+        <line x1="12" y1="3" x2="12" y2="9"/>
+      </svg>
+    </div>
+    <div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid #F97316"></div>
+  </div>`,
+  user: `<div style="display:flex;flex-direction:column;align-items:center">
+    <div style="width:28px;height:28px;background:#0EA5E9;border-radius:50%;border:2.5px solid white;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(14,165,233,0.6)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+      </svg>
+    </div>
+    <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid #0EA5E9"></div>
+  </div>`,
+  group: `<div style="display:flex;align-items:center;justify-content:center;width:32px;height:32px">
+    <div style="width:24px;height:24px;background:#10B981;border-radius:4px;border:2.5px solid white;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(16,185,129,0.6);transform:rotate(45deg)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(-45deg)">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+        <path d="M16 3.13a4 4 0 010 7.75"/>
+      </svg>
+    </div>
+  </div>`,
+}
+
 export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
+  const [leafletIcons, setLeafletIcons] = useState<Record<MapMarkerType, import('leaflet').DivIcon> | null>(null)
+
+  useEffect(() => {
+    import('leaflet').then(({ default: L }) => {
+      setLeafletIcons({
+        shop:  L.divIcon({ className: '', html: PIN_HTML.shop,  iconSize: [30, 38], iconAnchor: [15, 38], tooltipAnchor: [0, -40] }),
+        user:  L.divIcon({ className: '', html: PIN_HTML.user,  iconSize: [28, 34], iconAnchor: [14, 34], tooltipAnchor: [0, -36] }),
+        group: L.divIcon({ className: '', html: PIN_HTML.group, iconSize: [32, 32], iconAnchor: [16, 16], tooltipAnchor: [0, -18] }),
+      })
+    })
+  }, [])
+
   const [visible, setVisible] = useState<Record<MapMarkerType, boolean>>({
     shop: true,
     user: true,
@@ -322,35 +367,26 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
             positions={southAfricaOutline}
           />
 
-          {filtered.map((marker) => {
-            const isSelected = marker.id === selectedMarkerId
-            return (
-              <CircleMarker
-                key={marker.id}
-                center={[marker.lat, marker.lng]}
-                radius={isSelected ? 10 : 7}
-                pathOptions={{
-                  color: markerMeta[marker.type].ring,
-                  weight: isSelected ? 4 : 2,
-                  fillColor: markerMeta[marker.type].color,
-                  fillOpacity: 0.95,
-                }}
-                eventHandlers={{
-                  click: () => setSelectedMarkerId(marker.id),
-                  mouseover: () => setHoveredMarkerId(marker.id),
-                  mouseout: () => setHoveredMarkerId(null),
-                }}
-              >
-                <Tooltip direction="top" offset={[0, -8]} opacity={1}>
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-semibold">{marker.name}</p>
-                    <p className="text-[11px] text-slate-400">{markerMeta[marker.type].label.slice(0, -1)} · {marker.areaName}</p>
-                    <p className="text-[11px] text-slate-500">{marker.province}</p>
-                  </div>
-                </Tooltip>
-              </CircleMarker>
-            )
-          })}
+          {leafletIcons && filtered.map((marker) => (
+            <Marker
+              key={marker.id}
+              position={[marker.lat, marker.lng]}
+              icon={leafletIcons[marker.type]}
+              eventHandlers={{
+                click:     () => setSelectedMarkerId(marker.id),
+                mouseover: () => setHoveredMarkerId(marker.id),
+                mouseout:  () => setHoveredMarkerId(null),
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -4]} opacity={1}>
+                <div className="space-y-0.5">
+                  <p className="text-xs font-semibold">{marker.name}</p>
+                  <p className="text-[11px] text-slate-400">{markerMeta[marker.type].label.slice(0, -1)} · {marker.areaName}</p>
+                  <p className="text-[11px] text-slate-500">{marker.province}</p>
+                </div>
+              </Tooltip>
+            </Marker>
+          ))}
         </MapContainer>
       </div>
 
