@@ -27,8 +27,9 @@ let _cachedToken: string | null = null
 let _tokenExpiry = 0
 
 async function getIAMToken(): Promise<string | null> {
-  const AK = process.env.HW_AK
-  const SK = process.env.HW_SK
+  // setup-huawei.js writes OBS_ACCESS_KEY/OBS_SECRET_KEY (same AK/SK values) to .env.local
+  const AK = process.env.OBS_ACCESS_KEY ?? process.env.HW_AK
+  const SK = process.env.OBS_SECRET_KEY ?? process.env.HW_SK
   if (!AK || !SK) return null
 
   if (_cachedToken && Date.now() < _tokenExpiry) return _cachedToken
