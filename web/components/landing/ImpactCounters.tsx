@@ -35,13 +35,45 @@ function Counter({ target, prefix = '', suffix = '', label, sublabel, icon: Icon
   const display = prefix + (target >= 1000 ? value.toLocaleString('en-ZA') : value.toString()) + suffix
 
   return (
-    <div className="bg-card rounded-2xl border border-border p-6 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow">
-      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-        <Icon className="h-6 w-6 text-primary" />
+    <div style={{
+      background: 'rgba(255,255,255,0.04)',
+      border: '1px solid rgba(24,119,242,0.2)',
+      borderRadius: 20,
+      padding: '28px 24px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      textAlign: 'center',
+      backdropFilter: 'blur(10px)',
+      transition: 'box-shadow 0.3s',
+    }}
+      onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 0 40px rgba(24,119,242,0.2)')}
+      onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
+    >
+      <div style={{
+        width: 48, height: 48,
+        borderRadius: 14,
+        background: 'rgba(24,119,242,0.15)',
+        border: '1px solid rgba(24,119,242,0.25)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        marginBottom: 16,
+        boxShadow: '0 0 20px rgba(24,119,242,0.12)',
+      }}>
+        <Icon size={22} style={{ color: '#1877F2' }} />
       </div>
-      <p className="text-3xl sm:text-4xl font-bold text-text-primary tracking-tight">{display}</p>
-      <p className="text-sm font-semibold text-text-primary mt-2">{label}</p>
-      {sublabel && <p className="text-xs text-text-secondary mt-1">{sublabel}</p>}
+      <p style={{
+        fontSize: 'clamp(2rem, 4vw, 2.6rem)',
+        fontWeight: 800,
+        color: '#fff',
+        letterSpacing: '-0.04em',
+        lineHeight: 1,
+        margin: 0,
+        fontFamily: 'var(--font-outfit), sans-serif',
+      }}>
+        {display}
+      </p>
+      <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginTop: 10 }}>{label}</p>
+      {sublabel && <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>{sublabel}</p>}
     </div>
   )
 }
@@ -51,16 +83,18 @@ export default function ImpactCounters({ familiesHelped, totalCreditIssued, acti
   const [triggered, setTriggered] = useState(false)
 
   useEffect(() => {
-    const observer = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setTriggered(true); observer.disconnect() } }, { threshold: 0.2 })
+    const observer = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setTriggered(true); observer.disconnect() }
+    }, { threshold: 0.2 })
     if (ref.current) observer.observe(ref.current)
     return () => observer.disconnect()
   }, [])
 
   return (
     <div ref={ref} className="grid sm:grid-cols-3 gap-4">
-      <Counter target={familiesHelped} suffix="+" label="Families Helped" sublabel="registered grant recipients" icon={Users} triggered={triggered} />
-      <Counter target={totalCreditIssued} prefix="R" label="Credit Distributed" sublabel="in essential-goods credit" icon={CreditCard} triggered={triggered} />
-      <Counter target={activeGroups} label="Active Stokvel Groups" sublabel="across South Africa" icon={UsersRound} triggered={triggered} />
+      <Counter target={familiesHelped}    suffix="+" label="Families Helped"       sublabel="registered grant recipients"  icon={Users}      triggered={triggered} />
+      <Counter target={totalCreditIssued} prefix="R"  label="Credit Distributed"   sublabel="in essential-goods credit"    icon={CreditCard} triggered={triggered} />
+      <Counter target={activeGroups}              label="Active Stokvel Groups" sublabel="across South Africa"          icon={UsersRound} triggered={triggered} />
     </div>
   )
 }

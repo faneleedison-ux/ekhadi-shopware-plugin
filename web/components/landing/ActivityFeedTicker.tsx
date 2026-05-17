@@ -9,46 +9,76 @@ export interface ActivityItem {
   minutesAgo: number
 }
 
+const DEMO_ITEMS: ActivityItem[] = [
+  { name: 'Nomsa D.',  area: 'Umlazi',      amount: 500, minutesAgo: 2  },
+  { name: 'Thabo M.', area: 'Botshabelo',  amount: 350, minutesAgo: 8  },
+  { name: 'Lungelo N.',area: 'Mdantsane',   amount: 750, minutesAgo: 15 },
+  { name: 'Zanele K.',  area: 'Soweto',      amount: 400, minutesAgo: 21 },
+  { name: 'Sipho G.',  area: 'Khayelitsha', amount: 600, minutesAgo: 34 },
+]
+
 export default function ActivityFeedTicker({ items }: { items: ActivityItem[] }) {
-  const [index, setIndex] = useState(0)
+  const feed = items.length > 0 ? items : DEMO_ITEMS
+
+  const [index,   setIndex]   = useState(0)
   const [visible, setVisible] = useState(true)
 
   useEffect(() => {
-    if (items.length <= 1) return
-    const interval = setInterval(() => {
+    if (feed.length <= 1) return
+    const id = setInterval(() => {
       setVisible(false)
-      setTimeout(() => { setIndex((p) => (p + 1) % items.length); setVisible(true) }, 300)
+      setTimeout(() => {
+        setIndex((p) => (p + 1) % feed.length)
+        setVisible(true)
+      }, 320)
     }, 4000)
-    return () => clearInterval(interval)
-  }, [items.length])
+    return () => clearInterval(id)
+  }, [feed.length])
 
-  if (items.length === 0) return null
-
-  const item = items[index]
+  const item = feed[index]
   const timeLabel =
-    item.minutesAgo < 1 ? 'just now' :
-    item.minutesAgo < 60 ? `${item.minutesAgo} min ago` :
+    item.minutesAgo < 1  ? 'just now' :
+    item.minutesAgo < 60 ? `${item.minutesAgo}m ago` :
     `${Math.floor(item.minutesAgo / 60)}h ago`
 
   return (
-    <div className="bg-primary/8 border-b border-primary/15 px-4 py-2.5 flex items-center justify-center gap-3">
-      <span className="flex items-center gap-1.5 flex-shrink-0">
-        <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      gap: 12, padding: '10px 20px',
+      background: 'rgba(24,119,242,0.07)',
+      minHeight: 44,
+    }}>
+      {/* Live badge */}
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        <span style={{ position: 'relative', display: 'flex', width: 8, height: 8 }}>
+          <span className="animate-ping" style={{
+            position: 'absolute', inset: 0,
+            borderRadius: '50%', background: '#42B883', opacity: 0.6,
+          }} />
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#42B883', display: 'block' }} />
         </span>
-        <span className="text-primary text-xs font-bold uppercase tracking-widest">Live</span>
+        <span style={{ color: '#42B883', fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+          Live
+        </span>
       </span>
 
-      <span className="w-px h-4 bg-border flex-shrink-0" />
+      <span style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
 
-      <p className="text-text-secondary text-xs sm:text-sm transition-opacity duration-300" style={{ opacity: visible ? 1 : 0 }}>
-        <span className="font-semibold text-text-primary">{item.name}</span>
+      {/* Message */}
+      <p
+        style={{
+          fontSize: 13, color: 'rgba(255,255,255,0.5)',
+          margin: 0, lineHeight: 1.4,
+          opacity: visible ? 1 : 0,
+          transition: 'opacity 0.3s ease',
+        }}
+      >
+        <span style={{ fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{item.name}</span>
         {' from '}
-        <span className="font-semibold text-text-primary">{item.area}</span>
+        <span style={{ fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{item.area}</span>
         {' received '}
-        <span className="font-semibold text-primary">R{item.amount.toFixed(0)} credit</span>
-        <span className="text-text-secondary"> · {timeLabel}</span>
+        <span style={{ fontWeight: 700, color: '#60a5fa' }}>R{item.amount.toFixed(0)} credit</span>
+        <span style={{ color: 'rgba(255,255,255,0.3)' }}> · {timeLabel}</span>
       </p>
     </div>
   )

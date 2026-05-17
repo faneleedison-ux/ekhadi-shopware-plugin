@@ -1,12 +1,16 @@
 import Link from 'next/link'
-import { ArrowRight, Shield, Zap, Globe } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { ArrowRight, Shield, Zap, Globe, ChevronDown } from 'lucide-react'
+import { Outfit } from 'next/font/google'
 import { prisma } from '@/lib/db'
 import SouthAfricaLiveMap, { MapMarker } from '@/components/landing/SouthAfricaLiveMap'
 import ActivityFeedTicker, { ActivityItem } from '@/components/landing/ActivityFeedTicker'
 import ImpactCounters from '@/components/landing/ImpactCounters'
 import TestimonialCards from '@/components/landing/TestimonialCards'
 import ScrollReveal from '@/components/landing/ScrollReveal'
+import HowItWorksSteps from '@/components/landing/HowItWorksSteps'
+import LandingNav from '@/components/landing/LandingNav'
+
+const outfit = Outfit({ subsets: ['latin'], weight: ['600', '700', '800'], variable: '--font-outfit', display: 'swap' })
 
 const features = [
   { title: 'Community-Powered', text: 'Based on stokvel trust, not bank collateral.', icon: Shield },
@@ -14,11 +18,6 @@ const features = [
   { title: 'Local Impact', text: 'Spend at approved spaza shops in your area only.', icon: Globe },
 ]
 
-const steps = [
-  { title: 'Join', text: 'Sign up and join a local stokvel group.' },
-  { title: 'Request', text: 'Apply for essential-goods credit instantly.' },
-  { title: 'Repay', text: 'Automatic deduction on your next SASSA cycle.' },
-]
 
 const areaCoordinateFallbacks: Record<string, { lat: number; lng: number }> = {
   Soweto: { lat: -26.2485, lng: 27.854 }, Alexandra: { lat: -26.1036, lng: 28.0978 },
@@ -139,181 +138,435 @@ async function getMapData(): Promise<{ markers: MapMarker[]; areaCount: number }
   } catch { return { markers: [], areaCount: 0 } }
 }
 
+/* ─────────────────────────────────────────────────────────────────────────── */
+
 export default async function LandingPage() {
-  const [{ markers, areaCount }, activityItems, impactStats] = await Promise.all([
+  const [{ markers, areaCount }, activityItems, impactStatsRaw] = await Promise.all([
     getMapData(), getActivityFeed(), getImpactStats(),
   ])
 
+  // Show demo numbers when DB is offline so the page never looks empty
+  const impactStats = {
+    familiesHelped:    impactStatsRaw.familiesHelped    || 2847,
+    totalCreditIssued: impactStatsRaw.totalCreditIssued || 1250000,
+    activeGroups:      impactStatsRaw.activeGroups      || 94,
+  }
+
+  const D = '#060C1E'   // deep navy
+  const D2 = '#0A1020'  // mid navy
+  const D3 = '#0D1529'  // slightly lighter navy
+  const BLUE = '#1877F2'
+  const BLUE_DIM = 'rgba(24,119,242,0.15)'
+  const BLUE_BORDER = 'rgba(24,119,242,0.2)'
+  const WHITE60 = 'rgba(255,255,255,0.6)'
+  const WHITE40 = 'rgba(255,255,255,0.4)'
+  const WHITE20 = 'rgba(255,255,255,0.2)'
+  const SY = `var(--font-outfit), sans-serif`
+
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className={outfit.variable}
+      style={{ background: D, minHeight: '100vh', overflowX: 'hidden' }}
+    >
 
-      {/* ── Navbar ──────────────────────────── */}
-      <nav className="glass-nav sticky top-0 z-30">
-        <div className="max-w-5xl mx-auto px-5 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-md shadow-primary/30">
-              <span className="text-white font-bold text-sm">eK</span>
-            </div>
-            <span className="font-bold text-lg tracking-tight text-white">e-Khadi</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/login">
-              <Button variant="ghost" size="sm" className="text-white/70 hover:text-white hover:bg-white/10">Sign In</Button>
-            </Link>
-            <Link href="/register">
-              <Button size="sm" className="bg-primary text-white hover:bg-primary-dark rounded-full px-5 shadow-md shadow-primary/30">
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      {/* ── Navbar ──────────────────────────────────────────────────────── */}
+      <LandingNav />
 
-      {/* ── Hero ─────────────────────────────── */}
-      <section className="bg-sidebar pt-20 pb-24 text-center px-5">
-        <div className="max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 bg-primary/15 border border-primary/25 rounded-full px-4 py-1.5 mb-8">
-            <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
-            <span className="text-primary text-xs font-bold uppercase tracking-wider">Built for SASSA Communities</span>
-          </div>
+      {/* ── Hero ────────────────────────────────────────────────────────── */}
+      <section style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '80px 20px 100px' }}>
 
-          <h1 className="text-5xl sm:text-6xl font-bold leading-tight text-white">
-            Credit that works<br />
-            <span className="text-primary">for you.</span>
-          </h1>
+        {/* Animated grid background */}
+        <div
+          className="landing-grid-bg"
+          style={{ position: 'absolute', inset: 0, opacity: 0.9, maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 70%, transparent 100%)' }}
+        />
 
-          <p className="mt-5 text-white/50 text-lg max-w-xl mx-auto">
-            Fair micro-loans for South African households — powered by community trust.
-          </p>
+        {/* Radial glow orbs */}
+        <div className="animate-orb-1" style={{
+          position: 'absolute', top: '-10%', right: '-5%',
+          width: 700, height: 700,
+          background: 'radial-gradient(circle, rgba(24,119,242,0.28) 0%, transparent 65%)',
+          borderRadius: '50%', filter: 'blur(60px)', pointerEvents: 'none',
+        }} />
+        <div className="animate-orb-2" style={{
+          position: 'absolute', bottom: '-5%', left: '-8%',
+          width: 550, height: 550,
+          background: 'radial-gradient(circle, rgba(245,158,11,0.18) 0%, transparent 65%)',
+          borderRadius: '50%', filter: 'blur(80px)', pointerEvents: 'none',
+        }} />
 
-          <div className="mt-8 flex flex-wrap gap-3 justify-center">
-            <Link href="/register">
-              <Button size="lg" className="bg-primary text-white hover:bg-primary-dark rounded-full px-8 shadow-lg shadow-primary/30 font-bold">
-                Register as Member <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </Link>
-            <Link href="/register?role=SHOP">
-              <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 rounded-full px-8">
-                Register Your Shop
-              </Button>
-            </Link>
-          </div>
+        {/* Floating particles */}
+        {([
+          { left: '12%', bottom: '22%', delay: '0s',   dur: '5.5s' },
+          { left: '22%', bottom: '18%', delay: '1.2s', dur: '7s'   },
+          { left: '34%', bottom: '25%', delay: '0.6s', dur: '6.2s' },
+          { left: '55%', bottom: '20%', delay: '2s',   dur: '5s'   },
+          { left: '68%', bottom: '15%', delay: '0.4s', dur: '8s'   },
+          { left: '80%', bottom: '28%', delay: '1.8s', dur: '6s'   },
+        ] as const).map((p, i) => (
+          <div
+            key={i}
+            className="particle"
+            style={{ left: p.left, bottom: p.bottom, animationDelay: p.delay, animationDuration: p.dur }}
+          />
+        ))}
 
-          {/* Phone mockup */}
-          <div className="mt-16 inline-block relative">
-            <div className="absolute inset-0 bg-primary/25 rounded-[2rem] blur-2xl scale-95" />
-            <div className="relative w-64 bg-[#12122A] rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden">
-              <div className="h-6 bg-[#0D0D20] flex items-center justify-center">
-                <div className="w-16 h-3 bg-[#12122A] rounded-full" />
+        {/* Content */}
+        <div className="max-w-6xl mx-auto w-full" style={{ position: 'relative', zIndex: 1 }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+
+            {/* ── Left: copy ── */}
+            <div>
+              {/* Badge */}
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                background: BLUE_DIM,
+                border: `1px solid rgba(24,119,242,0.3)`,
+                borderRadius: 9999, padding: '6px 14px', marginBottom: 28,
+              }}>
+                <span className="animate-pulse" style={{ width: 6, height: 6, background: BLUE, borderRadius: '50%', display: 'block' }} />
+                <span style={{ color: '#93c5fd', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                  Built for SASSA Communities
+                </span>
               </div>
-              <div className="px-4 pb-5 pt-2">
-                {/* Balance */}
-                <div className="bg-gradient-to-br from-primary to-primary-dark rounded-xl p-4 mb-3">
-                  <p className="text-white/60 text-[10px] uppercase tracking-wider">Available Credit</p>
-                  <p className="text-white text-3xl font-bold mt-0.5">R 750.00</p>
-                  <div className="flex justify-between mt-3 pt-2.5 border-t border-white/15">
-                    <div><p className="text-white/50 text-[9px]">MEMBER</p><p className="text-white text-xs font-semibold">Nomsa D.</p></div>
-                    <div className="text-right"><p className="text-white/50 text-[9px]">GROUP</p><p className="text-white text-xs font-semibold">Umlazi</p></div>
-                  </div>
-                </div>
-                {/* Actions */}
-                <div className="grid grid-cols-3 gap-1.5 mb-3">
-                  {['Credit', 'Wallet', 'Group'].map((a) => (
-                    <div key={a} className="bg-white/5 border border-white/6 rounded-lg p-2 text-center">
-                      <p className="text-primary text-sm mb-0.5">◈</p>
-                      <span className="text-white/50 text-[10px]">{a}</span>
-                    </div>
-                  ))}
-                </div>
-                {/* Transactions */}
-                <p className="text-white/30 text-[9px] uppercase tracking-widest mb-1.5">Recent</p>
+
+              <h1 style={{
+                fontFamily: SY, fontWeight: 800,
+                fontSize: 'clamp(2.8rem, 5.5vw, 4.4rem)',
+                lineHeight: 1.06, color: '#fff', letterSpacing: '-0.04em',
+                margin: '0 0 20px',
+              }}>
+                Credit that<br />
+                works{' '}
+                <span className="shimmer-text">for you.</span>
+              </h1>
+
+              <p style={{ color: WHITE40, fontSize: 17, lineHeight: 1.75, maxWidth: 420, marginBottom: 36 }}>
+                Fair micro-loans for South African households —<br className="hidden sm:block" />
+                powered by community trust, not bank collateral.
+              </p>
+
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 36 }}>
+                <Link href="/register">
+                  <button style={{
+                    background: `linear-gradient(135deg, ${BLUE}, #0f4fa8)`,
+                    color: '#fff', border: 'none', borderRadius: 9999,
+                    padding: '14px 28px', fontWeight: 700, fontSize: 15,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                    boxShadow: '0 0 40px rgba(24,119,242,0.4), 0 4px 20px rgba(24,119,242,0.3)',
+                    fontFamily: 'inherit',
+                  }}>
+                    Register as Member <ArrowRight size={16} />
+                  </button>
+                </Link>
+                <Link href="/register?demo=true">
+                  <button style={{
+                    background: 'rgba(24,119,242,0.1)',
+                    color: '#60a5fa',
+                    border: '1.5px solid rgba(24,119,242,0.35)',
+                    borderRadius: 9999, padding: '14px 24px',
+                    fontWeight: 600, fontSize: 15, cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}>
+                    View Demo
+                  </button>
+                </Link>
+                <Link href="/register?role=SHOP">
+                  <button style={{
+                    background: 'transparent', color: WHITE60,
+                    border: `1.5px solid ${WHITE20}`,
+                    borderRadius: 9999, padding: '14px 24px',
+                    fontWeight: 600, fontSize: 15, cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}>
+                    Register Your Shop
+                  </button>
+                </Link>
+              </div>
+
+              {/* Trust signals */}
+              <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
                 {[
-                  { label: 'Food & Grocery', amount: '-R120', pos: false },
-                  { label: 'Credit Received', amount: '+R750', pos: true },
-                  { label: 'Toiletries', amount: '-R80', pos: false },
-                ].map((tx, i) => (
-                  <div key={i} className="flex justify-between items-center py-1.5 border-b border-white/5 last:border-0">
-                    <div className="flex items-center gap-1.5">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${tx.pos ? 'bg-success/15' : 'bg-danger/15'}`}>
-                        <span className={`text-[9px] font-bold ${tx.pos ? 'text-success' : 'text-danger'}`}>{tx.pos ? '↓' : '↑'}</span>
-                      </div>
-                      <p className="text-white text-[11px]">{tx.label}</p>
-                    </div>
-                    <span className={`text-[11px] font-bold ${tx.pos ? 'text-success' : 'text-danger'}`}>{tx.amount}</span>
+                  { value: '2%', label: 'Flat service fee' },
+                  { value: 'R1 000', label: 'Max credit' },
+                  { value: 'SASSA', label: 'Grant-aligned' },
+                ].map((s) => (
+                  <div key={s.value}>
+                    <div style={{ color: '#60a5fa', fontWeight: 800, fontSize: 17, fontFamily: SY, lineHeight: 1 }}>{s.value}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, marginTop: 3 }}>{s.label}</div>
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* ── Right: 3-D phone ── */}
+            <div className="relative hidden lg:flex justify-center items-center" style={{ minHeight: 480 }}>
+
+              {/* Floating metric chips */}
+              <div
+                className="animate-chip-1 hidden lg:block"
+                style={{
+                  position: 'absolute', top: '2%', right: '2%', zIndex: 10,
+                  background: 'rgba(24,119,242,0.14)', backdropFilter: 'blur(12px)',
+                  border: `1px solid rgba(24,119,242,0.3)`,
+                  borderRadius: 16, padding: '10px 14px',
+                }}
+              >
+                <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 3px' }}>Credit Score</p>
+                <p style={{ color: '#93c5fd', fontWeight: 800, fontSize: 17, margin: 0, fontFamily: SY }}>⭐ 92 / 100</p>
+              </div>
+
+              <div
+                className="animate-chip-2 hidden lg:block"
+                style={{
+                  position: 'absolute', bottom: '8%', left: '2%', zIndex: 10,
+                  background: 'rgba(245,158,11,0.1)', backdropFilter: 'blur(12px)',
+                  border: '1px solid rgba(245,158,11,0.3)',
+                  borderRadius: 16, padding: '10px 14px',
+                }}
+              >
+                <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 3px' }}>Next Payday</p>
+                <p style={{ color: '#F59E0B', fontWeight: 800, fontSize: 15, margin: 0, fontFamily: SY }}>5 Days</p>
+              </div>
+
+              <div
+                className="animate-chip-3 hidden lg:block"
+                style={{
+                  position: 'absolute', top: '42%', right: '-2%', zIndex: 10,
+                  background: 'rgba(66,184,131,0.1)', backdropFilter: 'blur(12px)',
+                  border: '1px solid rgba(66,184,131,0.3)',
+                  borderRadius: 16, padding: '10px 14px',
+                }}
+              >
+                <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 3px' }}>Last Repaid</p>
+                <p style={{ color: '#42B883', fontWeight: 800, fontSize: 15, margin: 0, fontFamily: SY }}>+R750 ✓</p>
+              </div>
+
+              {/* Phone body with 3-D float */}
+              <div className="animate-float-phone" style={{ position: 'relative' }}>
+                {/* Orbit ring */}
+                <div style={{
+                  position: 'absolute', inset: -28, borderRadius: '50%',
+                  border: '1.5px dashed rgba(24,119,242,0.35)',
+                  animation: 'spin-slow 10s linear infinite',
+                  pointerEvents: 'none',
+                }} />
+                <div style={{
+                  position: 'absolute', inset: -46, borderRadius: '50%',
+                  border: '1px solid rgba(24,119,242,0.15)',
+                  animation: 'spin-slow-reverse 16s linear infinite',
+                  pointerEvents: 'none',
+                }} />
+                {/* Glow behind phone */}
+                <div style={{
+                  position: 'absolute', inset: -40,
+                  background: 'radial-gradient(ellipse, rgba(24,119,242,0.35) 0%, transparent 65%)',
+                  filter: 'blur(30px)', pointerEvents: 'none',
+                }} />
+
+                {/* Phone shell */}
+                <div style={{
+                  width: 260,
+                  background: '#0D1529',
+                  borderRadius: 36,
+                  border: '1.5px solid rgba(24,119,242,0.35)',
+                  boxShadow: `
+                    0 0 0 1px rgba(255,255,255,0.05),
+                    0 40px 100px rgba(0,0,0,0.7),
+                    0 0 60px rgba(24,119,242,0.18),
+                    inset 0 0 0 1px rgba(255,255,255,0.03)
+                  `,
+                  overflow: 'hidden',
+                  position: 'relative',
+                }}>
+                  {/* Notch */}
+                  <div style={{ height: 24, background: '#070E1F', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 60, height: 10, background: '#0D1529', borderRadius: 9999 }} />
+                  </div>
+
+                  <div style={{ padding: '12px 16px 22px' }}>
+                    {/* Balance card */}
+                    <div style={{
+                      background: `linear-gradient(135deg, ${BLUE}, #0f4fa8)`,
+                      borderRadius: 20, padding: 16, marginBottom: 12,
+                      position: 'relative', overflow: 'hidden',
+                    }}>
+                      <div style={{
+                        position: 'absolute', top: -20, right: -20, width: 80, height: 80,
+                        background: 'rgba(255,255,255,0.07)', borderRadius: '50%',
+                      }} />
+                      <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 4px' }}>Available Credit</p>
+                      <p style={{ color: '#fff', fontSize: 28, fontWeight: 800, margin: 0, fontFamily: SY }}>R 750.00</p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.14)' }}>
+                        <div>
+                          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 8, margin: 0 }}>MEMBER</p>
+                          <p style={{ color: '#fff', fontSize: 11, fontWeight: 600, margin: 0 }}>Nomsa D.</p>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 8, margin: 0 }}>GROUP</p>
+                          <p style={{ color: '#fff', fontSize: 11, fontWeight: 600, margin: 0 }}>Umlazi</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quick actions */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 12 }}>
+                      {['Credit', 'Wallet', 'Group'].map((a) => (
+                        <div key={a} style={{
+                          background: BLUE_DIM,
+                          border: `1px solid rgba(24,119,242,0.14)`,
+                          borderRadius: 10, padding: '8px 4px', textAlign: 'center',
+                        }}>
+                          <p style={{ color: BLUE, fontSize: 12, margin: '0 0 2px' }}>◈</p>
+                          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9 }}>{a}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Transactions */}
+                    <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Recent</p>
+                    {[
+                      { label: 'Food & Grocery', amount: '-R120', pos: false },
+                      { label: 'Credit Received', amount: '+R750', pos: true },
+                      { label: 'Toiletries', amount: '-R80', pos: false },
+                    ].map((tx, i) => (
+                      <div key={i} style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '6px 0',
+                        borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{
+                            width: 22, height: 22, borderRadius: '50%',
+                            background: tx.pos ? 'rgba(66,184,131,0.15)' : 'rgba(250,56,62,0.15)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <span style={{ fontSize: 8, fontWeight: 700, color: tx.pos ? '#42B883' : '#FA383E' }}>{tx.pos ? '↓' : '↑'}</span>
+                          </div>
+                          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, margin: 0 }}>{tx.label}</p>
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: tx.pos ? '#42B883' : '#FA383E' }}>{tx.amount}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Scroll cue */}
+        <div style={{
+          position: 'absolute', bottom: 28, left: '50%', transform: 'translateX(-50%)',
+          color: 'rgba(255,255,255,0.2)', display: 'flex', flexDirection: 'column', alignItems: 'center',
+        }}>
+          <span style={{ fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 4 }}>scroll</span>
+          <div className="animate-float-y" style={{ animationDelay: '0.5s' }}>
+            <ChevronDown size={14} />
           </div>
         </div>
       </section>
 
-      {/* ── Activity Ticker ────────────────── */}
-      <ActivityFeedTicker items={activityItems} />
+      {/* ── Activity Ticker ─────────────────────────────────────────────── */}
+      <div style={{
+        background: 'rgba(24,119,242,0.06)',
+        borderTop: `1px solid ${BLUE_BORDER}`,
+        borderBottom: `1px solid ${BLUE_BORDER}`,
+      }}>
+        <ActivityFeedTicker items={activityItems} />
+      </div>
 
-      {/* ── Features ──────────────────────── */}
-      <section className="py-24 px-5">
-        <div className="max-w-5xl mx-auto">
+      {/* ── Features ────────────────────────────────────────────────────── */}
+      <section style={{ padding: '110px 20px', background: D2 }}>
+        <div className="max-w-6xl mx-auto">
           <ScrollReveal>
-            <div className="text-center mb-12">
-              <p className="text-primary text-xs font-bold uppercase tracking-widest mb-2">Why e-Khadi</p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-text-primary">Banking that puts you first</h2>
+            <div style={{ textAlign: 'center', marginBottom: 64 }}>
+              <p style={{ color: '#60a5fa', fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 12 }}>
+                Why e-Khadi
+              </p>
+              <h2 style={{ fontFamily: SY, fontWeight: 800, fontSize: 'clamp(2rem, 4vw, 3.2rem)', color: '#fff', letterSpacing: '-0.035em', margin: 0 }}>
+                Banking that puts you first
+              </h2>
             </div>
           </ScrollReveal>
-          <div className="grid sm:grid-cols-3 gap-4">
-            {features.map((f, i) => {
+
+          <ScrollReveal stagger className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {features.map((f) => {
               const Icon = f.icon
               return (
-                <ScrollReveal key={f.title} delay={i * 100}>
-                  <div className="bg-card rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow h-full">
-                    <div className="w-11 h-11 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
-                      <Icon className="h-5 w-5 text-primary" />
+                  <div
+                    key={f.title}
+                    className="card-3d"
+                    style={{
+                      background: 'rgba(255,255,255,0.03)',
+                      border: `1px solid rgba(24,119,242,0.16)`,
+                      borderRadius: 24, padding: '32px',
+                      backdropFilter: 'blur(12px)',
+                      cursor: 'default',
+                      transition: 'transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275), box-shadow 0.4s',
+                      height: '100%',
+                    }}
+                  >
+                    <div style={{
+                      width: 50, height: 50,
+                      background: BLUE_DIM,
+                      border: `1px solid rgba(24,119,242,0.25)`,
+                      borderRadius: 14,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      marginBottom: 22,
+                      boxShadow: '0 0 20px rgba(24,119,242,0.12)',
+                    }}>
+                      <Icon size={21} style={{ color: BLUE }} />
                     </div>
-                    <h3 className="font-bold text-text-primary text-lg mb-2">{f.title}</h3>
-                    <p className="text-text-secondary text-sm leading-relaxed">{f.text}</p>
+                    <h3 style={{ fontFamily: SY, color: '#fff', fontWeight: 700, fontSize: 19, marginBottom: 10 }}>{f.title}</h3>
+                    <p style={{ color: WHITE40, fontSize: 14, lineHeight: 1.75, margin: 0 }}>{f.text}</p>
                   </div>
-                </ScrollReveal>
               )
             })}
-          </div>
+          </ScrollReveal>
         </div>
       </section>
 
-      {/* ── How It Works ──────────────────── */}
-      <section className="py-24 px-5 bg-card">
-        <div className="max-w-5xl mx-auto">
+      {/* ── How It Works ────────────────────────────────────────────────── */}
+      <section style={{ padding: '110px 20px', background: D, position: 'relative', overflow: 'hidden' }}>
+        {/* Centre glow */}
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+          width: 700, height: 700,
+          background: 'radial-gradient(circle, rgba(24,119,242,0.07) 0%, transparent 60%)',
+          borderRadius: '50%', pointerEvents: 'none',
+        }} />
+
+        <div className="max-w-6xl mx-auto" style={{ position: 'relative' }}>
           <ScrollReveal>
-            <div className="text-center mb-12">
-              <p className="text-primary text-xs font-bold uppercase tracking-widest mb-2">3 Easy Steps</p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-text-primary">How It Works</h2>
+            <div style={{ textAlign: 'center', marginBottom: 72 }}>
+              <p style={{ color: '#60a5fa', fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 12 }}>
+                3 Easy Steps
+              </p>
+              <h2 style={{ fontFamily: SY, fontWeight: 800, fontSize: 'clamp(2rem, 4vw, 3.2rem)', color: '#fff', letterSpacing: '-0.035em', margin: 0 }}>
+                How It Works
+              </h2>
             </div>
           </ScrollReveal>
-          <div className="grid sm:grid-cols-3 gap-6">
-            {steps.map((s, i) => (
-              <ScrollReveal key={s.title} delay={i * 120}>
-                <div className="text-center p-6">
-                  <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-primary/25">
-                    <span className="text-white font-bold text-2xl">{i + 1}</span>
-                  </div>
-                  <h3 className="font-bold text-text-primary text-xl mb-2">{s.title}</h3>
-                  <p className="text-text-secondary text-sm leading-relaxed">{s.text}</p>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
+
+          <HowItWorksSteps />
         </div>
       </section>
 
-      {/* ── Impact Stats ──────────────────── */}
-      <section className="py-24 px-5">
-        <div className="max-w-5xl mx-auto">
+      {/* ── Impact Stats ────────────────────────────────────────────────── */}
+      <section style={{ padding: '110px 20px', background: D2, position: 'relative' }}>
+        <div className="max-w-6xl mx-auto">
           <ScrollReveal>
-            <div className="text-center mb-12">
-              <p className="text-primary text-xs font-bold uppercase tracking-widest mb-2">Live Impact</p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-text-primary">Real numbers. Real people.</h2>
+            <div style={{ textAlign: 'center', marginBottom: 64 }}>
+              <p style={{ color: '#60a5fa', fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 12 }}>
+                Live Impact
+              </p>
+              <h2 style={{ fontFamily: SY, fontWeight: 800, fontSize: 'clamp(2rem, 4vw, 3.2rem)', color: '#fff', letterSpacing: '-0.035em', margin: 0 }}>
+                Real numbers. Real people.
+              </h2>
             </div>
           </ScrollReveal>
-          <ScrollReveal delay={100}>
+          <ScrollReveal stagger>
             <ImpactCounters
               familiesHelped={impactStats.familiesHelped}
               totalCreditIssued={impactStats.totalCreditIssued}
@@ -323,13 +576,17 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── Testimonials ──────────────────── */}
-      <section className="py-24 px-5 bg-card">
-        <div className="max-w-5xl mx-auto">
+      {/* ── Testimonials ────────────────────────────────────────────────── */}
+      <section style={{ padding: '110px 20px', background: D }}>
+        <div className="max-w-6xl mx-auto">
           <ScrollReveal>
-            <div className="text-center mb-12">
-              <p className="text-primary text-xs font-bold uppercase tracking-widest mb-2">Community Voices</p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-text-primary">In their own words</h2>
+            <div style={{ textAlign: 'center', marginBottom: 64 }}>
+              <p style={{ color: '#60a5fa', fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 12 }}>
+                Community Voices
+              </p>
+              <h2 style={{ fontFamily: SY, fontWeight: 800, fontSize: 'clamp(2rem, 4vw, 3.2rem)', color: '#fff', letterSpacing: '-0.035em', margin: 0 }}>
+                In their own words
+              </h2>
             </div>
           </ScrollReveal>
           <ScrollReveal delay={80}>
@@ -338,63 +595,206 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── Map ───────────────────────────── */}
-      <section className="py-24 px-5">
-        <div className="max-w-5xl mx-auto">
+      {/* ── SA Map ──────────────────────────────────────────────────────── */}
+      <section style={{ padding: '110px 20px', background: D3 }}>
+        <div className="max-w-6xl mx-auto">
           <ScrollReveal>
-            <div className="text-center mb-10">
-              <p className="text-primary text-xs font-bold uppercase tracking-widest mb-2">Coverage</p>
-              <h2 className="text-3xl font-bold text-text-primary">South Africa Footprint</h2>
+            <div style={{ textAlign: 'center', marginBottom: 52 }}>
+              <p style={{ color: '#60a5fa', fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 12 }}>
+                Coverage
+              </p>
+              <h2 style={{ fontFamily: SY, fontWeight: 800, fontSize: 'clamp(2rem, 4vw, 3.2rem)', color: '#fff', letterSpacing: '-0.035em', margin: 0 }}>
+                South Africa Footprint
+              </h2>
             </div>
           </ScrollReveal>
           <ScrollReveal delay={80}>
-            <div className="rounded-2xl overflow-hidden border border-border shadow-sm">
-              <SouthAfricaLiveMap markers={markers} areaCount={areaCount} />
-            </div>
+            <SouthAfricaLiveMap markers={markers} areaCount={areaCount} />
           </ScrollReveal>
         </div>
       </section>
 
-      {/* ── Bottom CTA ────────────────────── */}
-      <section className="py-24 px-5 bg-sidebar">
+      {/* ── CTA ─────────────────────────────────────────────────────────── */}
+      <section style={{ padding: '130px 20px', background: D, position: 'relative', overflow: 'hidden' }}>
+        {/* Aurora glows */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'radial-gradient(ellipse 80% 60% at 50% 100%, rgba(24,119,242,0.18) 0%, transparent 55%)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'radial-gradient(ellipse 40% 40% at 15% 60%, rgba(245,158,11,0.07) 0%, transparent 55%)',
+          pointerEvents: 'none',
+        }} />
+
         <ScrollReveal>
-          <div className="max-w-2xl mx-auto text-center">
-            <div className="w-14 h-14 bg-primary/20 border border-primary/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <span className="text-primary font-bold text-xl">eK</span>
+          <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+            {/* Animated logo orb */}
+            <div style={{ position: 'relative', width: 68, height: 68, margin: '0 auto 28px' }}>
+              <div className="animate-spin-slow" style={{
+                position: 'absolute', inset: -9,
+                border: '1.5px dashed rgba(24,119,242,0.45)',
+                borderRadius: '50%',
+              }} />
+              <div className="animate-spin-slow-rev" style={{
+                position: 'absolute', inset: -18,
+                border: '1px solid rgba(24,119,242,0.18)',
+                borderRadius: '50%',
+              }} />
+              <div style={{
+                width: 68, height: 68,
+                background: BLUE_DIM,
+                border: `1px solid rgba(24,119,242,0.3)`,
+                borderRadius: 20,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 0 40px rgba(24,119,242,0.3)',
+              }}>
+                <span style={{ color: BLUE, fontWeight: 800, fontSize: 22, fontFamily: SY }}>eK</span>
+              </div>
             </div>
-            <h3 className="text-3xl sm:text-4xl font-bold text-white">Simple. Fair. Community-Led.</h3>
-            <p className="text-white/50 mt-4 leading-relaxed">
+
+            <h3 style={{
+              fontFamily: SY, fontWeight: 800,
+              fontSize: 'clamp(2.2rem, 5vw, 3.4rem)', color: '#fff',
+              letterSpacing: '-0.04em', margin: '0 0 18px', lineHeight: 1.1,
+            }}>
+              Simple. Fair.<br />Community-Led.
+            </h3>
+
+            <p style={{ color: WHITE40, fontSize: 16, lineHeight: 1.75, marginBottom: 40 }}>
               Financial access when your family needs it most.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3 justify-center">
+
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Link href="/register">
-                <Button size="lg" className="bg-primary text-white hover:bg-primary-dark rounded-full px-8 shadow-lg shadow-primary/30 font-bold">
-                  Start Now <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
+                <button style={{
+                  background: `linear-gradient(135deg, ${BLUE}, #0f4fa8)`,
+                  color: '#fff', border: 'none', borderRadius: 9999,
+                  padding: '15px 34px', fontWeight: 700, fontSize: 15,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                  boxShadow: '0 0 40px rgba(24,119,242,0.45)',
+                  fontFamily: 'inherit',
+                }}>
+                  Start Now <ArrowRight size={16} />
+                </button>
               </Link>
               <Link href="/login">
-                <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 rounded-full px-8">
+                <button style={{
+                  background: 'transparent', color: WHITE60,
+                  border: `1.5px solid ${WHITE20}`,
+                  borderRadius: 9999, padding: '15px 34px',
+                  fontWeight: 600, fontSize: 15, cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}>
                   Sign In
-                </Button>
+                </button>
               </Link>
             </div>
           </div>
         </ScrollReveal>
       </section>
 
-      {/* ── Footer ────────────────────────── */}
-      <footer className="bg-card border-t border-border py-6 px-5">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xs">eK</span>
+      {/* ── Footer ──────────────────────────────────────────────────────── */}
+      <footer style={{
+        background: '#030710',
+        borderTop: `1px solid rgba(24,119,242,0.1)`,
+        padding: '56px 20px 32px',
+      }}>
+        <div className="max-w-6xl mx-auto">
+          {/* Top row */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-10 pb-10" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+
+            {/* Brand */}
+            <div className="sm:col-span-2">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                <div style={{
+                  width: 34, height: 34,
+                  background: `linear-gradient(135deg, ${BLUE}, #0f4fa8)`,
+                  borderRadius: 10,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 0 16px rgba(24,119,242,0.4)',
+                }}>
+                  <span style={{ color: '#fff', fontWeight: 800, fontSize: 13, fontFamily: SY }}>eK</span>
+                </div>
+                <span style={{ color: '#fff', fontWeight: 800, fontSize: 16, fontFamily: SY }}>e-Khadi</span>
+              </div>
+              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, lineHeight: 1.75, maxWidth: 300, margin: '0 0 16px' }}>
+                Community-powered micro-credit for SASSA grant recipients across South Africa. Fair pricing. Local impact.
+              </p>
+              {/* WhatsApp */}
+              <a
+                href="https://wa.me/27000000000"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  background: 'rgba(37,211,102,0.12)',
+                  border: '1px solid rgba(37,211,102,0.3)',
+                  borderRadius: 9999,
+                  padding: '7px 14px',
+                  fontSize: 13, fontWeight: 600,
+                  color: '#25D366', textDecoration: 'none',
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="#25D366">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                </svg>
+                WhatsApp Support
+              </a>
             </div>
-            <span className="font-semibold text-text-primary text-sm">e-Khadi</span>
+
+            {/* Links: App */}
+            <div>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>App</p>
+              {[
+                { label: 'Sign In',            href: '/login' },
+                { label: 'Register as Member', href: '/register' },
+                { label: 'Register Your Shop', href: '/register?role=SHOP' },
+                { label: 'View Demo',          href: '/register?demo=true' },
+              ].map((l) => (
+                <div key={l.href} style={{ marginBottom: 10 }}>
+                  <Link href={l.href} style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, textDecoration: 'none' }}>{l.label}</Link>
+                </div>
+              ))}
+            </div>
+
+            {/* Links: Legal */}
+            <div>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>Legal</p>
+              {[
+                { label: 'Privacy Policy',   href: '/privacy' },
+                { label: 'Terms of Service', href: '/terms' },
+                { label: 'Cookie Policy',    href: '/privacy#cookies' },
+                { label: 'POPIA Compliance', href: '/privacy#popia' },
+              ].map((l) => (
+                <div key={l.href} style={{ marginBottom: 10 }}>
+                  <Link href={l.href} style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, textDecoration: 'none' }}>{l.label}</Link>
+                </div>
+              ))}
+            </div>
           </div>
-          <p className="text-text-secondary text-xs">© 2025 e-Khadi. Community credit for South Africa.</p>
-          <div className="flex gap-4">
-            <Link href="/login" className="text-xs text-text-secondary hover:text-primary transition-colors">Sign In</Link>
-            <Link href="/register" className="text-xs text-text-secondary hover:text-primary transition-colors">Register</Link>
+
+          {/* Bottom row */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-8">
+            <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12 }}>© 2025 e-Khadi. Community credit for South Africa.</p>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {[
+                { label: 'SASSA-aligned', color: '#1877F2' },
+                { label: 'POPIA compliant', color: '#10B981' },
+                { label: '2% flat fee', color: '#F59E0B' },
+              ].map((b) => (
+                <span key={b.label} style={{
+                  fontSize: 10, fontWeight: 700,
+                  color: b.color,
+                  background: `${b.color}15`,
+                  border: `1px solid ${b.color}30`,
+                  borderRadius: 9999, padding: '3px 9px',
+                }}>
+                  {b.label}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </footer>

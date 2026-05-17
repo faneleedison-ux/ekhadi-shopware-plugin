@@ -172,62 +172,89 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
   const activeMarker = selected ?? hovered
   const mapCenter: LatLngExpression = [-29.2, 24.8]
 
+  const inputStyle: React.CSSProperties = {
+    height: 40,
+    borderRadius: 10,
+    border: '1px solid rgba(24,119,242,0.25)',
+    background: 'rgba(255,255,255,0.05)',
+    color: 'rgba(255,255,255,0.85)',
+    padding: '0 12px',
+    fontSize: 13,
+    outline: 'none',
+    width: '100%',
+  }
+
   return (
-    <div className="rounded-2xl border border-border bg-white shadow-xl overflow-hidden">
-      <div className="px-5 pt-5 pb-4 border-b border-border bg-[radial-gradient(circle_at_top_left,_#dbeafe_0%,_#ecfeff_35%,_#ffffff_75%)]">
-        <h3 className="text-xl font-bold text-text-primary">South Africa Community Map</h3>
-        <p className="text-sm text-text-secondary mt-1">
-          Live coverage across {areaCount} areas with {totals.shop} shops, {totals.user} users and {totals.group} stokvel groups.
+    <div style={{
+      borderRadius: 24,
+      border: '1px solid rgba(24,119,242,0.2)',
+      background: '#0D1529',
+      overflow: 'hidden',
+    }}>
+      {/* ── Header ── */}
+      <div style={{
+        padding: '20px 24px 18px',
+        borderBottom: '1px solid rgba(24,119,242,0.15)',
+        background: 'rgba(24,119,242,0.05)',
+      }}>
+        <h3 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>
+          South Africa Community Map
+        </h3>
+        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: 0 }}>
+          Live coverage across {areaCount} areas · {totals.shop} shops · {totals.user} members · {totals.group} stokvel groups
         </p>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        {/* Toggle buttons */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
           {(Object.keys(markerMeta) as MapMarkerType[]).map((type) => {
-            const active = visible[type]
-
+            const isOn = visible[type]
             return (
               <button
                 key={type}
                 type="button"
                 onClick={() => setVisible((prev) => ({ ...prev, [type]: !prev[type] }))}
-                className={[
-                  'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
-                  active
-                    ? 'border-transparent text-white'
-                    : 'border-border bg-white text-text-secondary hover:bg-slate-50',
-                ].join(' ')}
-                style={active ? { backgroundColor: markerMeta[type].color } : undefined}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 7,
+                  borderRadius: 9999,
+                  border: `1px solid ${isOn ? markerMeta[type].color : 'rgba(255,255,255,0.12)'}`,
+                  background: isOn ? `${markerMeta[type].color}22` : 'rgba(255,255,255,0.04)',
+                  color: isOn ? markerMeta[type].color : 'rgba(255,255,255,0.4)',
+                  padding: '5px 12px',
+                  fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
               >
-                <span
-                  className="inline-block h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: active ? '#FFFFFF' : markerMeta[type].color }}
-                />
+                <span style={{
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: isOn ? markerMeta[type].color : 'rgba(255,255,255,0.2)',
+                  display: 'block',
+                }} />
                 {markerMeta[type].label}: {totals[type]}
               </button>
             )
           })}
         </div>
 
+        {/* Search / filter row */}
         <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name, area, or province"
-            className="h-10 rounded-lg border border-border bg-white px-3 text-sm text-text-primary placeholder:text-text-secondary/70"
+            placeholder="Search by name, area, or province…"
+            style={inputStyle}
           />
-
           <select
             value={provinceFilter}
             onChange={(e) => setProvinceFilter(e.target.value)}
-            className="h-10 min-w-[170px] rounded-lg border border-border bg-white px-3 text-sm text-text-primary"
+            style={{ ...inputStyle, minWidth: 170, cursor: 'pointer' }}
           >
-            {provinces.map((province) => (
-              <option key={province} value={province}>
-                {province === 'ALL' ? 'All provinces' : province}
+            {provinces.map((p) => (
+              <option key={p} value={p} style={{ background: '#0D1529' }}>
+                {p === 'ALL' ? 'All provinces' : p}
               </option>
             ))}
           </select>
-
           <button
             type="button"
             onClick={() => {
@@ -237,16 +264,33 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
               setHoveredMarkerId(null)
               setVisible({ shop: true, user: true, group: true })
             }}
-            className="h-10 rounded-lg border border-border bg-white px-3 text-xs font-semibold text-text-secondary hover:bg-slate-50"
+            style={{
+              height: 40, borderRadius: 10,
+              border: '1px solid rgba(24,119,242,0.25)',
+              background: 'rgba(255,255,255,0.04)',
+              color: 'rgba(255,255,255,0.5)',
+              padding: '0 14px', fontSize: 12, fontWeight: 600,
+              cursor: 'pointer', whiteSpace: 'nowrap',
+            }}
           >
-            Reset Filters
+            Reset
           </button>
         </div>
       </div>
 
-      <div className="relative bg-slate-900">
-        <div className="absolute left-4 top-4 z-[450] rounded-lg border border-cyan-200/80 bg-white/90 px-3 py-2 text-[11px] font-semibold text-slate-700 shadow-sm backdrop-blur">
-          True map projection with South Africa boundary overlay
+      {/* ── Map ── */}
+      <div style={{ position: 'relative', background: '#060C1E' }}>
+        <div style={{
+          position: 'absolute', left: 12, top: 12, zIndex: 450,
+          borderRadius: 8,
+          border: '1px solid rgba(24,119,242,0.25)',
+          background: 'rgba(13,21,41,0.88)',
+          backdropFilter: 'blur(8px)',
+          padding: '6px 12px',
+          fontSize: 11, fontWeight: 600,
+          color: 'rgba(255,255,255,0.5)',
+        }}>
+          South Africa boundary overlay
         </div>
 
         <MapContainer
@@ -264,22 +308,21 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
 
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           />
 
           <Polygon
             pathOptions={{
-              color: '#0369A1',
-              weight: 2.5,
-              fillColor: '#38BDF8',
-              fillOpacity: 0.13,
+              color: '#1877F2',
+              weight: 2,
+              fillColor: '#1877F2',
+              fillOpacity: 0.07,
             }}
             positions={southAfricaOutline}
           />
 
           {filtered.map((marker) => {
             const isSelected = marker.id === selectedMarkerId
-
             return (
               <CircleMarker
                 key={marker.id}
@@ -300,7 +343,7 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
                 <Tooltip direction="top" offset={[0, -8]} opacity={1}>
                   <div className="space-y-0.5">
                     <p className="text-xs font-semibold">{marker.name}</p>
-                    <p className="text-[11px] text-slate-600">{markerMeta[marker.type].label.slice(0, -1)} • {marker.areaName}</p>
+                    <p className="text-[11px] text-slate-400">{markerMeta[marker.type].label.slice(0, -1)} · {marker.areaName}</p>
                     <p className="text-[11px] text-slate-500">{marker.province}</p>
                   </div>
                 </Tooltip>
@@ -310,21 +353,40 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
         </MapContainer>
       </div>
 
-      <div className="px-5 py-4 border-t border-border bg-slate-50/80">
+      {/* ── Footer ── */}
+      <div style={{
+        padding: '14px 24px',
+        borderTop: '1px solid rgba(24,119,242,0.12)',
+        background: 'rgba(24,119,242,0.04)',
+      }}>
         {activeMarker ? (
-          <p className="text-sm text-text-primary">
-            <span className="font-semibold">Focused:</span> {activeMarker.name} ({markerMeta[activeMarker.type].label.slice(0, -1)}) in {activeMarker.areaName}, {activeMarker.province}
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', margin: '0 0 10px' }}>
+            <span style={{ fontWeight: 700, color: '#fff' }}>Focused:</span>{' '}
+            {activeMarker.name} ({markerMeta[activeMarker.type].label.slice(0, -1)}) · {activeMarker.areaName}, {activeMarker.province}
           </p>
         ) : (
-          <p className="text-sm text-text-secondary">
-            Select a marker to view details. Showing {filtered.length} visible markers.
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', margin: '0 0 10px' }}>
+            Select a marker to view details · Showing {filtered.length} markers
           </p>
         )}
 
-        <div className="mt-3 flex flex-wrap gap-2 text-xs">
-          <span className="rounded-full bg-orange-100 px-2 py-1 font-medium text-orange-700">Visible shops: {visibleTotals.shop}</span>
-          <span className="rounded-full bg-sky-100 px-2 py-1 font-medium text-sky-700">Visible users: {visibleTotals.user}</span>
-          <span className="rounded-full bg-emerald-100 px-2 py-1 font-medium text-emerald-700">Visible groups: {visibleTotals.group}</span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {[
+            { label: `Shops: ${visibleTotals.shop}`,   color: '#F97316' },
+            { label: `Members: ${visibleTotals.user}`,  color: '#0EA5E9' },
+            { label: `Groups: ${visibleTotals.group}`,  color: '#10B981' },
+          ].map((b) => (
+            <span key={b.label} style={{
+              borderRadius: 9999,
+              border: `1px solid ${b.color}35`,
+              background: `${b.color}15`,
+              color: b.color,
+              padding: '3px 10px',
+              fontSize: 11, fontWeight: 600,
+            }}>
+              {b.label}
+            </span>
+          ))}
         </div>
       </div>
     </div>
