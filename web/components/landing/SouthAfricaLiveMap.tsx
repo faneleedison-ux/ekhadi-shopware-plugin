@@ -220,9 +220,9 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
   const inputStyle: React.CSSProperties = {
     height: 40,
     borderRadius: 10,
-    border: '1px solid rgba(24,119,242,0.3)',
+    border: '1px solid rgba(225,29,42,0.3)',
     background: '#fff',
-    color: '#1a1a2e',
+    color: '#14130E',
     padding: '0 12px',
     fontSize: 13,
     outline: 'none',
@@ -232,18 +232,18 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
   return (
     <div style={{
       borderRadius: 24,
-      border: '1px solid rgba(24,119,242,0.18)',
+      border: '1px solid rgba(225,29,42,0.18)',
       background: '#fff',
       overflow: 'hidden',
-      boxShadow: '0 4px 32px rgba(24,119,242,0.08)',
+      boxShadow: '0 4px 32px rgba(225,29,42,0.08)',
     }}>
       {/* ── Header ── */}
       <div style={{
         padding: '20px 24px 18px',
-        borderBottom: '1px solid rgba(24,119,242,0.1)',
-        background: '#f8faff',
+        borderBottom: '1px solid rgba(225,29,42,0.1)',
+        background: '#F4EDE1',
       }}>
-        <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1a1a2e', margin: '0 0 4px' }}>
+        <h3 style={{ fontSize: 18, fontWeight: 700, color: '#14130E', margin: '0 0 4px' }}>
           South Africa Community Map
         </h3>
         <p style={{ fontSize: 13, color: 'rgba(26,26,46,0.5)', margin: 0 }}>
@@ -296,7 +296,7 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
             style={{ ...inputStyle, minWidth: 170, cursor: 'pointer' }}
           >
             {provinces.map((p) => (
-              <option key={p} value={p} style={{ background: '#fff', color: '#1a1a2e' }}>
+              <option key={p} value={p} style={{ background: '#fff', color: '#14130E' }}>
                 {p === 'ALL' ? 'All provinces' : p}
               </option>
             ))}
@@ -312,7 +312,7 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
             }}
             style={{
               height: 40, borderRadius: 10,
-              border: '1px solid rgba(24,119,242,0.3)',
+              border: '1px solid rgba(225,29,42,0.3)',
               background: '#fff',
               color: 'rgba(26,26,46,0.6)',
               padding: '0 14px', fontSize: 12, fontWeight: 600,
@@ -329,7 +329,7 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
         <div style={{
           position: 'absolute', left: 12, top: 12, zIndex: 450,
           borderRadius: 8,
-          border: '1px solid rgba(24,119,242,0.2)',
+          border: '1px solid rgba(225,29,42,0.2)',
           background: 'rgba(255,255,255,0.92)',
           backdropFilter: 'blur(8px)',
           padding: '6px 12px',
@@ -359,9 +359,9 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
 
           <Polygon
             pathOptions={{
-              color: '#1877F2',
+              color: '#E11D2A',
               weight: 2,
-              fillColor: '#1877F2',
+              fillColor: '#E11D2A',
               fillOpacity: 0.07,
             }}
             positions={southAfricaOutline}
@@ -393,12 +393,12 @@ export default function SouthAfricaLiveMap({ markers, areaCount }: Props) {
       {/* ── Footer ── */}
       <div style={{
         padding: '14px 24px',
-        borderTop: '1px solid rgba(24,119,242,0.1)',
-        background: '#f8faff',
+        borderTop: '1px solid rgba(225,29,42,0.1)',
+        background: '#F4EDE1',
       }}>
         {activeMarker ? (
           <p style={{ fontSize: 13, color: 'rgba(26,26,46,0.7)', margin: '0 0 10px' }}>
-            <span style={{ fontWeight: 700, color: '#1a1a2e' }}>Focused:</span>{' '}
+            <span style={{ fontWeight: 700, color: '#14130E' }}>Focused:</span>{' '}
             {activeMarker.name} ({markerMeta[activeMarker.type].label.slice(0, -1)}) · {activeMarker.areaName}, {activeMarker.province}
           </p>
         ) : (

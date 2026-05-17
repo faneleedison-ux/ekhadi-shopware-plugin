@@ -19,48 +19,48 @@ const config: Config = {
     },
     extend: {
       colors: {
-        // e-Khadi brand colors
+        // e-Khadi Dawn brand palette
         primary: {
-          DEFAULT: '#1877F2',
-          dark: '#166FE5',
-          light: '#E7F3FF',
+          DEFAULT: '#E11D2A',  // Dawn red
+          dark: '#A60E1A',
+          light: '#FBEAE8',   // light red tint
           foreground: '#FFFFFF',
         },
-        background: '#F0F2F5',
-        sidebar: '#1877F2',
+        background: '#F4EDE1',  // warm cream (paper-light)
+        sidebar: '#0A0E1F',     // night dark
         card: {
           DEFAULT: '#FFFFFF',
-          foreground: '#1C1E21',
+          foreground: '#14130E',
         },
-        'text-primary': '#1C1E21',
-        'text-secondary': '#65676B',
-        success: '#42B883',
-        warning: '#F7B928',
-        danger: '#FA383E',
-        border: '#E4E6EB',
-        input: '#E4E6EB',
-        ring: '#1877F2',
+        'text-primary': '#14130E',  // near-black ink
+        'text-secondary': '#5a5650',
+        success: '#3F7B4F',  // leaf green
+        warning: '#B47023',  // amber
+        danger: '#E11D2A',   // dawn red
+        border: '#E2D9CE',   // warm cream border
+        input: '#E2D9CE',
+        ring: '#E11D2A',
         // shadcn compatibility
-        foreground: '#1C1E21',
+        foreground: '#14130E',
         secondary: {
-          DEFAULT: '#F0F2F5',
-          foreground: '#1C1E21',
+          DEFAULT: '#EDE5D8',
+          foreground: '#14130E',
         },
         muted: {
-          DEFAULT: '#F0F2F5',
-          foreground: '#65676B',
+          DEFAULT: '#EDE5D8',
+          foreground: '#5a5650',
         },
         accent: {
-          DEFAULT: '#E7F3FF',
-          foreground: '#1877F2',
+          DEFAULT: '#FBEAE8',
+          foreground: '#E11D2A',
         },
         destructive: {
-          DEFAULT: '#FA383E',
+          DEFAULT: '#E11D2A',
           foreground: '#FFFFFF',
         },
         popover: {
           DEFAULT: '#FFFFFF',
-          foreground: '#1C1E21',
+          foreground: '#14130E',
         },
       },
       borderRadius: {
@@ -88,7 +88,9 @@ const config: Config = {
         'fade-in': 'fade-in 0.3s ease-out',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans:  ['Geist', 'Inter', 'system-ui', 'sans-serif'],
+        serif: ['Instrument Serif', 'Georgia', 'serif'],
+        mono:  ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
     },
   },
