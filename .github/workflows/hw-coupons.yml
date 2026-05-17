@@ -13,7 +13,7 @@ jobs:
     name: Train + Deploy ModelArts credit scorer
     runs-on: [self-hosted, linux, ekhadi]
     steps:
-      - name: Full pipeline — export data, train, deploy, set endpoint
+      - name: Export data, train, deploy, set endpoint
         env:
           HW_AK:        ${{ secrets.HW_AK }}
           HW_SK:        ${{ secrets.HW_SK }}
@@ -22,205 +22,117 @@ jobs:
         run: |
           set -e
 
-          # ── IAM tokens ────────────────────────────────────────────────────────
+          # ── Scoped IAM token ──────────────────────────────────────────────────
           curl -sf -X POST https://iam.myhuaweicloud.com/v3/auth/tokens \
             -H "Content-Type: application/json" \
             -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}},\"scope\":{\"project\":{\"name\":\"$MA_REGION\"}}}}" \
             -D /tmp/iam_scoped.txt -o /dev/null
           TOKEN=$(grep -i x-subject-token /tmp/iam_scoped.txt | awk '{print $2}' | tr -d '\r')
           [ -z "$TOKEN" ] && { echo "Scoped IAM failed"; exit 1; }
-          echo "IAM token OK"
+          echo "IAM token obtained."
 
           # ── Export training data from Postgres → OBS ──────────────────────────
           echo "=== Exporting training data ==="
           cd /root/ekhadi-shopware-plugin
           node modelarts/export-training-data.js
-          echo "Export done"
 
-          # ── Upload train.py to OBS via Node S3 client ─────────────────────────
-          echo "=== Uploading train.py ==="
-          cd /root/ekhadi-shopware-plugin/web
-          node -e "
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-const fs = require('fs');
-const s3 = new S3Client({
-  region: 'af-south-1',
-  endpoint: 'https://obs.af-south-1.myhuaweicloud.com',
-  credentials: { accessKeyId: process.env.HW_AK, secretAccessKey: process.env.HW_SK },
-  forcePathStyle: false,
-});
-Promise.all([
-  s3.send(new PutObjectCommand({ Bucket:'ekhadi-files', Key:'modelarts/code/train.py',
-    Body: fs.readFileSync('../modelarts/credit-scorer/train.py'), ContentType:'text/plain' })),
-  s3.send(new PutObjectCommand({ Bucket:'ekhadi-files', Key:'modelarts/code/customize_service.py',
-    Body: fs.readFileSync('../modelarts/credit-scorer/customize_service.py'), ContentType:'text/plain' })),
-]).then(()=>console.log('Scripts uploaded to OBS')).catch(e=>{console.error(e);process.exit(1)});
-"
+          # ── Upload train.py + customize_service.py to OBS ─────────────────────
+          echo "=== Uploading scripts to OBS ==="
+          node modelarts/upload-scripts.js
 
           # ── Get available training flavors ────────────────────────────────────
           echo "=== Getting training flavors ==="
-          FLAVOR_RESP=$(curl -s "$MA_HOST/v2/$MA_PROJ/training-job-flavors?flavor_type=CPU" \
-            -H "X-Auth-Token: $TOKEN")
-          FLAVOR_ID=$(echo "$FLAVOR_RESP" | python3 -c "
-import json,sys
-d=json.load(sys.stdin)
-fl=d.get('flavors',d.get('job_flavors',[]))
-print(fl[0].get('flavor_id') or fl[0].get('id') if fl else 'modelarts.vm.cpu.2u')
-" 2>/dev/null || echo "modelarts.vm.cpu.2u")
+          FLAVOR_RESP=$(curl -s "$MA_HOST/v2/$MA_PROJ/training-job-flavors?flavor_type=CPU" -H "X-Auth-Token: $TOKEN")
+          FLAVOR_ID=$(echo "$FLAVOR_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); fl=d.get('flavors',d.get('job_flavors',[])); print(fl[0].get('flavor_id') or fl[0].get('id') if fl else 'modelarts.vm.cpu.2u')" 2>/dev/null || echo "modelarts.vm.cpu.2u")
           echo "Using flavor: $FLAVOR_ID"
 
-          # ── Create training job ───────────────────────────────────────────────
+          # ── Create training job (v2, fallback to v1) ──────────────────────────
           echo "=== Creating training job ==="
           JOB_NAME="ekhadi-credit-scorer-$(date +%Y%m%d%H%M)"
-          CREATE=$(curl -s -w "\n%{http_code}" -X POST \
-            "$MA_HOST/v2/$MA_PROJ/training-jobs" \
+          CREATE_RESP=$(curl -s -w "\n%{http_code}" -X POST "$MA_HOST/v2/$MA_PROJ/training-jobs" \
             -H "X-Auth-Token: $TOKEN" -H "Content-Type: application/json" \
-            -d "{
-              \"kind\":\"job\",
-              \"metadata\":{\"name\":\"$JOB_NAME\"},
-              \"algorithm\":{
-                \"type\":\"customized\",
-                \"code_dir\":\"obs://ekhadi-files/modelarts/code/\",
-                \"boot_file\":\"train.py\",
-                \"engine\":{\"engine_name\":\"Python\",\"engine_version\":\"Python-3.9.2\"},
-                \"parameters\":[
-                  {\"name\":\"data-url\",\"value\":\"obs://ekhadi-files/modelarts/training-data/latest.csv\"},
-                  {\"name\":\"train-url\",\"value\":\"obs://ekhadi-files/modelarts/models/credit-scorer/\"}
-                ]
-              },
-              \"task_resource\":{\"flavor_id\":\"$FLAVOR_ID\",\"node_count\":1},
-              \"log_export_path\":{\"obs_url\":\"obs://ekhadi-files/modelarts/logs/\"}
-            }")
-          CREATE_CODE=$(echo "$CREATE" | tail -1)
-          CREATE_BODY=$(echo "$CREATE" | head -n -1)
-          echo "HTTP $CREATE_CODE"
+            -d "{\"kind\":\"job\",\"metadata\":{\"name\":\"$JOB_NAME\"},\"algorithm\":{\"type\":\"customized\",\"code_dir\":\"obs://ekhadi-files/modelarts/code/\",\"boot_file\":\"train.py\",\"engine\":{\"engine_name\":\"Python\",\"engine_version\":\"Python-3.9.2\"},\"parameters\":[{\"name\":\"data-url\",\"value\":\"obs://ekhadi-files/modelarts/training-data/latest.csv\"},{\"name\":\"train-url\",\"value\":\"obs://ekhadi-files/modelarts/models/credit-scorer/\"}]},\"task_resource\":{\"flavor_id\":\"$FLAVOR_ID\",\"node_count\":1},\"log_export_path\":{\"obs_url\":\"obs://ekhadi-files/modelarts/logs/\"}}")
+          CREATE_CODE=$(echo "$CREATE_RESP" | tail -1)
+          CREATE_BODY=$(echo "$CREATE_RESP" | head -n -1)
+          echo "v2 HTTP $CREATE_CODE"
           echo "$CREATE_BODY" | python3 -m json.tool 2>/dev/null || echo "$CREATE_BODY"
 
           if [ "$CREATE_CODE" != "200" ] && [ "$CREATE_CODE" != "201" ]; then
-            echo "v2 training-jobs failed — trying v1"
-            CREATE=$(curl -s -w "\n%{http_code}" -X POST \
-              "$MA_HOST/v1/$MA_PROJ/training-jobs" \
+            echo "Trying v1 training-jobs API..."
+            CREATE_RESP=$(curl -s -w "\n%{http_code}" -X POST "$MA_HOST/v1/$MA_PROJ/training-jobs" \
               -H "X-Auth-Token: $TOKEN" -H "Content-Type: application/json" \
-              -d "{
-                \"job_name\":\"$JOB_NAME\",
-                \"job_desc\":\"e-Khadi credit scoring\",
-                \"config\":{
-                  \"worker_server_num\":1,
-                  \"app_url\":\"obs://ekhadi-files/modelarts/code/\",
-                  \"boot_file_url\":\"obs://ekhadi-files/modelarts/code/train.py\",
-                  \"hyperparameters\":[
-                    {\"label\":\"data-url\",\"value\":\"obs://ekhadi-files/modelarts/training-data/latest.csv\"},
-                    {\"label\":\"train-url\",\"value\":\"obs://ekhadi-files/modelarts/models/credit-scorer/\"}
-                  ],
-                  \"log_url\":\"obs://ekhadi-files/modelarts/logs/\",
-                  \"train_url\":\"obs://ekhadi-files/modelarts/models/credit-scorer/\"
-                }
-              }")
-            CREATE_CODE=$(echo "$CREATE" | tail -1)
-            CREATE_BODY=$(echo "$CREATE" | head -n -1)
+              -d "{\"job_name\":\"$JOB_NAME\",\"job_desc\":\"e-Khadi credit scoring\",\"config\":{\"worker_server_num\":1,\"app_url\":\"obs://ekhadi-files/modelarts/code/\",\"boot_file_url\":\"obs://ekhadi-files/modelarts/code/train.py\",\"hyperparameters\":[{\"label\":\"data-url\",\"value\":\"obs://ekhadi-files/modelarts/training-data/latest.csv\"},{\"label\":\"train-url\",\"value\":\"obs://ekhadi-files/modelarts/models/credit-scorer/\"}],\"log_url\":\"obs://ekhadi-files/modelarts/logs/\",\"train_url\":\"obs://ekhadi-files/modelarts/models/credit-scorer/\"}}")
+            CREATE_CODE=$(echo "$CREATE_RESP" | tail -1)
+            CREATE_BODY=$(echo "$CREATE_RESP" | head -n -1)
             echo "v1 HTTP $CREATE_CODE"
             echo "$CREATE_BODY" | python3 -m json.tool 2>/dev/null || echo "$CREATE_BODY"
           fi
 
-          JOB_ID=$(echo "$CREATE_BODY" | python3 -c "
-import json,sys
-d=json.load(sys.stdin)
-print(d.get('metadata',{}).get('id') or d.get('job_id') or d.get('id',''))
-" 2>/dev/null)
+          JOB_ID=$(echo "$CREATE_BODY" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('metadata',{}).get('id') or d.get('job_id') or d.get('id',''))" 2>/dev/null)
           echo "Job ID: $JOB_ID"
-          [ -z "$JOB_ID" ] && { echo "Could not get job ID"; exit 1; }
+          [ -z "$JOB_ID" ] && { echo "No job ID — training job creation failed"; exit 1; }
 
-          # ── Poll until complete (max 45 min) ──────────────────────────────────
+          # ── Poll until training completes (max 45 min) ────────────────────────
           echo "=== Polling training job ==="
           for i in $(seq 1 90); do
-            ST=$(curl -s "$MA_HOST/v2/$MA_PROJ/training-jobs/$JOB_ID" \
-              -H "X-Auth-Token: $TOKEN" \
-              | python3 -c "
-import json,sys
-d=json.load(sys.stdin)
-s=d.get('status',{})
-print(s.get('phase') or s.get('status') or d.get('status','UNKNOWN'))
-" 2>/dev/null || echo "UNKNOWN")
-            echo "[$i] $ST"
-            [ "$ST" = "Succeeded" ] || [ "$ST" = "SUCCEEDED" ] || [ "$ST" = "Complete" ] && { echo "Training complete!"; break; }
-            [ "$ST" = "Failed" ] || [ "$ST" = "FAILED" ] && { echo "Training FAILED"; exit 1; }
+            STATUS_BODY=$(curl -s "$MA_HOST/v2/$MA_PROJ/training-jobs/$JOB_ID" -H "X-Auth-Token: $TOKEN")
+            ST=$(echo "$STATUS_BODY" | python3 -c "import json,sys; d=json.load(sys.stdin); s=d.get('status',{}); print(s.get('phase') or s.get('status') or d.get('status','UNKNOWN'))" 2>/dev/null || echo "UNKNOWN")
+            echo "[$i/90] $ST"
+            if [ "$ST" = "Succeeded" ] || [ "$ST" = "SUCCEEDED" ] || [ "$ST" = "Complete" ]; then
+              echo "Training complete!"; break
+            fi
+            if [ "$ST" = "Failed" ] || [ "$ST" = "FAILED" ]; then
+              echo "Training failed!"; exit 1
+            fi
             sleep 30
           done
 
           # ── Register model ────────────────────────────────────────────────────
           echo "=== Registering model ==="
-          REG=$(curl -s -w "\n%{http_code}" -X POST "$MA_HOST/v1/$MA_PROJ/models" \
+          REG_RESP=$(curl -s -w "\n%{http_code}" -X POST "$MA_HOST/v1/$MA_PROJ/models" \
             -H "X-Auth-Token: $TOKEN" -H "Content-Type: application/json" \
-            -d "{
-              \"name\":\"ekhadi-credit-scorer\",
-              \"version\":\"1.0\",
-              \"description\":\"LightGBM credit scoring — e-Khadi\",
-              \"model_type\":\"PyTorch\",
-              \"model_url\":\"obs://ekhadi-files/modelarts/models/credit-scorer/\",
-              \"runtime\":\"Python3.9\",
-              \"handler\":\"customize_service.CreditScorerService\",
-              \"dependencies\":[{\"installer\":\"pip\",\"packages\":[
-                {\"package_name\":\"lightgbm\",\"package_version\":\"4.0.0\"},
-                {\"package_name\":\"scikit-learn\"},{\"package_name\":\"pandas\"}
-              ]}]
-            }")
-          REG_CODE=$(echo "$REG" | tail -1)
-          REG_BODY=$(echo "$REG" | head -n -1)
+            -d "{\"name\":\"ekhadi-credit-scorer\",\"version\":\"1.0\",\"description\":\"LightGBM credit scoring\",\"model_type\":\"PyTorch\",\"model_url\":\"obs://ekhadi-files/modelarts/models/credit-scorer/\",\"runtime\":\"Python3.9\",\"handler\":\"customize_service.CreditScorerService\",\"dependencies\":[{\"installer\":\"pip\",\"packages\":[{\"package_name\":\"lightgbm\",\"package_version\":\"4.0.0\"},{\"package_name\":\"scikit-learn\"},{\"package_name\":\"pandas\"}]}]}")
+          REG_CODE=$(echo "$REG_RESP" | tail -1)
+          REG_BODY=$(echo "$REG_RESP" | head -n -1)
           echo "HTTP $REG_CODE"
           echo "$REG_BODY" | python3 -m json.tool 2>/dev/null || echo "$REG_BODY"
-          MODEL_ID=$(echo "$REG_BODY" | python3 -c "import json,sys;print(json.load(sys.stdin).get('model_id',''))" 2>/dev/null)
+          MODEL_ID=$(echo "$REG_BODY" | python3 -c "import json,sys; print(json.load(sys.stdin).get('model_id',''))" 2>/dev/null)
           echo "Model ID: $MODEL_ID"
           [ -z "$MODEL_ID" ] && { echo "Model registration failed"; exit 1; }
 
-          # ── Deploy online service ─────────────────────────────────────────────
+          # ── Deploy online inference service ───────────────────────────────────
           echo "=== Deploying online service ==="
-          SVC=$(curl -s -w "\n%{http_code}" -X POST "$MA_HOST/v1/$MA_PROJ/services" \
+          SVC_RESP=$(curl -s -w "\n%{http_code}" -X POST "$MA_HOST/v1/$MA_PROJ/services" \
             -H "X-Auth-Token: $TOKEN" -H "Content-Type: application/json" \
-            -d "{
-              \"name\":\"ekhadi-credit-scorer-svc\",
-              \"description\":\"e-Khadi credit scoring inference\",
-              \"infer_type\":\"real-time\",
-              \"workspace_id\":\"0\",
-              \"config\":[{\"model_id\":\"$MODEL_ID\",\"weight\":100,
-                \"specification\":\"modelarts.vm.cpu.2u\",\"instance_count\":1}]
-            }")
-          SVC_CODE=$(echo "$SVC" | tail -1)
-          SVC_BODY=$(echo "$SVC" | head -n -1)
+            -d "{\"name\":\"ekhadi-credit-scorer-svc\",\"description\":\"e-Khadi credit scoring\",\"infer_type\":\"real-time\",\"workspace_id\":\"0\",\"config\":[{\"model_id\":\"$MODEL_ID\",\"weight\":100,\"specification\":\"modelarts.vm.cpu.2u\",\"instance_count\":1}]}")
+          SVC_CODE=$(echo "$SVC_RESP" | tail -1)
+          SVC_BODY=$(echo "$SVC_RESP" | head -n -1)
           echo "HTTP $SVC_CODE"
           echo "$SVC_BODY" | python3 -m json.tool 2>/dev/null || echo "$SVC_BODY"
-          SVC_ID=$(echo "$SVC_BODY" | python3 -c "import json,sys;print(json.load(sys.stdin).get('service_id',''))" 2>/dev/null)
+          SVC_ID=$(echo "$SVC_BODY" | python3 -c "import json,sys; print(json.load(sys.stdin).get('service_id',''))" 2>/dev/null)
           echo "Service ID: $SVC_ID"
           [ -z "$SVC_ID" ] && { echo "Service deployment failed"; exit 1; }
 
-          # ── Poll until running ────────────────────────────────────────────────
-          echo "=== Waiting for service ==="
+          # ── Poll until service running, then set secret + redeploy ─────────────
+          echo "=== Waiting for service to start ==="
           for i in $(seq 1 20); do
-            SVC_RESP=$(curl -s "$MA_HOST/v1/$MA_PROJ/services/$SVC_ID" -H "X-Auth-Token: $TOKEN")
-            SVC_ST=$(echo "$SVC_RESP" | python3 -c "import json,sys;print(json.load(sys.stdin).get('status',''))" 2>/dev/null)
-            echo "[$i] $SVC_ST"
+            SVC_STATUS_BODY=$(curl -s "$MA_HOST/v1/$MA_PROJ/services/$SVC_ID" -H "X-Auth-Token: $TOKEN")
+            SVC_ST=$(echo "$SVC_STATUS_BODY" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status',''))" 2>/dev/null)
+            echo "[$i/20] $SVC_ST"
             if [ "$SVC_ST" = "running" ] || [ "$SVC_ST" = "RUNNING" ]; then
-              ENDPOINT=$(echo "$SVC_RESP" | python3 -c "
-import json,sys
-d=json.load(sys.stdin)
-print(d.get('access_address') or d.get('predict_url') or
-      '$MA_HOST/v1/$MA_PROJ/services/$SVC_ID/predict')
-")
+              ENDPOINT=$(echo "$SVC_STATUS_BODY" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('access_address') or d.get('predict_url') or '$MA_HOST/v1/$MA_PROJ/services/$SVC_ID/predict')" 2>/dev/null)
               echo ""
-              echo "=========================================="
+              echo "============================================"
               echo "  MODELARTS_ENDPOINT=$ENDPOINT"
-              echo "=========================================="
-
-              # Set GitHub secret + redeploy
-              echo "$ENDPOINT" | gh secret set MODELARTS_ENDPOINT \
-                --repo faneleedison-ux/ekhadi-shopware-plugin
-              gh workflow run "Deploy e-Khadi to https://e-khadi.co.za" \
-                --repo faneleedison-ux/ekhadi-shopware-plugin
+              echo "============================================"
+              echo "$ENDPOINT" | gh secret set MODELARTS_ENDPOINT --repo faneleedison-ux/ekhadi-shopware-plugin
+              gh workflow run "Deploy e-Khadi to https://e-khadi.co.za" --repo faneleedison-ux/ekhadi-shopware-plugin
               echo "Secret set. App redeploying with ModelArts inference active."
               exit 0
             fi
             sleep 30
           done
-          echo "Service timed out — check Huawei Console for status"
+          echo "Service did not start in time — check Huawei Console"
           exit 1
 
   activate_modelarts:
@@ -232,47 +144,30 @@ print(d.get('access_address') or d.get('predict_url') or
           HW_AK: ${{ secrets.HW_AK }}
           HW_SK: ${{ secrets.HW_SK }}
         run: |
-          MA_HOST="https://modelarts.ap-southeast-1.myhuaweicloud.com"
-          IAM_HOST="https://iam.myhuaweicloud.com"
-
-          # Global token
-          curl -sf -X POST "$IAM_HOST/v3/auth/tokens" \
-            -H "Content-Type: application/json" \
-            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}}}}" \
-            -D /tmp/iam_h.txt -o /tmp/iam_b.txt
-          TOKEN=$(grep -i x-subject-token /tmp/iam_h.txt | awk '{print $2}' | tr -d '\r')
-          [ -z "$TOKEN" ] && { echo "IAM auth failed"; cat /tmp/iam_b.txt; exit 1; }
-
-          # Project ID
-          PROJ=$(curl -sf "$IAM_HOST/v3/projects" -H "X-Auth-Token: $TOKEN" \
-            | python3 -c "import json,sys; ps=[p for p in json.load(sys.stdin).get('projects',[]) if 'ap-southeast-1' in p.get('name','')]; print(ps[0]['id'] if ps else '')")
-          echo "Project: $PROJ"
-
-          # Scoped token
-          curl -sf -X POST "$IAM_HOST/v3/auth/tokens" \
+          curl -sf -X POST https://iam.myhuaweicloud.com/v3/auth/tokens \
             -H "Content-Type: application/json" \
             -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}},\"scope\":{\"project\":{\"name\":\"ap-southeast-1\"}}}}" \
-            -D /tmp/iam_s.txt -o /tmp/iam_sb.txt
+            -D /tmp/iam_s.txt -o /dev/null
           SCOPED=$(grep -i x-subject-token /tmp/iam_s.txt | awk '{print $2}' | tr -d '\r')
-          [ -z "$SCOPED" ] && SCOPED="$TOKEN" && echo "Using global token"
+          [ -z "$SCOPED" ] && { echo "Scoped IAM failed"; exit 1; }
 
-          # Try existing workspaces
           echo "=== GET workspaces ==="
-          WS=$(curl -s -w "\n%{http_code}" "$MA_HOST/v1/$PROJ/workspaces" -H "X-Auth-Token: $SCOPED")
-          WS_CODE=$(echo "$WS" | tail -1); WS_BODY=$(echo "$WS" | head -n -1)
-          echo "HTTP $WS_CODE"; echo "$WS_BODY" | python3 -m json.tool 2>/dev/null || echo "$WS_BODY"
-
+          WS=$(curl -s -w "\n%{http_code}" "$MA_HOST/v1/$MA_PROJ/workspaces" -H "X-Auth-Token: $SCOPED")
+          WS_CODE=$(echo "$WS" | tail -1)
+          WS_BODY=$(echo "$WS" | head -n -1)
+          echo "HTTP $WS_CODE"
+          echo "$WS_BODY" | python3 -m json.tool 2>/dev/null || echo "$WS_BODY"
           if [ "$WS_CODE" = "200" ]; then echo "ModelArts already active!"; exit 0; fi
 
-          # Create default workspace → activates the service
           echo "=== POST workspaces (activate) ==="
-          CR=$(curl -s -w "\n%{http_code}" -X POST "$MA_HOST/v1/$PROJ/workspaces" \
+          CR=$(curl -s -w "\n%{http_code}" -X POST "$MA_HOST/v1/$MA_PROJ/workspaces" \
             -H "X-Auth-Token: $SCOPED" -H "Content-Type: application/json" \
             -d '{"name":"default","description":"e-Khadi ModelArts workspace"}')
-          CR_CODE=$(echo "$CR" | tail -1); CR_BODY=$(echo "$CR" | head -n -1)
-          echo "HTTP $CR_CODE"; echo "$CR_BODY" | python3 -m json.tool 2>/dev/null || echo "$CR_BODY"
-
-          [ "$CR_CODE" = "200" ] || [ "$CR_CODE" = "201" ] && echo "Activated!" || echo "Activation returned $CR_CODE — check output above"
+          CR_CODE=$(echo "$CR" | tail -1)
+          CR_BODY=$(echo "$CR" | head -n -1)
+          echo "HTTP $CR_CODE"
+          echo "$CR_BODY" | python3 -m json.tool 2>/dev/null || echo "$CR_BODY"
+          [ "$CR_CODE" = "200" ] || [ "$CR_CODE" = "201" ] && echo "Activated!" || echo "HTTP $CR_CODE"
 
   set_budget:
     name: Set $100/month spending cap
@@ -283,76 +178,36 @@ print(d.get('access_address') or d.get('predict_url') or
           HW_AK: ${{ secrets.HW_AK }}
           HW_SK: ${{ secrets.HW_SK }}
         run: |
-          IAM_HOST="https://iam.myhuaweicloud.com"
-          BSS_HOST="https://bss-intl.myhuaweicloud.com"
-          CES_HOST="https://ces.ap-southeast-1.myhuaweicloud.com"
           LIMIT=100
-
-          # Global IAM token
-          curl -sf -X POST "$IAM_HOST/v3/auth/tokens" \
+          curl -sf -X POST https://iam.myhuaweicloud.com/v3/auth/tokens \
             -H "Content-Type: application/json" \
             -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}}}}" \
             -D /tmp/iam_h.txt -o /dev/null
           TOKEN=$(grep -i x-subject-token /tmp/iam_h.txt | awk '{print $2}' | tr -d '\r')
-          [ -z "$TOKEN" ] && { echo "IAM auth failed"; exit 1; }
-
-          # Scoped token for ap-southeast-1
-          curl -sf -X POST "$IAM_HOST/v3/auth/tokens" \
+          curl -sf -X POST https://iam.myhuaweicloud.com/v3/auth/tokens \
             -H "Content-Type: application/json" \
             -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}},\"scope\":{\"project\":{\"name\":\"ap-southeast-1\"}}}}" \
             -D /tmp/iam_s.txt -o /dev/null
           SCOPED=$(grep -i x-subject-token /tmp/iam_s.txt | awk '{print $2}' | tr -d '\r')
           [ -z "$SCOPED" ] && SCOPED="$TOKEN"
 
-          echo "=== BSS budget alert (warn at 80% = \$80) ==="
-          # Try v2/costs/budgets (newer Cost Center API)
-          BRESP=$(curl -s -w "\n%{http_code}" -X POST "$BSS_HOST/v2/costs/budgets" \
+          BRESP=$(curl -s -w "\n%{http_code}" -X POST "https://bss-intl.myhuaweicloud.com/v2/costs/budgets" \
             -H "X-Auth-Token: $TOKEN" -H "Content-Type: application/json" \
             -d "{\"budget_name\":\"ekhadi-ai-cap\",\"budget_type\":\"SPEND\",\"budget_amount\":$LIMIT,\"time_period\":\"MONTHLY\",\"alert_percent\":80}")
           BCODE=$(echo "$BRESP" | tail -1)
-          BBODY=$(echo "$BRESP" | head -n -1)
-          echo "v2/costs/budgets HTTP $BCODE"
-          echo "$BBODY" | python3 -m json.tool 2>/dev/null || echo "$BBODY"
+          echo "BSS budget HTTP $BCODE"
+          echo "$(echo "$BRESP" | head -n -1)" | python3 -m json.tool 2>/dev/null || true
 
-          # Try v1.0/budgets if v2 failed
-          if [ "$BCODE" != "200" ] && [ "$BCODE" != "201" ]; then
-            echo "--- trying v1.0 ---"
-            BRESP=$(curl -s -w "\n%{http_code}" -X POST "$BSS_HOST/v1.0/budgets" \
-              -H "X-Auth-Token: $TOKEN" -H "Content-Type: application/json" \
-              -d "{\"budget_name\":\"ekhadi-ai-cap\",\"budget_type\":\"SPEND\",\"budget_amount\":$LIMIT,\"time_period\":\"MONTHLY\",\"alert_percent\":80}")
-            BCODE=$(echo "$BRESP" | tail -1)
-            BBODY=$(echo "$BRESP" | head -n -1)
-            echo "v1.0/budgets HTTP $BCODE"
-            echo "$BBODY" | python3 -m json.tool 2>/dev/null || echo "$BBODY"
-          fi
-
-          echo ""
-          echo "=== Cloud Eye inference alarm (ap-southeast-1) ==="
-          MA_PROJ="12d4b817c74d49f2b1649d903df7cc8a"
-          ARESP=$(curl -s -w "\n%{http_code}" -X POST "$CES_HOST/V1.0/$MA_PROJ/alarms" \
+          ARESP=$(curl -s -w "\n%{http_code}" -X POST "https://ces.ap-southeast-1.myhuaweicloud.com/V1.0/$MA_PROJ/alarms" \
             -H "X-Auth-Token: $SCOPED" -H "Content-Type: application/json" \
-            -d "{
-              \"alarm_name\":\"ekhadi-modelarts-spend\",
-              \"alarm_description\":\"ModelArts inference count — proxy for cost vs \$$LIMIT cap\",
-              \"metric\":{\"namespace\":\"SYS.ModelArts\",\"metric_name\":\"inference_requests_total\",\"dimensions\":[{\"name\":\"workspace_id\",\"value\":\"0\"}]},
-              \"condition\":{\"period\":86400,\"filter\":\"sum\",\"comparison_operator\":\">=\",\"value\":500000,\"unit\":\"Count\",\"count\":1},
-              \"alarm_enabled\":true,\"alarm_action_enabled\":false
-            }")
-          ACODE=$(echo "$ARESP" | tail -1)
-          ABODY=$(echo "$ARESP" | head -n -1)
-          echo "HTTP $ACODE"; echo "$ABODY" | python3 -m json.tool 2>/dev/null || echo "$ABODY"
-
-          echo ""
-          echo "=== Summary ==="
-          echo "Monthly cap:    \$$LIMIT USD"
-          echo "Alert at:       \$80 (80%)"
-          echo "Budget HTTP:    $BCODE"
-          echo "CES alarm HTTP: $ACODE"
+            -d "{\"alarm_name\":\"ekhadi-modelarts-spend\",\"alarm_description\":\"ModelArts cost cap proxy\",\"metric\":{\"namespace\":\"SYS.ModelArts\",\"metric_name\":\"inference_requests_total\",\"dimensions\":[{\"name\":\"workspace_id\",\"value\":\"0\"}]},\"condition\":{\"period\":86400,\"filter\":\"sum\",\"comparison_operator\":\">=\",\"value\":500000,\"unit\":\"Count\",\"count\":1},\"alarm_enabled\":true,\"alarm_action_enabled\":false}")
+          echo "CES alarm HTTP $(echo "$ARESP" | tail -1)"
+          echo "Monthly cap: \$$LIMIT | Alert at: \$80 (80%)"
 
   check:
     runs-on: [self-hosted, linux, ekhadi]
     steps:
-      - name: Query IAM + BSS International + ModelArts regions
+      - name: Query IAM + BSS balance
         env:
           HW_AK: ${{ secrets.HW_AK }}
           HW_SK: ${{ secrets.HW_SK }}
@@ -367,12 +222,10 @@ print(d.get('access_address') or d.get('predict_url') or
           curl -s "https://bss-intl.myhuaweicloud.com/v2/accounts/customer-accounts/balances" \
             -H "X-Auth-Token: $TOKEN" | python3 -m json.tool
 
-          echo "=== MODELARTS af-south-1 ==="
-          curl -s "https://modelarts.af-south-1.myhuaweicloud.com/v2/$(curl -s https://iam.myhuaweicloud.com/v3/projects -H "X-Auth-Token: $TOKEN" | python3 -c "import json,sys;p=[x for x in json.load(sys.stdin)['projects'] if 'af-south' in x['name']];print(p[0]['id'] if p else '')" 2>/dev/null)/training-jobs?limit=1" \
-            -H "X-Auth-Token: $TOKEN" -w "\nHTTP %{http_code}" 2>/dev/null | tail -3
-
-          echo "=== MODELARTS ap-southeast-1 ==="
-          PROJ=$(curl -s https://iam.myhuaweicloud.com/v3/projects -H "X-Auth-Token: $TOKEN" | python3 -c "import json,sys;p=[x for x in json.load(sys.stdin)['projects'] if 'ap-southeast-1' in x['name']];print(p[0]['id'] if p else '')" 2>/dev/null)
-          echo "Project ap-southeast-1: $PROJ"
-          curl -s "https://modelarts.ap-southeast-1.myhuaweicloud.com/v2/$PROJ/training-jobs?limit=1" \
-            -H "X-Auth-Token: $TOKEN" -w "\nHTTP %{http_code}" 2>/dev/null | tail -3
+          echo "=== MODELARTS WORKSPACE (ap-southeast-1) ==="
+          curl -sf -X POST https://iam.myhuaweicloud.com/v3/auth/tokens \
+            -H "Content-Type: application/json" \
+            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}},\"scope\":{\"project\":{\"name\":\"ap-southeast-1\"}}}}" \
+            -D /tmp/iam_s.txt -o /dev/null
+          SCOPED=$(grep -i x-subject-token /tmp/iam_s.txt | awk '{print $2}' | tr -d '\r')
+          curl -s "$MA_HOST/v1/$MA_PROJ/workspaces" -H "X-Auth-Token: $SCOPED" | python3 -m json.tool
