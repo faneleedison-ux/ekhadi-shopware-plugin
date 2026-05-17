@@ -86,12 +86,26 @@ jobs:
           [ -z "$SCOPED" ] && SCOPED="$TOKEN"
 
           echo "=== BSS budget alert (warn at 80% = \$80) ==="
-          BRESP=$(curl -s -w "\n%{http_code}" -X POST "$BSS_HOST/v2/budgets" \
+          # Try v2/costs/budgets (newer Cost Center API)
+          BRESP=$(curl -s -w "\n%{http_code}" -X POST "$BSS_HOST/v2/costs/budgets" \
             -H "X-Auth-Token: $TOKEN" -H "Content-Type: application/json" \
             -d "{\"budget_name\":\"ekhadi-ai-cap\",\"budget_type\":\"SPEND\",\"budget_amount\":$LIMIT,\"time_period\":\"MONTHLY\",\"alert_percent\":80}")
           BCODE=$(echo "$BRESP" | tail -1)
           BBODY=$(echo "$BRESP" | head -n -1)
-          echo "HTTP $BCODE"; echo "$BBODY" | python3 -m json.tool 2>/dev/null || echo "$BBODY"
+          echo "v2/costs/budgets HTTP $BCODE"
+          echo "$BBODY" | python3 -m json.tool 2>/dev/null || echo "$BBODY"
+
+          # Try v1.0/budgets if v2 failed
+          if [ "$BCODE" != "200" ] && [ "$BCODE" != "201" ]; then
+            echo "--- trying v1.0 ---"
+            BRESP=$(curl -s -w "\n%{http_code}" -X POST "$BSS_HOST/v1.0/budgets" \
+              -H "X-Auth-Token: $TOKEN" -H "Content-Type: application/json" \
+              -d "{\"budget_name\":\"ekhadi-ai-cap\",\"budget_type\":\"SPEND\",\"budget_amount\":$LIMIT,\"time_period\":\"MONTHLY\",\"alert_percent\":80}")
+            BCODE=$(echo "$BRESP" | tail -1)
+            BBODY=$(echo "$BRESP" | head -n -1)
+            echo "v1.0/budgets HTTP $BCODE"
+            echo "$BBODY" | python3 -m json.tool 2>/dev/null || echo "$BBODY"
+          fi
 
           echo ""
           echo "=== Cloud Eye inference alarm (ap-southeast-1) ==="
