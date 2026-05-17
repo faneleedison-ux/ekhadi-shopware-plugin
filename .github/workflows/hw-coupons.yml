@@ -58,39 +58,54 @@ jobs:
           echo "Using flavor: $FLAVOR_ID"
 
           # ── Authorize ModelArts to access OBS (idempotent) ───────────────────
-          # Creates the modelarts_agency IAM agency — same action as clicking
-          # "Authorize" in the ModelArts console Settings page.
           echo "=== Authorizing ModelArts ==="
+          # Domain-level (unscoped) token needed for IAM agency operations
           curl -sf -X POST https://iam.myhuaweicloud.com/v3/auth/tokens \
             -H "Content-Type: application/json" \
             -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}}}}" \
             -D /tmp/iam_domain.hdr -o /tmp/iam_domain.json
           DOMAIN_TOKEN=$(grep -i x-subject-token /tmp/iam_domain.hdr | awk '{print $2}' | tr -d '\r')
           DOMAIN_ID=$(python3 -c "import json; d=json.load(open('/tmp/iam_domain.json')); print(d['token']['user']['domain']['id'])" 2>/dev/null)
+          echo "Domain ID: $DOMAIN_ID"
+
           if [ -n "$DOMAIN_TOKEN" ] && [ -n "$DOMAIN_ID" ]; then
-            echo "Domain ID: $DOMAIN_ID"
-            AGENCY_RESP=$(curl -s -X POST "https://iam.myhuaweicloud.com/v3.0/OS-AGENCY/agencies" \
-              -H "X-Auth-Token: $DOMAIN_TOKEN" -H "Content-Type: application/json" \
-              -d "{\"agency\":{\"name\":\"modelarts_agency\",\"domain_id\":\"$DOMAIN_ID\",\"trust_domain_name\":\"op_svc_modelarts\",\"description\":\"ModelArts OBS access\",\"duration\":\"FOREVER\"}}")
-            echo "$AGENCY_RESP" | python3 -m json.tool 2>/dev/null || echo "$AGENCY_RESP"
-            AGENCY_ID=$(echo "$AGENCY_RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('agency',{}).get('id',''))" 2>/dev/null)
-            if [ -n "$AGENCY_ID" ]; then
-              echo "Agency created: $AGENCY_ID — granting OBS OperateAccess"
-              OBS_ROLE_ID=$(curl -s "https://iam.myhuaweicloud.com/v3/roles?name=OBS+OperateAccess" \
-                -H "X-Auth-Token: $DOMAIN_TOKEN" | python3 -c "import json,sys; r=json.load(sys.stdin).get('roles',[]); print(r[0]['id'] if r else '')" 2>/dev/null)
-              if [ -n "$OBS_ROLE_ID" ]; then
-                curl -s -X PUT "https://iam.myhuaweicloud.com/v3.0/OS-AGENCY/agencies/$AGENCY_ID/domains/$DOMAIN_ID/roles/$OBS_ROLE_ID" \
-                  -H "X-Auth-Token: $DOMAIN_TOKEN"
-                echo "Granted OBS OperateAccess to modelarts_agency"
-              else
-                echo "OBS role not found — agency may still work with default perms"
-              fi
+            # Get existing agency or create it
+            AGENCY_ID=$(curl -s "https://iam.myhuaweicloud.com/v3.0/OS-AGENCY/agencies?domain_id=$DOMAIN_ID&name=modelarts_agency" \
+              -H "X-Auth-Token: $DOMAIN_TOKEN" | python3 -c "import json,sys; a=json.load(sys.stdin).get('agencies',[]); print(a[0]['id'] if a else '')" 2>/dev/null)
+            if [ -z "$AGENCY_ID" ]; then
+              AGENCY_RESP=$(curl -s -X POST "https://iam.myhuaweicloud.com/v3.0/OS-AGENCY/agencies" \
+                -H "X-Auth-Token: $DOMAIN_TOKEN" -H "Content-Type: application/json" \
+                -d "{\"agency\":{\"name\":\"modelarts_agency\",\"domain_id\":\"$DOMAIN_ID\",\"trust_domain_name\":\"op_svc_modelarts\",\"description\":\"ModelArts OBS access\",\"duration\":\"FOREVER\"}}")
+              AGENCY_ID=$(echo "$AGENCY_RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('agency',{}).get('id',''))" 2>/dev/null)
+              echo "Created agency: $AGENCY_ID"
             else
-              echo "Agency already exists or creation skipped — proceeding"
+              echo "Agency already exists: $AGENCY_ID"
             fi
-          else
-            echo "Could not get domain token — skipping agency creation"
+
+            if [ -n "$AGENCY_ID" ]; then
+              # Try multiple possible OBS role names (Huawei Cloud regions vary)
+              for ROLE_NAME in "OBS OperateAccess" "obs_op_access" "Tenant Guest" "OBS Administrator"; do
+                ENCODED=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$ROLE_NAME'))")
+                ROLE_ID=$(curl -s "https://iam.myhuaweicloud.com/v3/roles?name=$ENCODED" \
+                  -H "X-Auth-Token: $DOMAIN_TOKEN" | python3 -c "import json,sys; r=json.load(sys.stdin).get('roles',[]); print(r[0]['id'] if r else '')" 2>/dev/null)
+                if [ -n "$ROLE_ID" ]; then
+                  curl -s -X PUT "https://iam.myhuaweicloud.com/v3.0/OS-AGENCY/agencies/$AGENCY_ID/domains/$DOMAIN_ID/roles/$ROLE_ID" \
+                    -H "X-Auth-Token: $DOMAIN_TOKEN"
+                  echo "Attached role '$ROLE_NAME' ($ROLE_ID) to modelarts_agency"
+                  break
+                fi
+              done
+            fi
           fi
+
+          # Register the agency with ModelArts authorization API (the key step)
+          echo "Calling ModelArts authorization endpoint..."
+          MA_AUTH_RESP=$(curl -s -w "\n%{http_code}" -X POST "$MA_HOST/v2/$MA_PROJ/authorizations" \
+            -H "X-Auth-Token: $TOKEN" -H "Content-Type: application/json" \
+            -d "{\"type\":\"agency\",\"agency_names\":[\"modelarts_agency\"]}")
+          MA_AUTH_CODE=$(echo "$MA_AUTH_RESP" | tail -1)
+          echo "ModelArts auth HTTP $MA_AUTH_CODE"
+          echo "$(echo "$MA_AUTH_RESP" | head -n -1)" | python3 -m json.tool 2>/dev/null || true
 
           # ── Create training job (v2, fallback to v1) ──────────────────────────
           echo "=== Creating training job ==="
