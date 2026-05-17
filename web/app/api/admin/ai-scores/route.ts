@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { computeRecommendation, type RecommendationInput } from '@/lib/aiRecommendation'
 import { geminiScore } from '@/lib/geminiScorer'
+import { modelartsScore } from '@/lib/modelarts'
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -67,10 +68,12 @@ export async function GET() {
         requestAmount: Number(req.amount),
       }
 
+      // Priority: ModelArts inference → Gemini → rule engine
+      const maResult = await modelartsScore(input)
+      if (maResult) return { requestId: req.id, ...maResult }
+
       const aiResult = await geminiScore(input)
-      if (aiResult) {
-        return { requestId: req.id, ...aiResult }
-      }
+      if (aiResult) return { requestId: req.id, ...aiResult }
 
       return { requestId: req.id, ...computeRecommendation(input), confidence: null, source: 'rules' }
     })

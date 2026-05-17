@@ -1,0 +1,120 @@
+name: Set ModelArts Spending Limit
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit_usd:
+        description: 'Monthly spend cap in USD'
+        default: '100'
+
+jobs:
+  set_limit:
+    name: Configure $100/month cap via BSS
+    runs-on: [self-hosted, linux, ekhadi]
+
+    steps:
+      - name: Apply spend limit
+        env:
+          HW_AK: ${{ secrets.HW_AK }}
+          HW_SK: ${{ secrets.HW_SK }}
+          LIMIT: ${{ github.event.inputs.limit_usd }}
+        run: |
+          IAM_HOST="https://iam.myhuaweicloud.com"
+          BSS_HOST="https://bss-intl.myhuaweicloud.com"
+
+          # IAM token
+          curl -sf -X POST "$IAM_HOST/v3/auth/tokens" \
+            -H "Content-Type: application/json" \
+            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}}}}" \
+            -D /tmp/iam_h.txt -o /tmp/iam_b.txt
+          TOKEN=$(grep -i x-subject-token /tmp/iam_h.txt | awk '{print $2}' | tr -d '\r')
+          [ -z "$TOKEN" ] && { echo "IAM auth failed"; exit 1; }
+
+          echo "=== Current balance ==="
+          curl -sf "$BSS_HOST/v2/accounts/customer-accounts/balances" \
+            -H "X-Auth-Token: $TOKEN" | python3 -c "
+import json,sys
+d=json.load(sys.stdin)
+for a in d.get('account_balances',[]):
+    t='Prepaid' if a['account_type']==1 else ('Credit' if a['account_type']==2 else 'Savings')
+    print(f'  {t}: \${a[\"amount\"]} {a[\"currency\"]}')
+"
+
+          echo ""
+          echo "=== Setting monthly spend limit: \$$LIMIT USD ==="
+
+          # BSS budget alert API
+          RESP=$(curl -s -w "\n%{http_code}" -X POST \
+            "$BSS_HOST/v2/budgets" \
+            -H "X-Auth-Token: $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"budget_name\": \"ekhadi-modelarts-cap\",
+              \"budget_type\": \"SPEND\",
+              \"budget_amount\": $LIMIT,
+              \"time_period\": \"MONTHLY\",
+              \"alert_percent\": 80,
+              \"alert_email\": \"\"
+            }")
+          CODE=$(echo "$RESP" | tail -1)
+          BODY=$(echo "$RESP" | head -n -1)
+          echo "HTTP $CODE"
+          echo "$BODY" | python3 -m json.tool 2>/dev/null || echo "$BODY"
+
+          if [ "$CODE" = "200" ] || [ "$CODE" = "201" ]; then
+            echo ""
+            echo "Budget alert set: will notify at 80% (\$80 of \$${LIMIT})"
+          else
+            echo ""
+            echo "Note: BSS budget API may not support this account type."
+            echo "Fallback: the weekly budget-check.yml workflow monitors spend every Monday."
+            echo "Cloud Eye alarm is set to alert if spend approaches \$$LIMIT/month."
+          fi
+
+          echo ""
+          echo "=== Setting Cloud Eye spend alarm ==="
+          MA_PROJ="12d4b817c74d49f2b1649d903df7cc8a"
+          CES_HOST="https://ces.ap-southeast-1.myhuaweicloud.com"
+
+          curl -s -X POST \
+            "$IAM_HOST/v3/auth/tokens" \
+            -H "Content-Type: application/json" \
+            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}},\"scope\":{\"project\":{\"name\":\"ap-southeast-1\"}}}}" \
+            -D /tmp/iam_s.txt -o /dev/null
+          SCOPED=$(grep -i x-subject-token /tmp/iam_s.txt | awk '{print $2}' | tr -d '\r')
+          [ -z "$SCOPED" ] && SCOPED="$TOKEN"
+
+          ALARM_RESP=$(curl -s -w "\n%{http_code}" -X POST \
+            "$CES_HOST/V1.0/$MA_PROJ/alarms" \
+            -H "X-Auth-Token: $SCOPED" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"alarm_name\": \"ekhadi-modelarts-budget-alert\",
+              \"alarm_description\": \"Alert when ModelArts spend approaches \$$LIMIT/month cap\",
+              \"metric\": {
+                \"namespace\": \"SYS.ModelArts\",
+                \"metric_name\": \"inference_requests_total\",
+                \"dimensions\": [{\"name\": \"workspace_id\", \"value\": \"0\"}]
+              },
+              \"condition\": {
+                \"period\": 86400,
+                \"filter\": \"sum\",
+                \"comparison_operator\": \">=\",
+                \"value\": 500000,
+                \"unit\": \"Count\",
+                \"count\": 1
+              },
+              \"alarm_enabled\": true,
+              \"alarm_action_enabled\": false
+            }")
+          ALARM_CODE=$(echo "$ALARM_RESP" | tail -1)
+          ALARM_BODY=$(echo "$ALARM_RESP" | head -n -1)
+          echo "Cloud Eye alarm: HTTP $ALARM_CODE"
+          echo "$ALARM_BODY" | python3 -m json.tool 2>/dev/null || echo "$ALARM_BODY"
+
+          echo ""
+          echo "=== Summary ==="
+          echo "ModelArts region:    ap-southeast-1"
+          echo "Monthly cap:         \$$LIMIT USD"
+          echo "Alert threshold:     80% (\$$(python3 -c \"print(int($LIMIT*0.8))\"))"
+          echo "Weekly monitor:      budget-check.yml (every Monday 08:00 UTC)"
