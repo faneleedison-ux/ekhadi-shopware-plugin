@@ -17,8 +17,10 @@ export default function DawnHero({ items }: { items?: ActivityItem[] }) {
   }
 
   useEffect(() => {
+    // Always reveal after 1.8s regardless of video — ensures content shows even if video fails
+    const fallback = setTimeout(() => setRevealed(true), 1800)
     const v = videoRef.current
-    if (!v) return
+    if (!v) return () => clearTimeout(fallback)
     let timer: ReturnType<typeof setTimeout>
     const arm = () => {
       const d = isFinite(v.duration) && v.duration > 0 ? v.duration : 14
@@ -27,7 +29,9 @@ export default function DawnHero({ items }: { items?: ActivityItem[] }) {
     }
     if (v.readyState >= 1) arm()
     else v.addEventListener('loadedmetadata', arm, { once: true })
-    return () => clearTimeout(timer)
+    // Also reveal on video error
+    v.addEventListener('error', () => setRevealed(true), { once: true })
+    return () => { clearTimeout(fallback); clearTimeout(timer) }
   }, [])
 
   return (
@@ -47,7 +51,7 @@ export default function DawnHero({ items }: { items?: ActivityItem[] }) {
         <span>Township rooftops · Dawn · Recorded in South Africa</span>
       </div>
 
-      {revealed && <DawnPhoneHero />}
+      <DawnPhoneHero />
 
       <div className="hero-inner">
         <div className="hero-rule-top rise d0">
