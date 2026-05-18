@@ -93,7 +93,7 @@ export default async function ShopTransactionsPage() {
         ) : (
           <ul>
             {transactions.map((tx, i) => (
-              <li key={tx.id} className={`flex items-center justify-between gap-3 px-5 py-3 border-b border-[#C9BCA0] last:border-0 ${i % 2 === 0 ? 'bg-[#EBE0C7]' : 'bg-[#F2E9D6]'}`}>
+              <li key={tx.id} className={`flex items-center justify-between gap-3 px-5 py-3 border-b border-[#C9BCA0] last:border-0 hover:bg-[#E11D2A]/4 transition-colors ${i % 2 === 0 ? 'bg-[#EBE0C7]' : 'bg-[#F2E9D6]'}`}>
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-full bg-[#E11D2A]/10 flex items-center justify-center flex-shrink-0">
                     <ArrowUpRight className="h-4 w-4 text-[#E11D2A]" />

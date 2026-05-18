@@ -93,6 +93,33 @@ html {
     background: var(--status-info-soft);
   }
 
+  /* ── Dawn section cap (editorial heading prefix) ── */
+  .dawn-section-cap {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 6px;
+  }
+  .dawn-section-cap-num {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .22em;
+    color: #A89971;
+    text-transform: uppercase;
+  }
+  .dawn-section-cap-rule {
+    flex: 0 0 40px;
+    height: 1px;
+    background: #C9BCA0;
+  }
+  .dawn-section-cap-tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .18em;
+    color: #E11D2A;
+    text-transform: uppercase;
+  }
+
   /* Landing page navbar */
   .glass-nav {
     background: rgba(10, 14, 31, 0.97);

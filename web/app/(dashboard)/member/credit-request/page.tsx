@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatCurrency, formatDate, calculateServiceFee, calculateRepayment } from '@/lib/utils'
+import { ListRowSkeleton } from '@/components/ui/Skeleton'
 
 interface CreditRequest {
   id: string
@@ -33,6 +34,7 @@ export default function CreditRequestPage() {
   const [reason, setReason] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [requests, setRequests] = useState<CreditRequest[]>([])
   const [loadingHistory, setLoadingHistory] = useState(true)
@@ -96,10 +98,11 @@ export default function CreditRequestPage() {
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to submit request'); return }
       setSuccess(true)
+      setSubmitted(true)
       setAmount('')
       setReason('')
       await fetchHistory()
-      setTimeout(() => setSuccess(false), 4000)
+      setTimeout(() => { setSuccess(false); setSubmitted(false) }, 4000)
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
@@ -123,10 +126,11 @@ export default function CreditRequestPage() {
           <div className="w-8 h-8 bg-[#E11D2A]/10 rounded-xl flex items-center justify-center">
             <CreditCard className="h-4 w-4 text-[#E11D2A]" />
           </div>
-          <div>
+          <div className="flex-1">
             <p className="font-[var(--serif)] italic text-base text-[#14130E]">New Credit Request</p>
             <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#6B6552]">Request between R50 and R300 · 2% flat service fee</p>
           </div>
+          {submitted && <CheckCircle className="h-4 w-4 text-[#3F7B4F]" />}
         </div>
 
         <div className="p-5 space-y-4">
@@ -181,7 +185,7 @@ export default function CreditRequestPage() {
                   step={10}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="pl-7 bg-[#F2E9D6] border-[#C9BCA0]"
+                  className={`pl-7 bg-[#F2E9D6] border-[#C9BCA0] ${submitted ? 'border-[#3F7B4F]' : ''}`}
                   required
                 />
               </div>
@@ -230,7 +234,7 @@ export default function CreditRequestPage() {
             <div className="space-y-1.5">
               <Label className="font-[var(--mono)] text-[11px] tracking-widest uppercase text-[#6B6552]">Reason for credit</Label>
               <Select value={reason} onValueChange={setReason}>
-                <SelectTrigger className="bg-[#F2E9D6] border-[#C9BCA0]">
+                <SelectTrigger className={`bg-[#F2E9D6] border-[#C9BCA0] ${submitted ? 'border-[#3F7B4F]' : ''}`}>
                   <SelectValue placeholder="Select a reason..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -269,17 +273,17 @@ export default function CreditRequestPage() {
         </div>
 
         {loadingHistory ? (
-          <div className="text-center py-8 font-[var(--mono)] text-[11px] text-[#A89971]">Loading…</div>
+          <ListRowSkeleton rows={3} />
         ) : requests.length === 0 ? (
           <div className="text-center py-10">
             <CreditCard className="h-10 w-10 text-[#A89971] mx-auto mb-3" />
-            <p className="font-[var(--sans-dawn)] text-sm font-medium text-[#6B6552]">No requests yet</p>
+            <p className="font-[var(--serif)] italic text-lg text-[#14130E]">Nothing here yet.</p>
             <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#A89971] mt-1">Submit your first credit request above</p>
           </div>
         ) : (
           <ul>
             {requests.map((req, i) => (
-              <li key={req.id} className={`flex items-center justify-between px-5 py-3 border-b border-[#C9BCA0] last:border-0 ${i % 2 === 0 ? 'bg-[#EBE0C7]' : 'bg-[#F2E9D6]'}`}>
+              <li key={req.id} className={`flex items-center justify-between px-5 py-3 border-b border-[#C9BCA0] last:border-0 hover:bg-[#E11D2A]/4 transition-colors ${i % 2 === 0 ? 'bg-[#EBE0C7]' : 'bg-[#F2E9D6]'}`}>
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                     req.status === 'APPROVED' ? 'bg-[#3F7B4F]/10' :

@@ -5,7 +5,6 @@ import { Store, MapPin, Users, TrendingUp, ArrowUpRight, ArrowRight } from 'luci
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
 import SalesHeatmap from '@/components/shop/SalesHeatmap'
 
 export default async function ShopDashboard() {
@@ -21,6 +20,7 @@ export default async function ShopDashboard() {
     return (
       <div className="space-y-5 animate-fade-in">
         <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl px-5 py-4">
+          <div className="dawn-section-cap"><span className="dawn-section-cap-num">§ 01</span><span className="dawn-section-cap-rule" /><span className="dawn-section-cap-tag">Shop Dashboard</span></div>
           <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552] mb-1">Shop · e-Khadi</p>
           <h1 className="font-[var(--serif)] italic text-2xl text-[#14130E] leading-tight">Shop Dashboard</h1>
         </div>
@@ -93,6 +93,7 @@ export default async function ShopDashboard() {
 
       {/* Header */}
       <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl px-5 py-4">
+        <div className="dawn-section-cap"><span className="dawn-section-cap-num">§ 01</span><span className="dawn-section-cap-rule" /><span className="dawn-section-cap-tag">Shop Dashboard</span></div>
         <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552] mb-1">Shop · e-Khadi</p>
         <h1 className="font-[var(--serif)] italic text-2xl text-[#14130E] leading-tight">Shop Dashboard</h1>
         <div className="flex items-center gap-2 mt-1">
@@ -167,11 +168,14 @@ export default async function ShopDashboard() {
         </div>
 
         {recentTx.length === 0 ? (
-          <div className="text-center py-8 font-[var(--mono)] text-[11px] text-[#A89971]">No transactions yet</div>
+          <div className="text-center py-10">
+            <p className="font-[var(--serif)] italic text-lg text-[#14130E]">Nothing here yet.</p>
+            <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#A89971] mt-1">Your recent transactions will appear here</p>
+          </div>
         ) : (
           <ul>
             {recentTx.map((tx, i) => (
-              <li key={tx.id} className={`flex items-center gap-3 px-5 py-3 border-b border-[#C9BCA0] last:border-0 ${i % 2 === 0 ? 'bg-[#EBE0C7]' : 'bg-[#F2E9D6]'}`}>
+              <li key={tx.id} className={`flex items-center gap-3 px-5 py-3 border-b border-[#C9BCA0] last:border-0 hover:bg-[#E11D2A]/4 transition-colors ${i % 2 === 0 ? 'bg-[#EBE0C7]' : 'bg-[#F2E9D6]'}`}>
                 <div className="w-8 h-8 rounded-full bg-[#E11D2A]/10 flex items-center justify-center flex-shrink-0">
                   <ArrowUpRight className="h-3.5 w-3.5 text-[#E11D2A]" />
                 </div>

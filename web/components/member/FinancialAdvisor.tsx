@@ -117,14 +117,14 @@ export default function FinancialAdvisor() {
     <>
       {/* ── Floating button ─────────────────────────────────────────────────── */}
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => setOpen((v) => !v)}
         className="fixed bottom-20 right-4 z-50 lg:bottom-6 lg:right-6 w-14 h-14 rounded-2xl shadow-xl flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95"
         style={{
           background: 'linear-gradient(135deg, #1877F2, #0f4fa8)',
           boxShadow: '0 4px 20px rgba(24,119,242,0.5)',
         }}
       >
-        <MessageCircle className="h-6 w-6 text-white" />
+        <MessageCircle className={`h-6 w-6 text-white transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
         {unread > 0 && (
           <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] font-black text-white flex items-center justify-center">
             {unread}
@@ -133,11 +133,16 @@ export default function FinancialAdvisor() {
       </button>
 
       {/* ── Chat panel ──────────────────────────────────────────────────────── */}
-      {open && (
-        <div
-          className="fixed bottom-20 right-4 z-50 lg:bottom-6 lg:right-6 w-[calc(100vw-2rem)] max-w-sm rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-fade-in"
-          style={{ height: '480px', border: '1px solid rgba(24,119,242,0.2)' }}
-        >
+      <div
+        className={`fixed bottom-20 right-4 z-50 lg:bottom-6 lg:right-6 w-[calc(100vw-2rem)] max-w-sm rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ${
+          open ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+        }`}
+        style={{
+          height: '480px',
+          border: '1px solid rgba(24,119,242,0.2)',
+          transition: 'transform 0.35s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.25s ease',
+        }}
+      >
           {/* Header */}
           <div
             className="flex items-center justify-between px-4 py-3 flex-shrink-0"
@@ -156,7 +161,7 @@ export default function FinancialAdvisor() {
               </div>
             </div>
             <button onClick={() => setOpen(false)} className="text-white/60 hover:text-white transition-colors">
-              <X className="h-5 w-5" />
+              <ChevronDown className={`h-5 w-5 transition-transform duration-300 ${open ? 'rotate-0' : 'rotate-180'}`} />
             </button>
           </div>
 
@@ -239,7 +244,6 @@ export default function FinancialAdvisor() {
             </button>
           </div>
         </div>
-      )}
     </>
   )
 }

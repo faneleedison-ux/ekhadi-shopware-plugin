@@ -130,14 +130,14 @@ export default async function WalletPage() {
         {transactions.length === 0 ? (
           <div className="text-center py-10">
             <Wallet className="h-10 w-10 text-[#A89971] mx-auto mb-3" />
-            <p className="font-[var(--sans-dawn)] text-sm font-medium text-[#6B6552]">No transactions yet</p>
+            <p className="font-[var(--serif)] italic text-lg text-[#14130E]">Nothing here yet.</p>
             <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#A89971] mt-1">Your transaction history will appear here</p>
           </div>
         ) : (
           <ul>
             {transactions.map((tx, i) => (
               <li key={tx.id} className={cn(
-                'flex items-center gap-3 px-5 py-3 border-b border-[#C9BCA0] last:border-0',
+                'flex items-center gap-3 px-5 py-3 border-b border-[#C9BCA0] last:border-0 hover:bg-[#E11D2A]/4 transition-colors',
                 i % 2 === 0 ? 'bg-[#EBE0C7]' : 'bg-[#F2E9D6]'
               )}>
                 <div className={cn(

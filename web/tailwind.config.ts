@@ -26,7 +26,7 @@ const config: Config = {
           light: '#FBEAE8',   // light red tint
           foreground: '#FFFFFF',
         },
-        background: '#F4EDE1',  // warm cream (paper-light)
+        background: '#F7F2E8',  // warm cream (paper-light)
         sidebar: '#0A0E1F',     // night dark
         card: {
           DEFAULT: '#FFFFFF',

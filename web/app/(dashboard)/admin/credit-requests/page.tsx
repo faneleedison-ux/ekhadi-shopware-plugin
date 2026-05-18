@@ -81,6 +81,7 @@ export default function CreditRequestsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [selectedRequest, setSelectedRequest] = useState<CreditRequest | null>(null)
   const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL')
+  const [confirming, setConfirming] = useState<{ id: string; action: 'approve' | 'reject' } | null>(null)
 
   useEffect(() => {
     fetchRequests()
@@ -266,7 +267,7 @@ export default function CreditRequestsPage() {
                         <TableCell>{statusBadge(req.status)}</TableCell>
                         <TableCell className="text-xs text-text-secondary">{formatDate(req.createdAt)}</TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 flex-wrap">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -277,28 +278,52 @@ export default function CreditRequestsPage() {
                               <Eye className="h-3.5 w-3.5" />
                             </Button>
                             {req.status === 'PENDING' && (
-                              <>
-                                <Button
-                                  variant="success"
-                                  size="sm"
-                                  onClick={() => handleApprove(req.id)}
-                                  loading={actionLoading === req.id + '-approve'}
-                                  className="h-7 px-2 text-xs"
-                                >
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Approve
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => handleReject(req.id)}
-                                  loading={actionLoading === req.id + '-reject'}
-                                  className="h-7 px-2 text-xs"
-                                >
-                                  <XCircle className="h-3 w-3 mr-1" />
-                                  Reject
-                                </Button>
-                              </>
+                              confirming?.id === req.id ? (
+                                <>
+                                  {confirming.action === 'approve' ? (
+                                    <button
+                                      onClick={() => { handleApprove(req.id); setConfirming(null) }}
+                                      className="bg-[#3F7B4F] text-white font-[var(--mono)] text-[9px] tracking-widest uppercase px-3 py-1.5 rounded-lg"
+                                    >
+                                      Confirm Approve ✓
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => { handleReject(req.id); setConfirming(null) }}
+                                      className="bg-[#E11D2A] text-white font-[var(--mono)] text-[9px] tracking-widest uppercase px-3 py-1.5 rounded-lg"
+                                    >
+                                      Confirm Reject ✗
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => setConfirming(null)}
+                                    className="bg-[#F2E9D6] border border-[#C9BCA0] text-[#6B6552] font-[var(--mono)] text-[9px] tracking-widest uppercase px-3 py-1.5 rounded-lg"
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button
+                                    variant="success"
+                                    size="sm"
+                                    onClick={() => setConfirming({ id: req.id, action: 'approve' })}
+                                    className="h-7 px-2 text-xs"
+                                  >
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => setConfirming({ id: req.id, action: 'reject' })}
+                                    className="h-7 px-2 text-xs"
+                                  >
+                                    <XCircle className="h-3 w-3 mr-1" />
+                                    Reject
+                                  </Button>
+                                </>
+                              )
                             )}
                           </div>
                         </TableCell>
@@ -315,7 +340,7 @@ export default function CreditRequestsPage() {
       {/* Detail Modal */}
       {selectedRequest && (
         <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
-          <DialogContent>
+          <DialogContent role="dialog" aria-modal="true" aria-label="Credit request details">
             <DialogHeader>
               <DialogTitle>Credit Request Details</DialogTitle>
               <DialogDescription>
@@ -392,22 +417,52 @@ export default function CreditRequestsPage() {
             </div>
             {selectedRequest.status === 'PENDING' && (
               <DialogFooter className="gap-2">
-                <Button
-                  variant="destructive"
-                  onClick={() => handleReject(selectedRequest.id)}
-                  loading={actionLoading === selectedRequest.id + '-reject'}
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Reject
-                </Button>
-                <Button
-                  variant="success"
-                  onClick={() => handleApprove(selectedRequest.id)}
-                  loading={actionLoading === selectedRequest.id + '-approve'}
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Approve
-                </Button>
+                {confirming?.id === selectedRequest.id ? (
+                  <>
+                    {confirming.action === 'approve' ? (
+                      <button
+                        onClick={() => { handleApprove(selectedRequest.id); setConfirming(null) }}
+                        className="bg-[#3F7B4F] text-white font-[var(--mono)] text-[9px] tracking-widest uppercase px-3 py-1.5 rounded-lg"
+                      >
+                        Confirm Approve ✓
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => { handleReject(selectedRequest.id); setConfirming(null) }}
+                        className="bg-[#E11D2A] text-white font-[var(--mono)] text-[9px] tracking-widest uppercase px-3 py-1.5 rounded-lg"
+                      >
+                        Confirm Reject ✗
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setConfirming(null)}
+                      className="bg-[#F2E9D6] border border-[#C9BCA0] text-[#6B6552] font-[var(--mono)] text-[9px] tracking-widest uppercase px-3 py-1.5 rounded-lg"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="destructive"
+                      onClick={() => setConfirming({ id: selectedRequest.id, action: 'reject' })}
+                      loading={actionLoading === selectedRequest.id + '-reject'}
+                      aria-label={`Reject request from ${selectedRequest.requester.name}`}
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Reject
+                    </Button>
+                    <Button
+                      variant="success"
+                      onClick={() => setConfirming({ id: selectedRequest.id, action: 'approve' })}
+                      loading={actionLoading === selectedRequest.id + '-approve'}
+                      aria-label={`Approve request from ${selectedRequest.requester.name}`}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Approve
+                    </Button>
+                  </>
+                )}
               </DialogFooter>
             )}
           </DialogContent>

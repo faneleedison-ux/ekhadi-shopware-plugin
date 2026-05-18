@@ -285,8 +285,8 @@ export default function ForecastDashboard({
       {/* ── Section header ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-1">
         <div>
-          <h3 className="text-sm font-bold text-text-primary">Stock Demand Breakdown</h3>
-          <p className="text-xs text-text-secondary mt-0.5">Based on your area&apos;s last 30 days of purchases</p>
+          <h3 className="font-[var(--serif)] italic text-xl text-[#14130E]">Stock Demand Breakdown</h3>
+          <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552] mt-0.5">Based on your area&apos;s last 30 days of purchases</p>
         </div>
         <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2 py-1 rounded-full">
           {items.length} categories
@@ -307,11 +307,11 @@ export default function ForecastDashboard({
               {/* Header */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white/60 flex items-center justify-center text-xl shadow-sm flex-shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-[#EBE0C7] flex items-center justify-center text-xl shadow-sm flex-shrink-0">
                     {item.emoji}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-text-primary">{item.category}</p>
+                    <p className="font-[var(--serif)] italic text-xl text-[#14130E]">{item.category}</p>
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                       {/* Status badge */}
                       <span className={`inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full border ${status.bg} ${status.color} ${status.border}`}>
@@ -335,24 +335,24 @@ export default function ForecastDashboard({
 
                 {/* Right: percent + sparkline */}
                 <div className="text-right flex flex-col items-end gap-1">
-                  <p className="text-xl font-black text-text-primary leading-none">{item.percent}%</p>
-                  <p className="text-[9px] text-text-secondary">of all sales</p>
+                  <p className="font-[var(--serif)] italic text-xl text-[#14130E] leading-none">{item.percent}%</p>
+                  <p className="font-[var(--mono)] text-[9px] text-[#A89971]">of all sales</p>
                   <Sparkline trend={item.trend} />
                 </div>
               </div>
 
               {/* Demand bar */}
               <div className="mb-3">
-                <div className="flex justify-between text-[10px] text-text-secondary mb-1.5">
-                  <span className="font-medium">Customer demand</span>
-                  <span className="font-bold text-text-primary">{item.count} purchases / month</span>
+                <div className="flex justify-between mb-1.5">
+                  <span className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552]">Customer demand</span>
+                  <span className="font-[var(--mono)] text-[10px] text-[#14130E] font-bold">{item.count} purchases / month</span>
                 </div>
                 <DemandBar percent={item.percent} colorClass={status.bar} delay={idx * 80} />
               </div>
 
               {/* Action suggestions */}
               <div className="space-y-1.5">
-                <p className="text-[9px] font-bold text-text-secondary uppercase tracking-wide px-1">Suggested actions</p>
+                <p className="font-[var(--mono)] text-[9px] text-[#6B6552] uppercase tracking-widest px-1">Suggested actions</p>
                 {item.suggestions.map((s, i) => (
                   <div key={i} className="flex items-start gap-2 bg-white/60 rounded-xl px-3 py-2 border border-white/80">
                     <ShoppingCart className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
@@ -379,12 +379,12 @@ export default function ForecastDashboard({
       )}
 
       {/* ── Audit trail footer ───────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-border bg-card p-4">
-        <p className="text-xs font-bold text-text-primary mb-1 flex items-center gap-1.5">
+      <div className="rounded-xl border border-[#C9BCA0] bg-[#EBE0C7] p-4">
+        <p className="font-[var(--serif)] italic text-xl text-[#14130E] mb-1 flex items-center gap-1.5">
           <span className="w-2 h-2 bg-primary rounded-full" />
           Forecast Methodology
         </p>
-        <p className="text-[11px] text-text-secondary leading-relaxed">
+        <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#6B6552] leading-relaxed">
           Demand scores are calculated from real purchase activity in <strong className="text-text-primary">{areaName}</strong> over the past 30 days
           compared to the prior 30-day period. Trend % reflects month-over-month change. Data refreshes every 45 seconds.
           Last updated: <strong className="text-text-primary">{timeStr}</strong>.

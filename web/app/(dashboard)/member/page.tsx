@@ -7,8 +7,6 @@ import { prisma } from '@/lib/db'
 import { formatCurrency, formatDate, getMonthName } from '@/lib/utils'
 import MemberVirtualCard from '@/components/dashboard/MemberVirtualCard'
 import CreditHealthScoreCard from '@/components/dashboard/CreditHealthScoreCard'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import GrantStatusCard from '@/components/member/GrantStatusCard'
 import StreakBadges from '@/components/member/StreakBadges'
@@ -130,6 +128,7 @@ export default async function MemberDashboard() {
 
       {/* 1. Greeting */}
       <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl px-5 py-4">
+        <div className="dawn-section-cap"><span className="dawn-section-cap-num">§ 01</span><span className="dawn-section-cap-rule" /><span className="dawn-section-cap-tag">Member Dashboard</span></div>
         <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552] mb-1">
           {areaName ?? 'Community'} · e-Khadi
         </p>
@@ -176,7 +175,7 @@ export default async function MemberDashboard() {
       )}
 
       {/* 4. Quick actions */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { href: '/member/credit-request', icon: CreditCard,    label: 'Request Credit', iconColor: 'text-[#E11D2A]', bg: 'bg-[#E11D2A]/10' },
           { href: '/member/wallet',          icon: QrCode,        label: 'Scan & Pay',     iconColor: 'text-[#3F7B4F]', bg: 'bg-[#3F7B4F]/10' },

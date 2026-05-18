@@ -34,15 +34,41 @@ export default function BottomNav({ userRole }: { userRole: string }) {
   const pathname = usePathname()
   const navItems = userRole === 'ADMIN' ? adminNavItems : userRole === 'MEMBER' ? memberNavItems : shopNavItems
 
+  const activeIndex = navItems.findIndex(
+    (item) =>
+      pathname === item.href ||
+      (item.href !== '/admin' &&
+        item.href !== '/member' &&
+        item.href !== '/shop' &&
+        pathname.startsWith(item.href))
+  )
+  const indicatorIndex = activeIndex >= 0 ? activeIndex : 0
+
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-card border-t border-border safe-area-pb shadow-lg">
+    <nav aria-label="Mobile navigation" className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-card border-t border-border safe-area-pb shadow-lg" style={{ position: 'relative' }}>
+      {/* Sliding active indicator */}
+      <span
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: `calc(${indicatorIndex} * 25%)`,
+          width: '25%',
+          height: '2px',
+          backgroundColor: '#E11D2A',
+          transition: 'left 0.3s cubic-bezier(0.34,1.4,0.64,1)',
+        }}
+      />
       <div className="flex items-center justify-around h-16">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/admin' && item.href !== '/member' && item.href !== '/shop' && pathname.startsWith(item.href))
           const Icon = item.icon
           return (
             <Link key={item.href} href={item.href}
-              className={cn('flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors flex-1', isActive ? 'text-primary' : 'text-text-secondary hover:text-text-primary')}>
+              title={item.label}
+              aria-current={isActive ? 'page' : undefined}
+              aria-label={item.label}
+              className={cn('flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors flex-1 focus-visible:ring-2 focus-visible:ring-[#E11D2A] focus-visible:ring-offset-2 focus-visible:outline-none', isActive ? 'text-primary' : 'text-text-secondary hover:text-text-primary')}>
               <Icon className={cn('h-5 w-5', isActive && 'stroke-[2.5]')} />
               <span className="text-xs font-medium">{item.label}</span>
             </Link>

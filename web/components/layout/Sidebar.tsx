@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
@@ -43,13 +43,30 @@ interface SidebarProps { userRole: string; userName: string; userEmail?: string 
 export default function Sidebar({ userRole, userName, userEmail }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
   const pathname = usePathname()
+
+  // Restore collapsed state from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('sidebar-collapsed')
+    if (stored !== null) {
+      setCollapsed(stored === 'true')
+    }
+  }, [])
+
+  // Persist collapsed state to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', collapsed.toString())
+  }, [collapsed])
   const navItems = userRole === 'ADMIN' ? adminNavItems : userRole === 'MEMBER' ? memberNavItems : shopNavItems
 
   return (
-    <aside className={cn(
-      'hidden lg:flex flex-col h-screen sticky top-0 bg-sidebar border-r border-white/8 transition-all duration-300 z-30',
-      collapsed ? 'w-16' : 'w-60'
-    )}>
+    <aside
+      aria-label="Sidebar navigation"
+      aria-expanded={!collapsed}
+      className={cn(
+        'hidden lg:flex flex-col h-screen sticky top-0 bg-sidebar border-r border-white/8 transition-all duration-300 z-30',
+        collapsed ? 'w-16' : 'w-60'
+      )}
+    >
       {/* Logo */}
       <div className={cn('flex items-center h-16 px-4 border-b border-white/8', collapsed && 'justify-center')}>
         {!collapsed ? (
@@ -75,9 +92,12 @@ export default function Sidebar({ userRole, userName, userEmail }: SidebarProps)
           const isActive = pathname === item.href || (item.href !== '/admin' && item.href !== '/member' && item.href !== '/shop' && pathname.startsWith(item.href))
           const Icon = item.icon
           return (
-            <Link key={item.href} href={item.href} title={collapsed ? item.label : undefined}
+            <Link key={item.href} href={item.href}
+              title={collapsed ? item.label : undefined}
+              aria-current={isActive ? 'page' : undefined}
+              aria-label={item.label}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 relative',
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 relative focus-visible:ring-2 focus-visible:ring-[#E11D2A] focus-visible:ring-offset-2 focus-visible:outline-none',
                 item.href === '/shop/forecast'
                   ? isActive
                     ? 'text-white font-semibold'
@@ -109,7 +129,8 @@ export default function Sidebar({ userRole, userName, userEmail }: SidebarProps)
       {/* Bottom controls — sign out + collapse only (user identity is in the header) */}
       <div className="border-t border-white/8 p-2 space-y-0.5">
         <button onClick={() => signOut({ callbackUrl: '/login' })} title={collapsed ? 'Sign Out' : undefined}
-          className={cn('flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-white/45 hover:bg-white/10 hover:text-white transition-colors text-sm', collapsed && 'justify-center px-2')}>
+          aria-label="Sign out"
+          className={cn('flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-white/45 hover:bg-white/10 hover:text-white transition-colors text-sm focus-visible:ring-2 focus-visible:ring-[#E11D2A] focus-visible:ring-offset-2 focus-visible:outline-none', collapsed && 'justify-center px-2')}>
           <LogOut className="h-4 w-4 flex-shrink-0" />
           {!collapsed && <span>Sign Out</span>}
         </button>

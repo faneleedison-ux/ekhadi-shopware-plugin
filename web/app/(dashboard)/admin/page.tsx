@@ -58,6 +58,7 @@ export default async function AdminDashboard() {
       <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl px-5 py-4">
         <div className="flex items-end justify-between flex-wrap gap-3">
           <div>
+            <div className="dawn-section-cap"><span className="dawn-section-cap-num">§ 01</span><span className="dawn-section-cap-rule" /><span className="dawn-section-cap-tag">Admin Dashboard</span></div>
             <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552] mb-1">Admin · e-Khadi</p>
             <h1 className="font-[var(--serif)] italic text-2xl text-[#14130E] leading-tight">Admin Dashboard</h1>
             <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#6B6552] mt-1">Platform overview, approvals, and community operations.</p>
@@ -134,8 +135,8 @@ export default async function AdminDashboard() {
           </div>
           {recentRequests.length === 0 ? (
             <div className="flex flex-col items-center py-10 text-center px-5">
-              <FileText className="h-8 w-8 text-[#A89971] mb-2" />
-              <p className="font-[var(--sans-dawn)] text-sm font-medium text-[#6B6552]">No credit requests yet</p>
+              <FileText className="h-10 w-10 text-[#A89971] mb-3" />
+              <p className="font-[var(--serif)] italic text-lg text-[#14130E]">Nothing here yet.</p>
               <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#A89971] mt-1">Requests will appear here once members submit them</p>
             </div>
           ) : (
@@ -152,7 +153,7 @@ export default async function AdminDashboard() {
                 </thead>
                 <tbody>
                   {recentRequests.map((req, i) => (
-                    <tr key={req.id} className={`border-b border-[#C9BCA0] last:border-0 ${i % 2 === 0 ? 'bg-[#EBE0C7]' : 'bg-[#F2E9D6]'}`}>
+                    <tr key={req.id} className={`border-b border-[#C9BCA0] last:border-0 hover:bg-[#E11D2A]/3 transition-colors ${i % 2 === 0 ? 'bg-[#EBE0C7]' : 'bg-[#F2E9D6]'}`}>
                       <td className="px-4 py-3">
                         <p className="font-[var(--sans-dawn)] text-sm font-medium text-[#14130E]">{req.requester.name}</p>
                         <p className="font-[var(--mono)] text-[10px] text-[#6B6552]">{req.requester.email}</p>
@@ -190,13 +191,14 @@ export default async function AdminDashboard() {
             </div>
             {activeGroups.length === 0 ? (
               <div className="flex flex-col items-center py-8 text-center px-4">
-                <UsersRound className="h-8 w-8 text-[#A89971] mb-2" />
-                <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#A89971]">No groups yet</p>
+                <UsersRound className="h-10 w-10 text-[#A89971] mb-3" />
+                <p className="font-[var(--serif)] italic text-lg text-[#14130E]">Nothing here yet.</p>
+                <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#A89971] mt-1">Groups will appear here once they are created</p>
               </div>
             ) : (
               <ul>
                 {activeGroups.map((group, i) => (
-                  <li key={group.id} className={`px-5 py-3 border-b border-[#C9BCA0] last:border-0 ${i % 2 === 0 ? 'bg-[#EBE0C7]' : 'bg-[#F2E9D6]'}`}>
+                  <li key={group.id} className={`px-5 py-3 border-b border-[#C9BCA0] last:border-0 hover:bg-[#E11D2A]/4 transition-colors cursor-pointer ${i % 2 === 0 ? 'bg-[#EBE0C7]' : 'bg-[#F2E9D6]'}`}>
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-[var(--sans-dawn)] text-sm font-semibold text-[#14130E]">{group.name}</p>

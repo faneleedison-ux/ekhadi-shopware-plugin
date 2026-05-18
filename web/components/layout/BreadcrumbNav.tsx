@@ -2,26 +2,26 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChevronRight, Home } from 'lucide-react'
 
 const PATH_LABELS: Record<string, string> = {
-  member: 'Home',
-  wallet: 'Wallet',
-  'credit-request': 'Credit Request',
-  group: 'My Group',
-  'bulk-buy': 'Bulk Buy',
-  noticeboard: 'Noticeboard',
-  shop: 'Dashboard',
-  transactions: 'Transactions',
-  forecast: 'AI Forecast',
-  restock: 'Restock Orders',
-  receipts: 'Receipts',
   admin: 'Admin',
   members: 'Members',
   groups: 'Groups',
   areas: 'Areas',
   'credit-requests': 'Credit Requests',
+  noticeboard: 'Noticeboard',
   fraud: 'Fraud Detection',
+  member: 'Home',
+  wallet: 'Wallet',
+  group: 'My Group',
+  'credit-request': 'Request Credit',
+  'bulk-buy': 'Bulk Buy',
+  profile: 'Profile',
+  shop: 'Dashboard',
+  transactions: 'Transactions',
+  receipts: 'Receipts',
+  restock: 'Restock',
+  forecast: 'Forecast',
 }
 
 export default function BreadcrumbNav() {
@@ -36,15 +36,31 @@ export default function BreadcrumbNav() {
   }))
 
   return (
-    <nav className="flex items-center gap-1 text-[11px] text-text-secondary px-4 lg:px-6 py-2 border-b border-border bg-background/60">
-      <Home className="h-3 w-3 flex-shrink-0" />
-      {crumbs.map((crumb) => (
-        <span key={crumb.href} className="flex items-center gap-1">
-          <ChevronRight className="h-3 w-3 text-border" />
+    <nav
+      className="flex items-center gap-0 px-4 lg:px-6 py-2 border-b border-[#C9BCA0] bg-[#F4EDE1]/60"
+      style={{ fontFamily: 'var(--mono)' }}
+    >
+      {crumbs.map((crumb, i) => (
+        <span key={crumb.href} className="flex items-center">
+          {i > 0 && (
+            <span
+              className="mx-2 text-[#E11D2A] text-[11px] select-none"
+              aria-hidden="true"
+            >
+              ·
+            </span>
+          )}
           {crumb.isLast ? (
-            <span className="font-semibold text-text-primary">{crumb.label}</span>
+            <span className="text-[11px] text-[#14130E] font-medium tracking-wide">
+              {crumb.label}
+            </span>
           ) : (
-            <Link href={crumb.href} className="hover:text-primary transition-colors">{crumb.label}</Link>
+            <Link
+              href={crumb.href}
+              className="text-[11px] text-[#6B6552] tracking-wide hover:text-[#14130E] transition-colors"
+            >
+              {crumb.label}
+            </Link>
           )}
         </span>
       ))}

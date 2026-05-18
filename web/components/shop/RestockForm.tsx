@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { Plus, Trash2, Send, CheckCircle, Package, Clock } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
 const STOCK_CATEGORIES = [
@@ -53,24 +52,28 @@ export default function RestockForm({ shopName, recentOrders }: { shopName: stri
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold text-text-primary">Restock Orders</h1>
-        <p className="text-text-secondary mt-1">{shopName} · Submit your restocking needs to admin</p>
+      <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl px-5 py-4">
+        <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552] mb-1">Inventory · {shopName}</p>
+        <h1 className="font-[var(--serif)] italic text-2xl text-[#14130E] leading-tight">Restock Orders</h1>
+        <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#6B6552] mt-1">Submit your restocking needs to admin</p>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Package className="h-4 w-4 text-primary" /> New Restock Request
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl overflow-hidden">
+        <div className="flex items-center gap-3 px-5 py-3 border-b border-[#C9BCA0]">
+          <div className="w-8 h-8 bg-[#E11D2A]/10 rounded-xl flex items-center justify-center">
+            <Package className="h-4 w-4 text-[#E11D2A]" />
+          </div>
+          <div>
+            <p className="font-[var(--serif)] italic text-base text-[#14130E]">New Restock Request</p>
+          </div>
+        </div>
+        <div className="p-5 space-y-4">
           {items.map((item, i) => {
             const cat = STOCK_CATEGORIES.find(c => c.value === item.category)
             return (
-              <div key={i} className="p-3 bg-background rounded-xl border border-border space-y-2.5">
+              <div key={i} className="p-3 bg-[#F2E9D6] rounded-xl border border-[#C9BCA0] space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold text-text-secondary">Item {i + 1}</p>
+                  <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552]">Item {i + 1}</p>
                   {items.length > 1 && (
                     <button onClick={() => removeItem(i)} className="text-danger hover:bg-danger/10 rounded-lg p-1 transition-colors">
                       <Trash2 className="h-3.5 w-3.5" />
@@ -80,7 +83,7 @@ export default function RestockForm({ shopName, recentOrders }: { shopName: stri
                 <select
                   value={item.category}
                   onChange={(e) => updateItem(i, 'category', e.target.value)}
-                  className="w-full text-sm bg-white border border-border rounded-xl px-3 py-2.5 outline-none focus:border-primary"
+                  className="w-full text-sm bg-[#F2E9D6] border border-[#C9BCA0] rounded-xl px-3 py-2.5 font-[var(--sans-dawn)] text-[#14130E] outline-none focus:border-[#E11D2A] transition-colors"
                 >
                   {STOCK_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                 </select>
@@ -91,7 +94,7 @@ export default function RestockForm({ shopName, recentOrders }: { shopName: stri
                       onChange={(e) => updateItem(i, 'product', e.target.value)}
                       placeholder={cat?.suggestions[0] ?? 'Product name'}
                       list={`suggestions-${i}`}
-                      className="w-full text-sm bg-white border border-border rounded-xl px-3 py-2.5 outline-none focus:border-primary"
+                      className="w-full text-sm bg-[#F2E9D6] border border-[#C9BCA0] rounded-xl px-3 py-2.5 font-[var(--sans-dawn)] text-[#14130E] outline-none focus:border-[#E11D2A] transition-colors"
                     />
                     <datalist id={`suggestions-${i}`}>
                       {cat?.suggestions.map(s => <option key={s} value={s} />)}
@@ -101,7 +104,7 @@ export default function RestockForm({ shopName, recentOrders }: { shopName: stri
                     value={item.quantity}
                     onChange={(e) => updateItem(i, 'quantity', e.target.value)}
                     placeholder="Qty"
-                    className="w-full text-sm bg-white border border-border rounded-xl px-3 py-2.5 outline-none focus:border-primary"
+                    className="w-full text-sm bg-[#F2E9D6] border border-[#C9BCA0] rounded-xl px-3 py-2.5 font-[var(--sans-dawn)] text-[#14130E] outline-none focus:border-[#E11D2A] transition-colors"
                   />
                 </div>
               </div>
@@ -120,7 +123,7 @@ export default function RestockForm({ shopName, recentOrders }: { shopName: stri
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Any special notes for admin..."
             rows={2}
-            className="w-full text-sm bg-background border border-border rounded-xl px-3 py-2.5 outline-none focus:border-primary transition-colors resize-none"
+            className="w-full text-sm bg-[#F2E9D6] border border-[#C9BCA0] rounded-xl px-3 py-2.5 font-[var(--sans-dawn)] text-[#14130E] outline-none focus:border-[#E11D2A] transition-colors resize-none"
           />
 
           {success && (
@@ -132,43 +135,39 @@ export default function RestockForm({ shopName, recentOrders }: { shopName: stri
           <button
             onClick={submit}
             disabled={loading || items.every(i => !i.product)}
-            className="w-full py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 disabled:opacity-40"
-            style={{ background: 'linear-gradient(135deg, #1877F2, #0f4fa8)' }}
+            className="w-full py-3 rounded-xl bg-[#E11D2A] hover:bg-[#A60E1A] text-white font-[var(--mono)] text-[10px] tracking-widest uppercase flex items-center justify-center gap-2 disabled:opacity-40 transition-colors"
           >
             <Send className="h-4 w-4" />
             {loading ? 'Submitting...' : 'Submit Restock Order'}
           </button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {recentOrders.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Clock className="h-4 w-4 text-text-secondary" /> Recent Orders
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ul className="divide-y divide-border">
-              {recentOrders.map(order => (
-                <li key={order.id} className="px-6 py-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-text-primary">
-                        {(order.items as RestockItem[]).map(i => i.product).join(', ')}
-                      </p>
-                      {order.notes && <p className="text-xs text-text-secondary mt-0.5">{order.notes}</p>}
-                    </div>
-                    <div className="flex-shrink-0 text-right">
-                      <Badge variant={statusVariant(order.status) as any}>{order.status}</Badge>
-                      <p className="text-[10px] text-text-secondary mt-1">{new Date(order.createdAt).toLocaleDateString('en-ZA')}</p>
-                    </div>
+        <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-3 px-5 py-3 border-b border-[#C9BCA0]">
+            <Clock className="h-4 w-4 text-[#6B6552]" />
+            <p className="font-[var(--serif)] italic text-base text-[#14130E]">Recent Orders</p>
+          </div>
+          <ul className="divide-y divide-[#C9BCA0]">
+            {recentOrders.map((order, idx) => (
+              <li key={order.id} className={`px-5 py-3 ${idx % 2 === 0 ? 'bg-[#EBE0C7]' : 'bg-[#F2E9D6]'}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-[var(--sans-dawn)] text-sm font-medium text-[#14130E]">
+                      {(order.items as RestockItem[]).map(i => i.product).join(', ')}
+                    </p>
+                    {order.notes && <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#6B6552] mt-0.5">{order.notes}</p>}
                   </div>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+                  <div className="flex-shrink-0 text-right">
+                    <Badge variant={statusVariant(order.status) as any}>{order.status}</Badge>
+                    <p className="font-[var(--mono)] text-[10px] text-[#A89971] mt-1">{new Date(order.createdAt).toLocaleDateString('en-ZA')}</p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   )
