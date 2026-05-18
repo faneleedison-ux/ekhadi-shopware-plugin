@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { FileText } from 'lucide-react'
+import { FileText, Search } from 'lucide-react'
 import { formatDate, formatCurrency } from '@/lib/utils'
 
 export interface SerializedMember {
@@ -116,13 +116,16 @@ export default function MembersTable({ members }: { members: SerializedMember[] 
   return (
     <div className="space-y-3">
       {/* Search */}
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search members by name, email, area…"
-        className="w-full px-4 py-2.5 bg-[#F2E9D6] border border-[#C9BCA0] rounded-xl font-[var(--mono)] text-[11px] text-[#14130E] outline-none focus:border-[#E11D2A] transition-colors placeholder:text-[#A89971]"
-      />
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#A89971] pointer-events-none" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search members by name, email, area…"
+          className="w-full pl-9 pr-4 py-2.5 bg-[#F2E9D6] border border-[#C9BCA0] rounded-xl font-[var(--mono)] text-[11px] text-[#14130E] outline-none focus:border-[#E11D2A] transition-colors placeholder:text-[#A89971]"
+        />
+      </div>
 
       {/* Table */}
       <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl overflow-hidden">

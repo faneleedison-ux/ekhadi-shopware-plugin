@@ -232,13 +232,13 @@ export default async function MemberDashboard() {
                 <span className="font-[var(--mono)] text-[9px] tracking-widest uppercase text-[#3F7B4F] border border-[#3F7B4F]/30 bg-[#3F7B4F]/10 rounded px-2 py-1">{activeGroup._count.members} members</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-[#F2E9D6] border border-[#C9BCA0] rounded-xl text-center">
+                <div className="p-4 bg-[#F2E9D6] border border-[#C9BCA0] rounded-xl text-center">
                   <p className="font-[var(--serif)] italic text-lg text-[#E11D2A]">
                     {formatCurrency(Number(activeGroup.wallet?.balance || 0))}
                   </p>
                   <p className="font-[var(--mono)] text-[10px] tracking-wide uppercase text-[#6B6552]">Group wallet</p>
                 </div>
-                <div className="p-3 bg-[#F2E9D6] border border-[#C9BCA0] rounded-xl text-center">
+                <div className="p-4 bg-[#F2E9D6] border border-[#C9BCA0] rounded-xl text-center">
                   {upcomingRotation ? (
                     <>
                       <p className="font-[var(--serif)] italic text-base text-[#14130E]">{getMonthName(upcomingRotation.month)}</p>

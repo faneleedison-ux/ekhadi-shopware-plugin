@@ -68,7 +68,7 @@ export default function BottomNav({ userRole }: { userRole: string }) {
               title={item.label}
               aria-current={isActive ? 'page' : undefined}
               aria-label={item.label}
-              className={cn('flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors flex-1 focus-visible:ring-2 focus-visible:ring-[#E11D2A] focus-visible:ring-offset-2 focus-visible:outline-none', isActive ? 'text-primary' : 'text-text-secondary hover:text-text-primary')}>
+              className={cn('flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors flex-1 focus-visible:ring-2 focus-visible:ring-[#E11D2A] focus-visible:ring-offset-2 focus-visible:outline-none', isActive ? 'text-primary bg-white/15' : 'text-text-secondary hover:text-text-primary hover:bg-white/8')}>
               <Icon className={cn('h-5 w-5', isActive && 'stroke-[2.5]')} />
               <span className="text-xs font-medium">{item.label}</span>
             </Link>

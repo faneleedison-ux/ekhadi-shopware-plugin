@@ -13,8 +13,8 @@ type Props = {
 export default function ToastMessage({ type, message, onClose }: Props) {
   const style =
     type === 'success'
-      ? 'bg-green-50 border-green-200 text-green-800'
-      : 'bg-red-50 border-red-200 text-red-800'
+      ? 'bg-[#3F7B4F]/10 border-[#3F7B4F]/30 text-[#3F7B4F]'
+      : 'bg-[#E11D2A]/10 border-[#E11D2A]/30 text-[#E11D2A]'
 
   return (
     <div className={`fixed right-4 top-4 z-[100] min-w-[280px] max-w-md border rounded-lg shadow-lg px-4 py-3 ${style}`}>

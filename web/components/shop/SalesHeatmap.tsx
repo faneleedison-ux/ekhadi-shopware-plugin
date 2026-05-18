@@ -22,64 +22,66 @@ export default function SalesHeatmap({ hourlyData }: Props) {
 
   function getColor(val: number) {
     const pct = val / max
-    if (pct > 0.75) return '#1877F2'
-    if (pct > 0.5) return '#60a5fa'
-    if (pct > 0.25) return '#bfdbfe'
-    return '#e5e7eb'
+    if (pct > 0.75) return '#E11D2A'
+    if (pct > 0.5) return 'rgba(225,29,42,0.6)'
+    if (pct > 0.25) return '#A07030'
+    return '#C9BCA0'
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-white p-4 space-y-3">
-      <div className="flex items-center justify-between">
+    <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl overflow-hidden">
+      <div className="px-5 py-3 border-b border-[#C9BCA0] flex items-center justify-between">
         <div>
-          <p className="text-sm font-bold text-text-primary">Sales by Hour</p>
-          <p className="text-xs text-text-secondary">When your area shops most</p>
+          <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552]">Activity</p>
+          <p className="font-[var(--serif)] italic text-lg text-[#14130E] leading-tight">Sales by Hour</p>
         </div>
         <div className="text-right">
-          <p className="text-xs font-bold text-primary">{label(peakHour)}</p>
-          <p className="text-[10px] text-text-secondary">peak hour</p>
+          <p className="font-[var(--serif)] italic text-base text-[#E11D2A]">{label(peakHour)}</p>
+          <p className="font-[var(--mono)] text-[9px] tracking-widest uppercase text-[#6B6552]">peak hour</p>
         </div>
       </div>
 
-      {/* Bar chart */}
-      <div className="flex items-end gap-0.5 h-20">
-        {hours.map((h) => {
-          const val = hourlyData[h]
-          const pct = (val / max) * 100
-          return (
-            <div key={h} className="flex-1 flex flex-col items-center gap-0.5" title={`${label(h)}: ${val} sales`}>
-              <div
-                className="w-full rounded-t-sm transition-all duration-700"
-                style={{
-                  height: animated ? `${Math.max(pct, 4)}%` : '4%',
-                  backgroundColor: h === peakHour ? '#1877F2' : getColor(val),
-                  transitionDelay: `${h * 20}ms`,
-                }}
-              />
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Hour labels - show every 6 hours */}
-      <div className="flex justify-between text-[9px] text-text-secondary px-0.5">
-        {[0, 6, 12, 18, 23].map(h => <span key={h}>{label(h)}</span>)}
-      </div>
-
-      <div className="flex items-center gap-4 text-[10px] text-text-secondary">
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-primary inline-block" /> Peak</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-blue-200 inline-block" /> Moderate</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-gray-200 inline-block" /> Low</span>
-      </div>
-
-      {max > 0 && (
-        <div className="mt-1 p-2.5 rounded-xl bg-primary-light flex items-center gap-2">
-          <span className="text-base">💡</span>
-          <p className="text-xs text-primary">
-            <span className="font-semibold">Tip:</span> Your busiest time is {label(peakHour)}. Make sure shelves are stocked beforehand.
-          </p>
+      <div className="p-4 space-y-3">
+        {/* Bar chart */}
+        <div className="flex items-end gap-0.5 h-20">
+          {hours.map((h) => {
+            const val = hourlyData[h]
+            const pct = (val / max) * 100
+            return (
+              <div key={h} className="flex-1 flex flex-col items-center gap-0.5" title={`${label(h)}: ${val} sales`}>
+                <div
+                  className="w-full rounded-t-sm transition-all duration-700"
+                  style={{
+                    height: animated ? `${Math.max(pct, 4)}%` : '4%',
+                    backgroundColor: h === peakHour ? '#E11D2A' : getColor(val),
+                    transitionDelay: `${h * 20}ms`,
+                  }}
+                />
+              </div>
+            )
+          })}
         </div>
-      )}
+
+        {/* Hour labels */}
+        <div className="flex justify-between font-[var(--mono)] text-[9px] text-[#A89971] px-0.5">
+          {[0, 6, 12, 18, 23].map(h => <span key={h}>{label(h)}</span>)}
+        </div>
+
+        <div className="flex items-center gap-4 font-[var(--mono)] text-[9px] tracking-wide text-[#6B6552]">
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[#E11D2A] inline-block" /> Peak</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[#A07030] inline-block" /> Moderate</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[#C9BCA0] inline-block" /> Low</span>
+        </div>
+
+        {max > 0 && (
+          <div className="p-3 rounded-xl bg-[#F2E9D6] border border-[#C9BCA0]">
+            <p className="font-[var(--mono)] text-[10px] text-[#6B6552] tracking-wide">
+              <span className="text-[#E11D2A] font-bold">Tip · </span>
+              Busiest time is {label(peakHour)}. Stock shelves before then.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

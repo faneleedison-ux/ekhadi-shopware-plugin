@@ -123,7 +123,7 @@ export default async function GroupPage() {
         <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl overflow-hidden">
           <div className="px-5 py-3 border-b border-[#C9BCA0]">
             <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552]">Stokvel</p>
-            <p className="font-[var(--serif)] italic text-base text-[#14130E]">Members ({group.members.length})</p>
+            <p className="font-[var(--serif)] italic text-lg text-[#14130E]">Members ({group.members.length})</p>
           </div>
           <ul>
             {group.members.map((member, i) => {
@@ -175,7 +175,7 @@ export default async function GroupPage() {
             <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl overflow-hidden">
               <div className="px-5 py-3 border-b border-[#C9BCA0]">
                 <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552]">Budget</p>
-                <p className="font-[var(--serif)] italic text-base text-[#14130E]">Spending Buckets</p>
+                <p className="font-[var(--serif)] italic text-lg text-[#14130E]">Spending Buckets</p>
               </div>
               <div className="p-4 space-y-4">
                 {buckets.map((bucket) => {
@@ -207,7 +207,7 @@ export default async function GroupPage() {
           <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl overflow-hidden">
             <div className="px-5 py-3 border-b border-[#C9BCA0]">
               <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552]">Stokvel</p>
-              <p className="font-[var(--serif)] italic text-base text-[#14130E]">Rotation Schedule</p>
+              <p className="font-[var(--serif)] italic text-lg text-[#14130E]">Rotation Schedule</p>
             </div>
 
             {group.rotationCycles.length === 0 ? (

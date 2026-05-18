@@ -183,7 +183,7 @@ html {
 
 /* Focus styles */
 :focus-visible {
-  outline: 2px solid #1877F2;
+  outline: 2px solid #E11D2A;
   outline-offset: 3px;
   border-radius: 6px;
 }

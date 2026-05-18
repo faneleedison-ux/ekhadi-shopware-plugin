@@ -29,7 +29,7 @@ const config: Config = {
         background: '#F7F2E8',  // warm cream (paper-light)
         sidebar: '#0A0E1F',     // night dark
         card: {
-          DEFAULT: '#FFFFFF',
+          DEFAULT: '#F2E9D6',
           foreground: '#14130E',
         },
         'text-primary': '#14130E',  // near-black ink

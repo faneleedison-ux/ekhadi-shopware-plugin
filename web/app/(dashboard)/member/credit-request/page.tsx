@@ -111,7 +111,7 @@ export default function CreditRequestPage() {
   }
 
   return (
-    <div className="space-y-5 animate-fade-in max-w-2xl">
+    <div className="space-y-5 animate-fade-in">
 
       {/* Heading */}
       <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl px-5 py-4">
