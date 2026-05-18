@@ -75,12 +75,12 @@ jobs:
 
           if [ -n "$DOMAIN_TOKEN" ] && [ -n "$DOMAIN_ID" ]; then
             # Get existing agency or create it
-            AGENCY_ID=$(curl -s "https://iam.myhuaweicloud.com/v3.0/OS-AGENCY/agencies?domain_id=$DOMAIN_ID&name=modelarts_agency" \
+            AGENCY_ID=$(curl -s "https://iam.myhuaweicloud.com/v3.0/OS-AGENCY/agencies?domain_id=$DOMAIN_ID&name=modelarts_agency_V2" \
               -H "X-Auth-Token: $DOMAIN_TOKEN" | python3 -c "import json,sys; a=json.load(sys.stdin).get('agencies',[]); print(a[0]['id'] if a else '')" 2>/dev/null)
             if [ -z "$AGENCY_ID" ]; then
               AGENCY_RESP=$(curl -s -X POST "https://iam.myhuaweicloud.com/v3.0/OS-AGENCY/agencies" \
                 -H "X-Auth-Token: $DOMAIN_TOKEN" -H "Content-Type: application/json" \
-                -d "{\"agency\":{\"name\":\"modelarts_agency\",\"domain_id\":\"$DOMAIN_ID\",\"trust_domain_name\":\"op_svc_modelarts\",\"description\":\"ModelArts OBS access\",\"duration\":\"FOREVER\"}}")
+                -d "{\"agency\":{\"name\":\"modelarts_agency_V2\",\"domain_id\":\"$DOMAIN_ID\",\"trust_domain_name\":\"op_svc_modelarts\",\"description\":\"ModelArts OBS access\",\"duration\":\"FOREVER\"}}")
               AGENCY_ID=$(echo "$AGENCY_RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('agency',{}).get('id',''))" 2>/dev/null)
               echo "Created agency: $AGENCY_ID"
             else
