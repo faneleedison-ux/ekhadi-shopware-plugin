@@ -40,7 +40,7 @@ export default function DawnHero({ items }: { items?: ActivityItem[] }) {
       <DawnWire items={items} />
 
       <div className="hero-video-wrap">
-        <video ref={videoRef} src="/hero-bg.mp4" autoPlay muted playsInline onEnded={reveal} />
+        <video ref={videoRef} src="https://ekhadi-files.obs.af-south-1.myhuaweicloud.com/hero-bg.mp4" autoPlay muted playsInline onEnded={reveal} />
         <div className="hero-dim" />
         <div className="hero-stars" />
         <div className="hero-grad" />
