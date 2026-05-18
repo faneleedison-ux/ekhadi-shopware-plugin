@@ -1140,6 +1140,7 @@ footer.foot { background: var(--paper); color: var(--ink); padding: 60px 0 32px;
 .lf-submit:hover:not(:disabled) { background: var(--dawn-2); }
 .lf-submit:active:not(:disabled) { transform: scale(.98); }
 .lf-submit:disabled { opacity: .55; cursor: not-allowed; }
+.lf-hint { font-family: var(--mono); font-size: 9px; letter-spacing: .14em; color: var(--ink-mute); margin-top: 5px; }
 .lf-error { background: rgba(225,29,42,.07); border: 1px solid rgba(225,29,42,.2); border-radius: 8px; padding: 11px 14px; font-family: var(--sans-dawn); font-size: 13px; color: var(--dawn); margin-bottom: 16px; }
 .lf-success { background: rgba(63,123,79,.08); border: 1px solid rgba(63,123,79,.22); border-radius: 8px; padding: 11px 14px; font-family: var(--sans-dawn); font-size: 13px; color: #3F7B4F; margin-bottom: 16px; }
 .lf-foot { text-align: center; margin-top: 18px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; color: var(--ink-mute); text-transform: uppercase; }
