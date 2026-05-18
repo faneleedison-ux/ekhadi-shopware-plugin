@@ -127,27 +127,18 @@ jobs:
             echo "$(echo "$MA_AUTH_RESP2" | head -n -1)" | python3 -m json.tool 2>/dev/null || true
           fi
 
-          # ── Create training job (v2, fallback to v1) ──────────────────────────
+          # ── Create training job (v2) ──────────────────────────────────────────
+          # spec wraps resource + log_export_path (v2 schema requirement)
           echo "=== Creating training job ==="
           JOB_NAME="ekhadi-credit-scorer-$(date +%Y%m%d%H%M)"
+          python3 -c "import json,sys; json.dump({'kind':'job','metadata':{'name':sys.argv[1],'workspace_id':'0'},'algorithm':{'type':'customized','code_dir':'obs://ekhadi-files/modelarts/code/','boot_file':'train.py','engine':{'engine_name':'Python','engine_version':'Python-3.9.2'},'parameters':[{'name':'data-url','value':'obs://ekhadi-files/modelarts/training-data/latest.csv'},{'name':'train-url','value':'obs://ekhadi-files/modelarts/models/credit-scorer/'}]},'spec':{'resource':{'flavor_id':sys.argv[2],'node_count':1},'log_export_path':{'obs_url':'obs://ekhadi-files/modelarts/logs/'}}},open('/tmp/train_job.json','w'))" "$JOB_NAME" "$FLAVOR_ID"
           CREATE_RESP=$(curl -s -w "\n%{http_code}" -X POST "$MA_HOST/v2/$MA_PROJ/training-jobs" \
             -H "X-Auth-Token: $TOKEN" -H "Content-Type: application/json" \
-            -d "{\"kind\":\"job\",\"metadata\":{\"name\":\"$JOB_NAME\"},\"algorithm\":{\"type\":\"customized\",\"code_dir\":\"obs://ekhadi-files/modelarts/code/\",\"boot_file\":\"train.py\",\"engine\":{\"engine_name\":\"Python\",\"engine_version\":\"Python-3.9.2\"},\"parameters\":[{\"name\":\"data-url\",\"value\":\"obs://ekhadi-files/modelarts/training-data/latest.csv\"},{\"name\":\"train-url\",\"value\":\"obs://ekhadi-files/modelarts/models/credit-scorer/\"}]},\"task_resource\":{\"flavor_id\":\"$FLAVOR_ID\",\"node_count\":1},\"log_export_path\":{\"obs_url\":\"obs://ekhadi-files/modelarts/logs/\"}}")
+            -d @/tmp/train_job.json)
           CREATE_CODE=$(echo "$CREATE_RESP" | tail -1)
           CREATE_BODY=$(echo "$CREATE_RESP" | head -n -1)
           echo "v2 HTTP $CREATE_CODE"
           echo "$CREATE_BODY" | python3 -m json.tool 2>/dev/null || echo "$CREATE_BODY"
-
-          if [ "$CREATE_CODE" != "200" ] && [ "$CREATE_CODE" != "201" ]; then
-            echo "Trying v1 training-jobs API..."
-            CREATE_RESP=$(curl -s -w "\n%{http_code}" -X POST "$MA_HOST/v1/$MA_PROJ/training-jobs" \
-              -H "X-Auth-Token: $TOKEN" -H "Content-Type: application/json" \
-              -d "{\"job_name\":\"$JOB_NAME\",\"job_desc\":\"e-Khadi credit scoring\",\"config\":{\"worker_server_num\":1,\"app_url\":\"obs://ekhadi-files/modelarts/code/\",\"boot_file_url\":\"obs://ekhadi-files/modelarts/code/train.py\",\"hyperparameters\":[{\"label\":\"data-url\",\"value\":\"obs://ekhadi-files/modelarts/training-data/latest.csv\"},{\"label\":\"train-url\",\"value\":\"obs://ekhadi-files/modelarts/models/credit-scorer/\"}],\"log_url\":\"obs://ekhadi-files/modelarts/logs/\",\"train_url\":\"obs://ekhadi-files/modelarts/models/credit-scorer/\"}}")
-            CREATE_CODE=$(echo "$CREATE_RESP" | tail -1)
-            CREATE_BODY=$(echo "$CREATE_RESP" | head -n -1)
-            echo "v1 HTTP $CREATE_CODE"
-            echo "$CREATE_BODY" | python3 -m json.tool 2>/dev/null || echo "$CREATE_BODY"
-          fi
 
           JOB_ID=$(echo "$CREATE_BODY" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('metadata',{}).get('id') or d.get('job_id') or d.get('id',''))" 2>/dev/null)
           echo "Job ID: $JOB_ID"
