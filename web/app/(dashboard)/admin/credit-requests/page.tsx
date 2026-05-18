@@ -193,20 +193,20 @@ export default function CreditRequestsPage() {
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-2 flex-wrap bg-white border border-border rounded-xl p-2">
+      <div className="flex gap-2 flex-wrap bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl p-2">
         {(['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const).map((status) => (
           <button
             key={status}
             onClick={() => setFilter(status)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-xl font-[var(--mono)] text-[10px] tracking-widest uppercase transition-all ${
               filter === status
-                ? 'bg-primary text-white shadow-sm'
-                : 'text-text-secondary hover:text-text-primary'
+                ? 'bg-[#E11D2A] text-white shadow-sm'
+                : 'text-[#6B6552] hover:text-[#14130E]'
             }`}
           >
             {status === 'ALL' ? 'All' : status.charAt(0) + status.slice(1).toLowerCase()}
-            <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs ${
-              filter === status ? 'bg-white/20 text-white' : 'bg-gray-100 text-text-secondary'
+            <span className={`ml-2 px-1.5 py-0.5 rounded text-[9px] ${
+              filter === status ? 'bg-white/20 text-white' : 'bg-[#C9BCA0]/50 text-[#6B6552]'
             }`}>
               {counts[status]}
             </span>

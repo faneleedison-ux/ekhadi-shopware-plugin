@@ -73,107 +73,99 @@ export default function ProfilePage() {
   const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', padding: '32px 16px' }}>
-      <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 28 }}>My Profile</h1>
+    <div className="space-y-5 animate-fade-in max-w-lg">
 
-      {/* Avatar */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 32 }}>
-        <div
-          onClick={() => fileRef.current?.click()}
-          style={{
-            position: 'relative', width: 96, height: 96,
-            borderRadius: '50%', cursor: 'pointer',
-            background: preview ? 'transparent' : 'linear-gradient(135deg,#1877F2,#0f4fa8)',
-            border: '3px solid #1877F2',
-            overflow: 'hidden',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          {preview
-            ? <img src={preview} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <span style={{ color: '#fff', fontSize: 28, fontWeight: 700 }}>{initials || <User size={32} color="#fff" />}</span>
-          }
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'rgba(0,0,0,0.35)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            opacity: 0, transition: 'opacity 0.2s',
-          }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-            onMouseLeave={e => (e.currentTarget.style.opacity = '0')}
+      {/* Header */}
+      <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl px-5 py-4">
+        <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552] mb-1">Account · e-Khadi</p>
+        <h1 className="font-[var(--serif)] italic text-2xl text-[#14130E] leading-tight">My Profile</h1>
+        <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#6B6552] mt-1">Update your name, photo and contact details</p>
+      </div>
+
+      {/* Avatar + form card */}
+      <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl overflow-hidden">
+
+        {/* Avatar section */}
+        <div className="flex flex-col items-center py-6 border-b border-[#C9BCA0] bg-[#F2E9D6]">
+          <div
+            onClick={() => fileRef.current?.click()}
+            className="relative w-24 h-24 rounded-full cursor-pointer overflow-hidden border-2 border-[#C9BCA0] hover:border-[#E11D2A] transition-colors"
+            style={{ background: preview ? 'transparent' : '#C9BCA0' }}
           >
-            <Camera size={22} color="#fff" />
+            {preview
+              ? <img src={preview} alt="avatar" className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex items-center justify-center font-[var(--serif)] italic text-3xl text-[#6B6552]">
+                  {initials || <User size={32} className="text-[#6B6552]" />}
+                </div>
+            }
+            <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+              <Camera size={22} className="text-white" />
+            </div>
           </div>
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFileChange} />
+          <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#A89971] mt-3">
+            {uploading ? 'Uploading…' : 'Tap to change photo'}
+          </p>
         </div>
-        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={handleFileChange} />
-        <p style={{ fontSize: 12, color: '#888', marginTop: 10 }}>
-          {uploading ? 'Uploading…' : 'Tap to change photo'}
-        </p>
+
+        {/* Fields */}
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="flex items-center gap-1.5 font-[var(--mono)] text-[11px] tracking-widest uppercase text-[#6B6552] mb-2">
+              <User size={13} /> Full Name
+            </label>
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Your full name"
+              className="w-full px-4 py-3 bg-[#F2E9D6] border border-[#C9BCA0] rounded-xl font-[var(--sans-dawn)] text-sm text-[#14130E] outline-none focus:border-[#E11D2A] transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="flex items-center gap-1.5 font-[var(--mono)] text-[11px] tracking-widest uppercase text-[#6B6552] mb-2">
+              <Mail size={13} /> Email
+            </label>
+            <input
+              value={session?.user?.email ?? ''}
+              disabled
+              className="w-full px-4 py-3 bg-[#F2E9D6] border border-[#C9BCA0] rounded-xl font-[var(--sans-dawn)] text-sm text-[#A89971] opacity-60 cursor-not-allowed"
+            />
+          </div>
+
+          <div>
+            <label className="flex items-center gap-1.5 font-[var(--mono)] text-[11px] tracking-widest uppercase text-[#6B6552] mb-2">
+              <Phone size={13} /> Phone (WhatsApp)
+            </label>
+            <input
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              placeholder="+27 60 000 0000"
+              className="w-full px-4 py-3 bg-[#F2E9D6] border border-[#C9BCA0] rounded-xl font-[var(--sans-dawn)] text-sm text-[#14130E] outline-none focus:border-[#E11D2A] transition-colors"
+            />
+          </div>
+
+          {error && (
+            <div className="p-3 rounded-xl border border-[#E11D2A]/30 bg-[#E11D2A]/10 font-[var(--mono)] text-[11px] text-[#E11D2A]">
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={handleSave}
+            disabled={saving || uploading}
+            className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-[var(--mono)] text-[11px] tracking-widest uppercase transition-all ${
+              saved
+                ? 'bg-[#3F7B4F] text-white'
+                : saving || uploading
+                ? 'bg-[#C9BCA0] text-[#6B6552] cursor-not-allowed'
+                : 'bg-[#E11D2A] hover:bg-[#A60E1A] text-white cursor-pointer'
+            }`}
+          >
+            {saved ? <><CheckCircle size={16} /> Saved</> : saving ? 'Saving…' : <><Save size={16} /> Save Changes</>}
+          </button>
+        </div>
       </div>
-
-      {/* Fields */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <Field label="Full Name" icon={<User size={16} />}>
-          <input
-            value={name} onChange={e => setName(e.target.value)}
-            placeholder="Your full name"
-            style={inputStyle}
-          />
-        </Field>
-
-        <Field label="Email" icon={<Mail size={16} />}>
-          <input value={session?.user?.email ?? ''} disabled style={{ ...inputStyle, opacity: 0.5, cursor: 'not-allowed' }} />
-        </Field>
-
-        <Field label="Phone (for WhatsApp notifications)" icon={<Phone size={16} />}>
-          <input
-            value={phone} onChange={e => setPhone(e.target.value)}
-            placeholder="+27 60 000 0000"
-            style={inputStyle}
-          />
-        </Field>
-      </div>
-
-      {error && (
-        <p style={{ color: '#ef4444', fontSize: 13, marginTop: 12, padding: '10px 14px', background: '#fef2f2', borderRadius: 8 }}>
-          {error}
-        </p>
-      )}
-
-      <button
-        onClick={handleSave}
-        disabled={saving || uploading}
-        style={{
-          marginTop: 24, width: '100%',
-          background: saved ? '#16a34a' : 'linear-gradient(135deg,#1877F2,#0f4fa8)',
-          color: '#fff', border: 'none', borderRadius: 12,
-          padding: '14px 0', fontSize: 15, fontWeight: 700,
-          cursor: saving || uploading ? 'not-allowed' : 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          opacity: saving || uploading ? 0.7 : 1,
-          transition: 'background 0.3s',
-        }}
-      >
-        {saved ? <><CheckCircle size={18} /> Saved</> : saving ? 'Saving…' : <><Save size={18} /> Save Changes</>}
-      </button>
     </div>
   )
-}
-
-function Field({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div>
-      <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-        {icon} {label}
-      </label>
-      {children}
-    </div>
-  )
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '11px 14px',
-  border: '1px solid #e2e8f0', borderRadius: 10,
-  fontSize: 14, outline: 'none', boxSizing: 'border-box',
-  background: '#fff',
 }

@@ -39,16 +39,28 @@ html {
   }
 
   .admin-heading {
+    font-family: var(--serif);
+    font-style: italic;
     font-size: var(--admin-title-size);
-    @apply font-bold text-text-primary tracking-tight;
+    font-weight: 400;
+    color: #14130E;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
   }
 
   .admin-subheading {
-    @apply text-sm text-text-secondary mt-1;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #6B6552;
+    margin-top: 4px;
   }
 
   .admin-kpi-card {
-    @apply rounded-xl border border-border bg-card shadow-sm h-full;
+    background: #EBE0C7;
+    border: 1px solid #C9BCA0;
+    border-radius: 1rem;
     min-height: 104px;
   }
 

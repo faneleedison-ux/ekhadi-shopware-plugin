@@ -11,8 +11,15 @@ export default async function BulkBuyPage() {
   const membership = await prisma.groupMember.findFirst({ where: { userId: session.user.id } })
   if (!membership) {
     return (
-      <div className="text-center py-16">
-        <p className="font-bold text-text-primary">You need to be in a group to use Bulk Buy</p>
+      <div className="space-y-5 animate-fade-in">
+        <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl px-5 py-4">
+          <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552] mb-1">Community · e-Khadi</p>
+          <h1 className="font-[var(--serif)] italic text-2xl text-[#14130E] leading-tight">Bulk Buy</h1>
+        </div>
+        <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl text-center py-16 px-5">
+          <p className="font-[var(--sans-dawn)] font-bold text-[#14130E]">You need to be in a group to use Bulk Buy</p>
+          <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#A89971] mt-2">Contact an admin to be assigned to a stokvel group first.</p>
+        </div>
       </div>
     )
   }

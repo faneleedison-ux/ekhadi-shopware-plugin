@@ -53,11 +53,14 @@ export default function Sidebar({ userRole, userName, userEmail }: SidebarProps)
       {/* Logo */}
       <div className={cn('flex items-center h-16 px-4 border-b border-white/8', collapsed && 'justify-center')}>
         {!collapsed ? (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-lg shadow-white/40 ring-2 ring-white/30" style={{boxShadow:'0 0 18px 4px rgba(255,255,255,0.55), 0 0 6px 1px rgba(255,255,255,0.8)'}}>
-              <span className="text-primary font-bold text-sm">eK</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-[#E11D2A] rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="font-serif italic text-white font-normal text-sm leading-none">eK</span>
             </div>
-            <span className="font-bold text-lg tracking-tight text-white" style={{textShadow:'0 0 12px rgba(255,255,255,0.6)'}}>e-Khadi</span>
+            <div>
+              <span className="font-serif italic text-lg text-white leading-none" style={{fontFamily:'var(--serif)'}}>e-Khadi</span>
+              <p className="font-mono text-[8px] tracking-widest uppercase text-white/40 leading-none mt-0.5" style={{fontFamily:'var(--mono)'}}>Community Credit</p>
+            </div>
           </div>
         ) : (
           <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center" style={{boxShadow:'0 0 18px 4px rgba(255,255,255,0.55), 0 0 6px 1px rgba(255,255,255,0.8)'}}>

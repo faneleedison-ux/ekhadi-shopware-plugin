@@ -23,35 +23,45 @@ export default async function MemberNoticeboardPage() {
 
   return (
     <div className="space-y-5 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
-          <Bell className="h-6 w-6 text-primary" /> Community Noticeboard
+
+      {/* Header */}
+      <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl px-5 py-4">
+        <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552] mb-1">Community · e-Khadi</p>
+        <h1 className="font-[var(--serif)] italic text-2xl text-[#14130E] leading-tight flex items-center gap-2">
+          <Bell className="h-5 w-5 text-[#E11D2A]" /> Noticeboard
         </h1>
-        <p className="text-text-secondary mt-1">Announcements from your stokvel admin</p>
+        <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#6B6552] mt-1">Announcements from your stokvel admin</p>
       </div>
 
       {notices.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="w-16 h-16 bg-primary/8 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Bell className="h-8 w-8 text-primary opacity-40" />
+        <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl text-center py-16 px-5">
+          <div className="w-16 h-16 bg-[#E11D2A]/8 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Bell className="h-8 w-8 text-[#E11D2A] opacity-30" />
           </div>
-          <p className="font-bold text-text-primary">No notices yet</p>
-          <p className="text-sm text-text-secondary mt-1">Check back soon for community announcements</p>
+          <p className="font-[var(--sans-dawn)] font-bold text-[#14130E]">No notices yet</p>
+          <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#A89971] mt-1">Check back soon for community announcements</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {notices.map(n => (
-            <div key={n.id} className={`rounded-2xl border p-4 ${n.pinned ? 'bg-primary/5 border-primary/20' : 'bg-white border-border'}`}>
+          {notices.map((n, i) => (
+            <div key={n.id} className={`rounded-2xl border overflow-hidden ${
+              n.pinned
+                ? 'bg-[#E11D2A]/5 border-[#E11D2A]/20'
+                : i % 2 === 0 ? 'bg-[#EBE0C7] border-[#C9BCA0]' : 'bg-[#F2E9D6] border-[#C9BCA0]'
+            }`}>
               {n.pinned && (
-                <div className="flex items-center gap-1 text-[10px] font-bold text-primary mb-2">
-                  <Pin className="h-3 w-3" /> PINNED NOTICE
+                <div className="flex items-center gap-1.5 px-4 py-2 border-b border-[#E11D2A]/20 bg-[#E11D2A]/8">
+                  <Pin className="h-3 w-3 text-[#E11D2A]" />
+                  <span className="font-[var(--mono)] text-[9px] tracking-widest uppercase text-[#E11D2A]">Pinned Notice</span>
                 </div>
               )}
-              <p className="text-base font-bold text-text-primary">{n.title}</p>
-              <p className="text-sm text-text-secondary mt-1.5 leading-relaxed whitespace-pre-wrap">{n.content}</p>
-              <p className="text-[11px] text-text-secondary mt-3">
-                Posted by <strong>{n.author.name}</strong> · {formatDate(new Date(n.createdAt))}
-              </p>
+              <div className="p-4">
+                <p className="font-[var(--serif)] italic text-lg text-[#14130E] leading-tight">{n.title}</p>
+                <p className="font-[var(--sans-dawn)] text-sm text-[#6B6552] mt-2 leading-relaxed whitespace-pre-wrap">{n.content}</p>
+                <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#A89971] mt-3">
+                  Posted by <strong className="text-[#6B6552]">{n.author.name}</strong> · {formatDate(new Date(n.createdAt))}
+                </p>
+              </div>
             </div>
           ))}
         </div>

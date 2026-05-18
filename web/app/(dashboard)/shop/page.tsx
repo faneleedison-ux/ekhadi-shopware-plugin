@@ -5,9 +5,7 @@ import { Store, MapPin, Users, TrendingUp, ArrowUpRight, ArrowRight } from 'luci
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import StatsCard from '@/components/dashboard/StatsCard'
 import SalesHeatmap from '@/components/shop/SalesHeatmap'
 
 export default async function ShopDashboard() {
@@ -21,10 +19,16 @@ export default async function ShopDashboard() {
 
   if (!shop) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-center">
-        <Store className="h-12 w-12 text-text-secondary mb-4" />
-        <h2 className="text-lg font-semibold text-text-primary">No shop profile found</h2>
-        <p className="text-sm text-text-secondary mt-1">Contact an admin to set up your shop account.</p>
+      <div className="space-y-5 animate-fade-in">
+        <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl px-5 py-4">
+          <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552] mb-1">Shop · e-Khadi</p>
+          <h1 className="font-[var(--serif)] italic text-2xl text-[#14130E] leading-tight">Shop Dashboard</h1>
+        </div>
+        <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl text-center py-14 px-5">
+          <Store className="h-12 w-12 text-[#A89971] mx-auto mb-4" />
+          <p className="font-[var(--sans-dawn)] font-semibold text-[#14130E]">No shop profile found</p>
+          <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#A89971] mt-2">Contact an admin to set up your shop account.</p>
+        </div>
       </div>
     )
   }
@@ -61,7 +65,6 @@ export default async function ShopDashboard() {
     }),
   ])
 
-  // Today's stats
   const [todayTxCount, todayVolumeAgg] = await Promise.all([
     prisma.storeCreditHistory.count({ where: { type: 'DEBIT', ...memberFilter, createdAt: { gte: todayStart } } }),
     prisma.storeCreditHistory.aggregate({
@@ -71,7 +74,6 @@ export default async function ShopDashboard() {
   ])
   const todayVolume = Number(todayVolumeAgg._sum.amount ?? 0)
 
-  // Top category this month
   const catCounts: Record<string, number> = {}
   for (const tx of topCategory) {
     const cat = tx.description.split(' - ').pop()?.trim() ?? ''
@@ -80,86 +82,109 @@ export default async function ShopDashboard() {
   const topCat = Object.entries(catCounts).sort((a, b) => b[1] - a[1])[0]
   const monthVol = Number(monthlyVolume._sum.amount ?? 0)
 
-  // Build hourly distribution (0-23)
   const hourlyData = Array.from({ length: 24 }, (_, h) =>
     hourlyTx.filter((t) => new Date(t.createdAt).getHours() === h).length
   )
-
-  // Peak hour for "Today at a Glance"
   const peakHour = hourlyData.indexOf(Math.max(...hourlyData, 1))
   const peakHourLabel = peakHour === 0 ? '12am' : peakHour === 12 ? '12pm' : peakHour < 12 ? `${peakHour}am` : `${peakHour - 12}pm`
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold text-text-primary">Shop Dashboard</h1>
-        <p className="text-text-secondary mt-1 flex items-center gap-1.5">
-          <MapPin className="h-3.5 w-3.5" />{shop.name} · {shop.area.name}, {shop.area.province}
-          <Badge variant={shop.isActive ? 'success' : 'destructive'} className="ml-1">{shop.isActive ? 'Active' : 'Inactive'}</Badge>
-        </p>
+    <div className="space-y-5 animate-fade-in">
+
+      {/* Header */}
+      <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl px-5 py-4">
+        <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552] mb-1">Shop · e-Khadi</p>
+        <h1 className="font-[var(--serif)] italic text-2xl text-[#14130E] leading-tight">Shop Dashboard</h1>
+        <div className="flex items-center gap-2 mt-1">
+          <MapPin className="h-3 w-3 text-[#A89971]" />
+          <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#6B6552]">{shop.name} · {shop.area.name}, {shop.area.province}</p>
+          <span className={`font-[var(--mono)] text-[9px] tracking-widest uppercase rounded px-2 py-0.5 border ${
+            shop.isActive
+              ? 'text-[#3F7B4F] border-[#3F7B4F]/30 bg-[#3F7B4F]/10'
+              : 'text-[#E11D2A] border-[#E11D2A]/30 bg-[#E11D2A]/10'
+          }`}>{shop.isActive ? 'Active' : 'Inactive'}</span>
+        </div>
       </div>
 
-      {/* KPI summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard title="Area Members" value={shop.area._count.customerProfiles} icon={<Users className="h-5 w-5 text-primary" />} description="In your area" iconBg="bg-primary-light" />
-        <StatsCard title="Total Sales" value={totalTxCount} icon={<TrendingUp className="h-5 w-5 text-success" />} description="All time" iconBg="bg-green-50" />
-        <StatsCard title="This Month" value={formatCurrency(monthVol)} icon={<ArrowUpRight className="h-5 w-5 text-warning" />} description="30-day volume" iconBg="bg-yellow-50" className="col-span-2 lg:col-span-1" />
-        <StatsCard title="Top Category" value={topCat?.[0] ?? '—'} icon={<Store className="h-5 w-5 text-violet-500" />} description={topCat ? `${topCat[1]} purchases` : 'No data yet'} iconBg="bg-violet-50" className="col-span-2 lg:col-span-1" />
+      {/* KPI grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: 'Area Members', value: shop.area._count.customerProfiles, sub: 'In your area', icon: <Users className="h-5 w-5 text-[#4A5C8A]" />, bg: 'bg-[#4A5C8A]/10' },
+          { label: 'Total Sales', value: totalTxCount, sub: 'All time', icon: <TrendingUp className="h-5 w-5 text-[#3F7B4F]" />, bg: 'bg-[#3F7B4F]/10' },
+          { label: 'This Month', value: formatCurrency(monthVol), sub: '30-day volume', icon: <ArrowUpRight className="h-5 w-5 text-[#A07030]" />, bg: 'bg-[#A07030]/10' },
+          { label: 'Top Category', value: topCat?.[0] ?? '—', sub: topCat ? `${topCat[1]} purchases` : 'No data yet', icon: <Store className="h-5 w-5 text-[#7B4F9B]" />, bg: 'bg-[#7B4F9B]/10' },
+        ].map((kpi) => (
+          <div key={kpi.label} className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl p-4">
+            <div className={`w-9 h-9 ${kpi.bg} rounded-xl flex items-center justify-center mb-3`}>
+              {kpi.icon}
+            </div>
+            <p className="font-[var(--serif)] italic text-xl text-[#14130E] leading-tight">{kpi.value}</p>
+            <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552] mt-0.5">{kpi.label}</p>
+            <p className="font-[var(--mono)] text-[10px] text-[#A89971] mt-0.5">{kpi.sub}</p>
+          </div>
+        ))}
       </div>
 
       {/* Today at a Glance */}
-      <div className="rounded-2xl border border-border bg-white p-4">
-        <p className="text-sm font-bold text-text-primary mb-3">Today at a Glance</p>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="text-center p-3 bg-background rounded-xl">
-            <p className="text-xl font-black text-text-primary">{todayTxCount}</p>
-            <p className="text-[10px] text-text-secondary uppercase tracking-wide">Sales Today</p>
+      <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-[#C9BCA0]">
+          <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552]">Live</p>
+          <p className="font-[var(--serif)] italic text-lg text-[#14130E] leading-tight">Today at a Glance</p>
+        </div>
+        <div className="grid grid-cols-3 gap-0">
+          <div className="text-center p-4 border-r border-[#C9BCA0] bg-[#F2E9D6]">
+            <p className="font-[var(--serif)] italic text-2xl text-[#14130E]">{todayTxCount}</p>
+            <p className="font-[var(--mono)] text-[9px] tracking-widest uppercase text-[#6B6552] mt-0.5">Sales Today</p>
           </div>
-          <div className="text-center p-3 bg-green-50 rounded-xl">
-            <p className="text-xl font-black text-success">{formatCurrency(todayVolume)}</p>
-            <p className="text-[10px] text-text-secondary uppercase tracking-wide">Revenue Today</p>
+          <div className="text-center p-4 border-r border-[#C9BCA0] bg-[#F2E9D6]">
+            <p className="font-[var(--serif)] italic text-2xl text-[#3F7B4F]">{formatCurrency(todayVolume)}</p>
+            <p className="font-[var(--mono)] text-[9px] tracking-widest uppercase text-[#6B6552] mt-0.5">Revenue Today</p>
           </div>
-          <div className="text-center p-3 bg-primary-light rounded-xl">
-            <p className="text-xl font-black text-primary">{peakHourLabel}</p>
-            <p className="text-[10px] text-text-secondary uppercase tracking-wide">Peak Hour</p>
+          <div className="text-center p-4 bg-[#F2E9D6]">
+            <p className="font-[var(--serif)] italic text-2xl text-[#E11D2A]">{peakHourLabel}</p>
+            <p className="font-[var(--mono)] text-[9px] tracking-widest uppercase text-[#6B6552] mt-0.5">Peak Hour</p>
           </div>
         </div>
         {todayTxCount === 0 && (
-          <p className="text-xs text-text-secondary text-center mt-3">No sales yet today. Members shop most at {peakHourLabel}.</p>
+          <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#A89971] text-center py-3 border-t border-[#C9BCA0]">
+            No sales yet today. Members shop most at {peakHourLabel}.
+          </p>
         )}
       </div>
 
       <SalesHeatmap hourlyData={hourlyData} />
 
-      {/* Last 5 transactions summary */}
-      <Card>
-        <CardHeader className="pb-3 flex-row items-center justify-between">
-          <CardTitle className="text-base">Recent Activity</CardTitle>
-          <Link href="/shop/transactions" className="text-xs text-primary hover:underline font-medium flex items-center gap-1">
+      {/* Recent Activity */}
+      <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#C9BCA0]">
+          <div>
+            <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552]">Sales</p>
+            <p className="font-[var(--serif)] italic text-lg text-[#14130E] leading-tight">Recent Activity</p>
+          </div>
+          <Link href="/shop/transactions" className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#E11D2A] flex items-center gap-1 hover:opacity-70 transition-opacity">
             View all <ArrowRight className="h-3 w-3" />
           </Link>
-        </CardHeader>
-        <CardContent className="p-0">
-          {recentTx.length === 0 ? (
-            <div className="text-center py-8 text-text-secondary text-sm">No transactions yet</div>
-          ) : (
-            <ul className="divide-y divide-border">
-              {recentTx.map((tx) => (
-                <li key={tx.id} className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50/50">
-                  <div className="w-8 h-8 rounded-full bg-danger/10 flex items-center justify-center flex-shrink-0">
-                    <ArrowUpRight className="h-3.5 w-3.5 text-danger" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{tx.user.name}</p>
-                    <p className="text-xs text-text-secondary">{formatDateTime(tx.createdAt)}</p>
-                  </div>
-                  <p className="text-sm font-semibold text-danger flex-shrink-0">-{formatCurrency(Number(tx.amount))}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+
+        {recentTx.length === 0 ? (
+          <div className="text-center py-8 font-[var(--mono)] text-[11px] text-[#A89971]">No transactions yet</div>
+        ) : (
+          <ul>
+            {recentTx.map((tx, i) => (
+              <li key={tx.id} className={`flex items-center gap-3 px-5 py-3 border-b border-[#C9BCA0] last:border-0 ${i % 2 === 0 ? 'bg-[#EBE0C7]' : 'bg-[#F2E9D6]'}`}>
+                <div className="w-8 h-8 rounded-full bg-[#E11D2A]/10 flex items-center justify-center flex-shrink-0">
+                  <ArrowUpRight className="h-3.5 w-3.5 text-[#E11D2A]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-[var(--sans-dawn)] text-sm font-medium text-[#14130E] truncate">{tx.user.name}</p>
+                  <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#6B6552]">{formatDateTime(tx.createdAt)}</p>
+                </div>
+                <p className="font-[var(--serif)] italic text-base text-[#E11D2A] flex-shrink-0">-{formatCurrency(Number(tx.amount))}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   )
 }

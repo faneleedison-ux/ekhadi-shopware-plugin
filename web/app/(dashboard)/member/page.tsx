@@ -128,13 +128,16 @@ export default async function MemberDashboard() {
   return (
     <div className="space-y-5 animate-fade-in">
 
-      {/* 1. Greeting — always first */}
-      <div>
-        <h1 className="text-xl font-bold text-text-primary">
-          {greeting}, {firstName} 👋
+      {/* 1. Greeting */}
+      <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl px-5 py-4">
+        <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552] mb-1">
+          {areaName ?? 'Community'} · e-Khadi
+        </p>
+        <h1 className="font-[var(--serif)] italic text-2xl text-[#14130E] leading-tight">
+          {greeting}, {firstName}.
         </h1>
-        <p className="text-text-secondary text-sm mt-0.5">
-          {areaName ? `${areaName} community` : 'Your community'} · {now.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' })}
+        <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#6B6552] mt-1">
+          {now.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' })}
         </p>
       </div>
 
@@ -172,40 +175,23 @@ export default async function MemberDashboard() {
         </div>
       )}
 
-      {/* 4. Quick actions — purposeful, not nav duplicates */}
+      {/* 4. Quick actions */}
       <div className="grid grid-cols-4 gap-3">
-        <Link href="/member/credit-request">
-          <div className="bg-white rounded-2xl p-3 border border-border hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col items-center gap-2 cursor-pointer group">
-            <div className="w-10 h-10 bg-primary-light rounded-xl flex items-center justify-center group-hover:bg-primary transition-colors">
-              <CreditCard className="h-5 w-5 text-primary group-hover:text-white transition-colors" />
+        {[
+          { href: '/member/credit-request', icon: CreditCard,    label: 'Request Credit', iconColor: 'text-[#E11D2A]', bg: 'bg-[#E11D2A]/10' },
+          { href: '/member/wallet',          icon: QrCode,        label: 'Scan & Pay',     iconColor: 'text-[#3F7B4F]', bg: 'bg-[#3F7B4F]/10' },
+          { href: '/member/bulk-buy',        icon: ShoppingBasket,label: 'Bulk Buy',       iconColor: 'text-[#4A5C8A]', bg: 'bg-[#4A5C8A]/10' },
+          { href: '/member/wallet',          icon: Wallet,        label: 'My Wallet',      iconColor: 'text-[#A07030]', bg: 'bg-[#A07030]/10' },
+        ].map(({ href, icon: Icon, label, iconColor, bg }) => (
+          <Link key={label} href={href}>
+            <div className="bg-[#EBE0C7] rounded-2xl p-3 border border-[#C9BCA0] hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col items-center gap-2 cursor-pointer group">
+              <div className={`w-10 h-10 ${bg} rounded-xl flex items-center justify-center group-hover:bg-[#E11D2A] transition-colors`}>
+                <Icon className={`h-5 w-5 ${iconColor} group-hover:text-white transition-colors`} />
+              </div>
+              <span className="font-[var(--mono)] text-[10px] tracking-wide uppercase text-[#14130E] text-center leading-tight">{label}</span>
             </div>
-            <span className="text-[11px] font-semibold text-text-primary text-center leading-tight">Request Credit</span>
-          </div>
-        </Link>
-        <Link href="/member/wallet">
-          <div className="bg-white rounded-2xl p-3 border border-border hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col items-center gap-2 cursor-pointer group">
-            <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center group-hover:bg-success transition-colors">
-              <QrCode className="h-5 w-5 text-success group-hover:text-white transition-colors" />
-            </div>
-            <span className="text-[11px] font-semibold text-text-primary text-center leading-tight">Scan & Pay</span>
-          </div>
-        </Link>
-        <Link href="/member/bulk-buy">
-          <div className="bg-white rounded-2xl p-3 border border-border hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col items-center gap-2 cursor-pointer group">
-            <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center group-hover:bg-purple-600 transition-colors">
-              <ShoppingBasket className="h-5 w-5 text-purple-600 group-hover:text-white transition-colors" />
-            </div>
-            <span className="text-[11px] font-semibold text-text-primary text-center leading-tight">Bulk Buy</span>
-          </div>
-        </Link>
-        <Link href="/member/wallet">
-          <div className="bg-white rounded-2xl p-3 border border-border hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col items-center gap-2 cursor-pointer group">
-            <div className="w-10 h-10 bg-yellow-50 rounded-xl flex items-center justify-center group-hover:bg-warning transition-colors">
-              <Wallet className="h-5 w-5 text-warning group-hover:text-white transition-colors" />
-            </div>
-            <span className="text-[11px] font-semibold text-text-primary text-center leading-tight">My Wallet</span>
-          </div>
-        </Link>
+          </Link>
+        ))}
       </div>
 
       {/* 5. Grant status — unified card */}
@@ -220,93 +206,89 @@ export default async function MemberDashboard() {
       />
 
       {/* 7. My group */}
-      <Card>
-        <CardHeader className="pb-3 flex-row items-center justify-between">
-          <CardTitle className="text-base">My Stokvel Group</CardTitle>
-          <Link href="/member/group">
-            <Button variant="ghost" size="sm" className="text-primary h-7 px-2">
-              View <ArrowRight className="h-3 w-3 ml-1" />
-            </Button>
+      <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#C9BCA0]">
+          <div>
+            <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552]">Stokvel</p>
+            <p className="font-[var(--serif)] italic text-lg text-[#14130E] leading-tight">My Group</p>
+          </div>
+          <Link href="/member/group" className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#E11D2A] flex items-center gap-1 hover:opacity-70 transition-opacity">
+            View <ArrowRight className="h-3 w-3" />
           </Link>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="p-4">
           {!activeGroup ? (
             <div className="text-center py-6">
-              <UsersRound className="h-10 w-10 text-text-secondary mx-auto mb-3" />
-              <p className="text-sm font-medium text-text-secondary">Not in a group yet</p>
-              <p className="text-xs text-text-secondary mt-1">An admin will assign you to a stokvel group</p>
+              <UsersRound className="h-10 w-10 text-[#A89971] mx-auto mb-3" />
+              <p className="font-[var(--sans-dawn)] text-sm font-medium text-[#6B6552]">Not in a group yet</p>
+              <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#A89971] mt-1">An admin will assign you to a stokvel group</p>
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-background rounded-xl">
+              <div className="flex items-center justify-between p-3 bg-[#F2E9D6] border border-[#C9BCA0] rounded-xl">
                 <div>
-                  <p className="font-semibold text-text-primary">{activeGroup.name}</p>
-                  <p className="text-xs text-text-secondary">{activeGroup.area.name}</p>
+                  <p className="font-[var(--serif)] italic text-base text-[#14130E]">{activeGroup.name}</p>
+                  <p className="font-[var(--mono)] text-[10px] tracking-wide uppercase text-[#6B6552]">{activeGroup.area.name}</p>
                 </div>
-                <Badge variant="success">{activeGroup._count.members} members</Badge>
+                <span className="font-[var(--mono)] text-[9px] tracking-widest uppercase text-[#3F7B4F] border border-[#3F7B4F]/30 bg-[#3F7B4F]/10 rounded px-2 py-1">{activeGroup._count.members} members</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-background rounded-xl text-center">
-                  <p className="text-lg font-bold text-primary">
+                <div className="p-3 bg-[#F2E9D6] border border-[#C9BCA0] rounded-xl text-center">
+                  <p className="font-[var(--serif)] italic text-lg text-[#E11D2A]">
                     {formatCurrency(Number(activeGroup.wallet?.balance || 0))}
                   </p>
-                  <p className="text-xs text-text-secondary">Group wallet</p>
+                  <p className="font-[var(--mono)] text-[10px] tracking-wide uppercase text-[#6B6552]">Group wallet</p>
                 </div>
-                <div className="p-3 bg-background rounded-xl text-center">
+                <div className="p-3 bg-[#F2E9D6] border border-[#C9BCA0] rounded-xl text-center">
                   {upcomingRotation ? (
                     <>
-                      <p className="text-sm font-bold text-text-primary">{getMonthName(upcomingRotation.month)}</p>
-                      <p className="text-xs text-text-secondary">Next rotation</p>
+                      <p className="font-[var(--serif)] italic text-base text-[#14130E]">{getMonthName(upcomingRotation.month)}</p>
+                      <p className="font-[var(--mono)] text-[10px] tracking-wide uppercase text-[#6B6552]">Next rotation</p>
                     </>
                   ) : (
                     <>
-                      <p className="text-sm font-bold text-text-secondary">—</p>
-                      <p className="text-xs text-text-secondary">No rotation</p>
+                      <p className="font-[var(--serif)] italic text-base text-[#A89971]">—</p>
+                      <p className="font-[var(--mono)] text-[10px] tracking-wide uppercase text-[#A89971]">No rotation</p>
                     </>
                   )}
                 </div>
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* 8. Recent credit requests */}
       {user.creditRequests.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3 flex-row items-center justify-between">
-            <CardTitle className="text-base">Recent Requests</CardTitle>
-            <Link href="/member/credit-request">
-              <Button variant="ghost" size="sm" className="text-primary h-7 px-2">
-                View all <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
+        <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-[#C9BCA0]">
+            <div>
+              <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552]">Credit</p>
+              <p className="font-[var(--serif)] italic text-lg text-[#14130E] leading-tight">Recent Requests</p>
+            </div>
+            <Link href="/member/credit-request" className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#E11D2A] flex items-center gap-1 hover:opacity-70 transition-opacity">
+              View all <ArrowRight className="h-3 w-3" />
             </Link>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ul className="divide-y divide-border">
-              {user.creditRequests.map((req) => (
-                <li key={req.id} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50/50 transition-colors">
-                  <div>
-                    <p className="text-sm font-medium text-text-primary">{req.reason}</p>
-                    <p className="text-xs text-text-secondary">{formatDate(req.createdAt)} · {req.group.name}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-primary">{formatCurrency(Number(req.amount))}</p>
-                    <Badge
-                      variant={
-                        req.status === 'APPROVED' ? 'success' :
-                        req.status === 'REJECTED' ? 'destructive' : 'warning'
-                      }
-                      className="text-xs mt-0.5"
-                    >
-                      {req.status}
-                    </Badge>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+          </div>
+          <ul>
+            {user.creditRequests.map((req, i) => (
+              <li key={req.id} className={`flex items-center justify-between px-5 py-3 border-b border-[#C9BCA0] last:border-0 ${i % 2 === 0 ? 'bg-[#EBE0C7]' : 'bg-[#F2E9D6]'}`}>
+                <div>
+                  <p className="font-[var(--sans-dawn)] text-sm font-medium text-[#14130E]">{req.reason}</p>
+                  <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#6B6552]">{formatDate(req.createdAt)} · {req.group.name}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-[var(--serif)] italic text-base text-[#E11D2A]">{formatCurrency(Number(req.amount))}</p>
+                  <span className={`font-[var(--mono)] text-[9px] tracking-widest uppercase rounded px-2 py-0.5 border ${
+                    req.status === 'APPROVED' ? 'text-[#3F7B4F] border-[#3F7B4F]/30 bg-[#3F7B4F]/10' :
+                    req.status === 'REJECTED' ? 'text-[#E11D2A] border-[#E11D2A]/30 bg-[#E11D2A]/10' :
+                    'text-[#A07030] border-[#A07030]/30 bg-[#A07030]/10'
+                  }`}>{req.status}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
     </div>

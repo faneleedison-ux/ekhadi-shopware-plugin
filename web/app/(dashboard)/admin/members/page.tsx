@@ -4,9 +4,6 @@ import { Users } from 'lucide-react'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { formatDate, formatCurrency } from '@/lib/utils'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 export default async function MembersPage() {
   const session = await getServerSession(authOptions)
@@ -25,98 +22,101 @@ export default async function MembersPage() {
     orderBy: { createdAt: 'desc' },
   })
 
-  const getCreditBadge = (score: number | undefined) => {
-    if (!score && score !== 0) return <Badge variant="secondary">No score</Badge>
-    if (score >= 75) return <Badge variant="success">{score} Excellent</Badge>
-    if (score >= 50) return <Badge variant="warning">{score} Good</Badge>
-    return <Badge variant="destructive">{score} Low</Badge>
+  const scoreBadge = (score: number | undefined) => {
+    if (!score && score !== 0) return <span className="font-[var(--mono)] text-[9px] tracking-widest uppercase rounded px-2 py-0.5 border text-[#A89971] border-[#A89971]/30 bg-[#A89971]/10">No score</span>
+    if (score >= 75) return <span className="font-[var(--mono)] text-[9px] tracking-widest uppercase rounded px-2 py-0.5 border text-[#3F7B4F] border-[#3F7B4F]/30 bg-[#3F7B4F]/10">{score} Excellent</span>
+    if (score >= 50) return <span className="font-[var(--mono)] text-[9px] tracking-widest uppercase rounded px-2 py-0.5 border text-[#A07030] border-[#A07030]/30 bg-[#A07030]/10">{score} Good</span>
+    return <span className="font-[var(--mono)] text-[9px] tracking-widest uppercase rounded px-2 py-0.5 border text-[#E11D2A] border-[#E11D2A]/30 bg-[#E11D2A]/10">{score} Low</span>
   }
 
   return (
-    <div className="admin-shell">
-      <div className="flex items-center justify-between">
+    <div className="space-y-5 animate-fade-in">
+
+      {/* Header */}
+      <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl px-5 py-4 flex items-end justify-between flex-wrap gap-3">
         <div>
-          <h1 className="admin-heading">Members</h1>
-          <p className="admin-subheading">{members.length} registered members</p>
+          <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552] mb-1">Admin · e-Khadi</p>
+          <h1 className="font-[var(--serif)] italic text-2xl text-[#14130E] leading-tight">Members</h1>
+          <p className="font-[var(--mono)] text-[10px] tracking-wide text-[#6B6552] mt-1">{members.length} registered members</p>
+        </div>
+        <div className="flex items-center gap-2 bg-[#F2E9D6] border border-[#C9BCA0] rounded-xl px-3 py-2">
+          <Users className="h-4 w-4 text-[#4A5C8A]" />
+          <span className="font-[var(--serif)] italic text-xl text-[#14130E]">{members.length}</span>
+          <span className="font-[var(--mono)] text-[9px] tracking-widest uppercase text-[#6B6552]">Total</span>
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Users className="h-4 w-4 text-primary" />
-            All Members
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="admin-table-wrap">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>SASSA ID</TableHead>
-                  <TableHead>Area</TableHead>
-                  <TableHead>Group</TableHead>
-                  <TableHead>Grant Amount</TableHead>
-                  <TableHead>Credit Score</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Joined</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {members.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center text-text-secondary py-12">
-                      No members registered yet. Run the seed to add demo data.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  members.map((member) => (
-                    <TableRow key={member.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-semibold text-sm text-text-primary">{member.name}</p>
-                          <p className="text-xs text-text-secondary">{member.email}</p>
-                          {member.phone && <p className="text-xs text-text-secondary">{member.phone}</p>}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm font-mono">
-                        {member.customerProfile?.sassaId || '—'}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {member.customerProfile?.area?.name || '—'}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {member.groupMemberships.length > 0
-                          ? member.groupMemberships.map((gm) => gm.group.name).join(', ')
-                          : <span className="text-text-secondary">No group</span>}
-                      </TableCell>
-                      <TableCell className="text-sm font-medium">
-                        {member.customerProfile
-                          ? formatCurrency(Number(member.customerProfile.monthlyGrantAmount))
-                          : '—'}
-                      </TableCell>
-                      <TableCell>
-                        {getCreditBadge(member.customerProfile?.creditScore)}
-                      </TableCell>
-                      <TableCell>
-                        {member.customerProfile?.isActive ? (
-                          <Badge variant="success">Active</Badge>
-                        ) : (
-                          <Badge variant="secondary">Inactive</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs text-text-secondary">
-                        {formatDate(member.createdAt)}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Members table */}
+      <div className="bg-[#EBE0C7] border border-[#C9BCA0] rounded-2xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-[#C9BCA0]">
+          <p className="font-[var(--mono)] text-[10px] tracking-widest uppercase text-[#6B6552]">Community</p>
+          <p className="font-[var(--serif)] italic text-lg text-[#14130E] leading-tight">All Members</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-[#14130E]">
+                <th className="px-4 py-2.5 text-left font-[var(--mono)] text-[9px] tracking-widest uppercase text-[#A89971]">Name</th>
+                <th className="px-4 py-2.5 text-left font-[var(--mono)] text-[9px] tracking-widest uppercase text-[#A89971]">SASSA ID</th>
+                <th className="px-4 py-2.5 text-left font-[var(--mono)] text-[9px] tracking-widest uppercase text-[#A89971]">Area</th>
+                <th className="px-4 py-2.5 text-left font-[var(--mono)] text-[9px] tracking-widest uppercase text-[#A89971]">Group</th>
+                <th className="px-4 py-2.5 text-left font-[var(--mono)] text-[9px] tracking-widest uppercase text-[#A89971]">Grant</th>
+                <th className="px-4 py-2.5 text-left font-[var(--mono)] text-[9px] tracking-widest uppercase text-[#A89971]">Score</th>
+                <th className="px-4 py-2.5 text-left font-[var(--mono)] text-[9px] tracking-widest uppercase text-[#A89971]">Status</th>
+                <th className="px-4 py-2.5 text-left font-[var(--mono)] text-[9px] tracking-widest uppercase text-[#A89971]">Joined</th>
+              </tr>
+            </thead>
+            <tbody>
+              {members.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-12 font-[var(--mono)] text-[11px] text-[#A89971]">
+                    No members registered yet. Run the seed to add demo data.
+                  </td>
+                </tr>
+              ) : (
+                members.map((member, i) => (
+                  <tr key={member.id} className={`border-b border-[#C9BCA0] last:border-0 ${i % 2 === 0 ? 'bg-[#EBE0C7]' : 'bg-[#F2E9D6]'}`}>
+                    <td className="px-4 py-3">
+                      <p className="font-[var(--sans-dawn)] text-sm font-medium text-[#14130E]">{member.name}</p>
+                      <p className="font-[var(--mono)] text-[10px] text-[#6B6552]">{member.email}</p>
+                      {member.phone && <p className="font-[var(--mono)] text-[10px] text-[#6B6552]">{member.phone}</p>}
+                    </td>
+                    <td className="px-4 py-3 font-[var(--mono)] text-[11px] text-[#14130E]">
+                      {member.customerProfile?.sassaId || '—'}
+                    </td>
+                    <td className="px-4 py-3 font-[var(--sans-dawn)] text-sm text-[#14130E]">
+                      {member.customerProfile?.area?.name || '—'}
+                    </td>
+                    <td className="px-4 py-3 font-[var(--sans-dawn)] text-sm text-[#14130E]">
+                      {member.groupMemberships.length > 0
+                        ? member.groupMemberships.map((gm) => gm.group.name).join(', ')
+                        : <span className="text-[#A89971]">No group</span>}
+                    </td>
+                    <td className="px-4 py-3 font-[var(--serif)] italic text-base text-[#E11D2A]">
+                      {member.customerProfile
+                        ? formatCurrency(Number(member.customerProfile.monthlyGrantAmount))
+                        : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      {scoreBadge(member.customerProfile?.creditScore)}
+                    </td>
+                    <td className="px-4 py-3">
+                      {member.customerProfile?.isActive ? (
+                        <span className="font-[var(--mono)] text-[9px] tracking-widest uppercase rounded px-2 py-0.5 border text-[#3F7B4F] border-[#3F7B4F]/30 bg-[#3F7B4F]/10">Active</span>
+                      ) : (
+                        <span className="font-[var(--mono)] text-[9px] tracking-widest uppercase rounded px-2 py-0.5 border text-[#A89971] border-[#A89971]/30 bg-[#A89971]/10">Inactive</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 font-[var(--mono)] text-[10px] text-[#6B6552]">
+                      {formatDate(member.createdAt)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   )
 }
