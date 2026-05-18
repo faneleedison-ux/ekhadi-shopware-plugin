@@ -68,9 +68,10 @@ jobs:
           DOMAIN_ID=$(python3 -c "import json; d=json.load(open('/tmp/iam_domain.json')); print(d['token']['user']['domain']['id'])" 2>/dev/null)
           echo "Domain ID: $DOMAIN_ID"
 
-          # Extract IAM user ID from the domain token response (needed for authorization)
+          # Extract IAM user ID + name from the domain token response
           IAM_USER_ID=$(python3 -c "import json; d=json.load(open('/tmp/iam_domain.json')); print(d['token']['user']['id'])" 2>/dev/null)
-          echo "IAM user ID: $IAM_USER_ID"
+          IAM_USER_NAME=$(python3 -c "import json; d=json.load(open('/tmp/iam_domain.json')); print(d['token']['user']['name'])" 2>/dev/null)
+          echo "IAM user ID: $IAM_USER_ID  name: $IAM_USER_NAME"
 
           if [ -n "$DOMAIN_TOKEN" ] && [ -n "$DOMAIN_ID" ]; then
             # Get existing agency or create it
@@ -100,10 +101,13 @@ jobs:
             fi
           fi
 
-          # Register the agency with ModelArts authorization API
-          # Write body to file to avoid shell escaping issues
-          echo "Calling ModelArts authorization endpoint..."
-          printf '{"type":"agency","content":[{"user_id":"%s"}]}' "$IAM_USER_ID" > /tmp/ma_auth.json
+          # Check existing authorizations first
+          echo "=== GET existing authorizations ==="
+          curl -s "$MA_HOST/v2/$MA_PROJ/authorizations" -H "X-Auth-Token: $TOKEN" | python3 -m json.tool 2>/dev/null || true
+
+          # Register agency with ModelArts — try with both user_id and user_name
+          echo "=== POST ModelArts authorization ==="
+          printf '{"type":"agency","content":[{"user_id":"%s","user_name":"%s"}]}' "$IAM_USER_ID" "$IAM_USER_NAME" > /tmp/ma_auth.json
           cat /tmp/ma_auth.json
           MA_AUTH_RESP=$(curl -s -w "\n%{http_code}" -X POST "$MA_HOST/v2/$MA_PROJ/authorizations" \
             -H "X-Auth-Token: $TOKEN" -H "Content-Type: application/json" \
@@ -111,6 +115,16 @@ jobs:
           MA_AUTH_CODE=$(echo "$MA_AUTH_RESP" | tail -1)
           echo "ModelArts auth HTTP $MA_AUTH_CODE"
           echo "$(echo "$MA_AUTH_RESP" | head -n -1)" | python3 -m json.tool 2>/dev/null || true
+
+          # Fallback: try with domain token instead of project-scoped token
+          if [ "$MA_AUTH_CODE" != "200" ] && [ "$MA_AUTH_CODE" != "201" ]; then
+            echo "Retrying with domain token..."
+            MA_AUTH_RESP2=$(curl -s -w "\n%{http_code}" -X POST "$MA_HOST/v2/$MA_PROJ/authorizations" \
+              -H "X-Auth-Token: $DOMAIN_TOKEN" -H "Content-Type: application/json" \
+              -d @/tmp/ma_auth.json)
+            echo "Domain-token auth HTTP $(echo "$MA_AUTH_RESP2" | tail -1)"
+            echo "$(echo "$MA_AUTH_RESP2" | head -n -1)" | python3 -m json.tool 2>/dev/null || true
+          fi
 
           # ── Create training job (v2, fallback to v1) ──────────────────────────
           echo "=== Creating training job ==="
