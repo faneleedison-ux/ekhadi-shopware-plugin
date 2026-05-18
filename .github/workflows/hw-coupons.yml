@@ -4,9 +4,8 @@ on:
   workflow_dispatch:
 
 env:
-  MA_HOST:   https://modelarts.ap-southeast-1.myhuaweicloud.com
-  MA_REGION: ap-southeast-1
-  MA_PROJ:   12d4b817c74d49f2b1649d903df7cc8a
+  MA_HOST:   https://modelarts.ap-southeast-3.myhuaweicloud.com
+  MA_REGION: ap-southeast-3
 
 jobs:
   train_deploy:
@@ -29,14 +28,16 @@ jobs:
         run: |
           set -e
 
-          # ── Scoped IAM token ──────────────────────────────────────────────────
+          # ── Scoped IAM token + dynamic project ID ────────────────────────────
           curl -sf -X POST https://iam.myhuaweicloud.com/v3/auth/tokens \
             -H "Content-Type: application/json" \
             -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}},\"scope\":{\"project\":{\"name\":\"$MA_REGION\"}}}}" \
-            -D /tmp/iam_scoped.txt -o /dev/null
+            -D /tmp/iam_scoped.txt -o /tmp/iam_scoped_body.json
           TOKEN=$(grep -i x-subject-token /tmp/iam_scoped.txt | awk '{print $2}' | tr -d '\r')
           [ -z "$TOKEN" ] && { echo "Scoped IAM failed"; exit 1; }
-          echo "IAM token obtained."
+          MA_PROJ=$(python3 -c "import json; d=json.load(open('/tmp/iam_scoped_body.json')); print(d['token']['project']['id'])" 2>/dev/null)
+          echo "IAM token obtained. Project ID: $MA_PROJ"
+          [ -z "$MA_PROJ" ] && { echo "Could not extract project ID"; exit 1; }
 
           # ── Export training data from Postgres → OBS ──────────────────────────
           # NODE_PATH lets node find @prisma/client from web/node_modules even
@@ -216,7 +217,7 @@ jobs:
           exit 1
 
   activate_modelarts:
-    name: Activate ModelArts (ap-southeast-1)
+    name: Activate ModelArts (ap-southeast-3)
     runs-on: [self-hosted, linux, ekhadi]
     steps:
       - name: Activate ModelArts workspace
@@ -226,7 +227,7 @@ jobs:
         run: |
           curl -sf -X POST https://iam.myhuaweicloud.com/v3/auth/tokens \
             -H "Content-Type: application/json" \
-            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}},\"scope\":{\"project\":{\"name\":\"ap-southeast-1\"}}}}" \
+            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}},\"scope\":{\"project\":{\"name\":\"ap-southeast-3\"}}}}" \
             -D /tmp/iam_s.txt -o /dev/null
           SCOPED=$(grep -i x-subject-token /tmp/iam_s.txt | awk '{print $2}' | tr -d '\r')
           [ -z "$SCOPED" ] && { echo "Scoped IAM failed"; exit 1; }
@@ -266,7 +267,7 @@ jobs:
           TOKEN=$(grep -i x-subject-token /tmp/iam_h.txt | awk '{print $2}' | tr -d '\r')
           curl -sf -X POST https://iam.myhuaweicloud.com/v3/auth/tokens \
             -H "Content-Type: application/json" \
-            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}},\"scope\":{\"project\":{\"name\":\"ap-southeast-1\"}}}}" \
+            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}},\"scope\":{\"project\":{\"name\":\"ap-southeast-3\"}}}}" \
             -D /tmp/iam_s.txt -o /dev/null
           SCOPED=$(grep -i x-subject-token /tmp/iam_s.txt | awk '{print $2}' | tr -d '\r')
           [ -z "$SCOPED" ] && SCOPED="$TOKEN"
@@ -278,7 +279,7 @@ jobs:
           echo "BSS budget HTTP $BCODE"
           echo "$(echo "$BRESP" | head -n -1)" | python3 -m json.tool 2>/dev/null || true
 
-          ARESP=$(curl -s -w "\n%{http_code}" -X POST "https://ces.ap-southeast-1.myhuaweicloud.com/V1.0/$MA_PROJ/alarms" \
+          ARESP=$(curl -s -w "\n%{http_code}" -X POST "https://ces.ap-southeast-3.myhuaweicloud.com/V1.0/$MA_PROJ/alarms" \
             -H "X-Auth-Token: $SCOPED" -H "Content-Type: application/json" \
             -d "{\"alarm_name\":\"ekhadi-modelarts-spend\",\"alarm_description\":\"ModelArts cost cap proxy\",\"metric\":{\"namespace\":\"SYS.ModelArts\",\"metric_name\":\"inference_requests_total\",\"dimensions\":[{\"name\":\"workspace_id\",\"value\":\"0\"}]},\"condition\":{\"period\":86400,\"filter\":\"sum\",\"comparison_operator\":\">=\",\"value\":500000,\"unit\":\"Count\",\"count\":1},\"alarm_enabled\":true,\"alarm_action_enabled\":false}")
           echo "CES alarm HTTP $(echo "$ARESP" | tail -1)"
@@ -302,10 +303,10 @@ jobs:
           curl -s "https://bss-intl.myhuaweicloud.com/v2/accounts/customer-accounts/balances" \
             -H "X-Auth-Token: $TOKEN" | python3 -m json.tool
 
-          echo "=== MODELARTS WORKSPACE (ap-southeast-1) ==="
+          echo "=== MODELARTS WORKSPACE (ap-southeast-3) ==="
           curl -sf -X POST https://iam.myhuaweicloud.com/v3/auth/tokens \
             -H "Content-Type: application/json" \
-            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}},\"scope\":{\"project\":{\"name\":\"ap-southeast-1\"}}}}" \
+            -d "{\"auth\":{\"identity\":{\"methods\":[\"hw_ak_sk\"],\"hw_ak_sk\":{\"access\":{\"key\":\"$HW_AK\"},\"secret\":{\"key\":\"$HW_SK\"}}},\"scope\":{\"project\":{\"name\":\"ap-southeast-3\"}}}}" \
             -D /tmp/iam_s.txt -o /dev/null
           SCOPED=$(grep -i x-subject-token /tmp/iam_s.txt | awk '{print $2}' | tr -d '\r')
           curl -s "$MA_HOST/v1/$MA_PROJ/workspaces" -H "X-Auth-Token: $SCOPED" | python3 -m json.tool
