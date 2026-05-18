@@ -138,7 +138,7 @@ export default function CreditRequestPage() {
             <div className="rounded-xl border border-[#3F7B4F]/30 bg-[#3F7B4F]/10 overflow-hidden">
               <div className="flex items-center gap-2 px-4 py-3 border-b border-[#3F7B4F]/20">
                 <CheckCircle className="h-5 w-5 text-[#3F7B4F] flex-shrink-0" />
-                <p className="font-[var(--mono)] text-xs font-bold text-[#3F7B4F] tracking-wide">Request submitted! Here's what happens next:</p>
+                <p className="font-[var(--mono)] text-xs font-bold text-[#3F7B4F] tracking-wide">Request submitted! Here&apos;s what happens next:</p>
               </div>
               <div className="p-4 space-y-3">
                 {[
