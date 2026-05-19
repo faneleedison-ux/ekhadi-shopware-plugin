@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import Groq from 'groq-sdk'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '')
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY ?? '' })
 
 const SYSTEM_PROMPT = `You are a warm, practical financial advisor built into e-Khadi — a stokvel credit app for SASSA grant recipients in South Africa who shop at local spaza shops.
 
@@ -39,7 +39,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Missing message' }, { status: 400 })
   }
 
-  // Fetch user context to personalise advice
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
@@ -52,40 +51,41 @@ export async function POST(req: Request) {
   const firstName = user?.name?.split(' ')[0] ?? 'Member'
   const systemWithContext = `${SYSTEM_PROMPT}\n\n[User context: ${firstName}, store credit balance R${balance}]`
 
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash-lite',
-    systemInstruction: systemWithContext,
-  })
+  const messages: Groq.Chat.ChatCompletionMessageParam[] = [
+    { role: 'system', content: systemWithContext },
+    ...(Array.isArray(history)
+      ? history.slice(-8).map((m: { role: string; content: string }) => ({
+          role: (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
+          content: m.content,
+        }))
+      : []),
+    { role: 'user', content: message },
+  ]
 
-  // Build Gemini conversation history
-  const geminiHistory = Array.isArray(history)
-    ? history.slice(-8).map((m: { role: string; content: string }) => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content }],
-      }))
-    : []
-
-  const chat = model.startChat({ history: geminiHistory })
-
-  let result: Awaited<ReturnType<typeof chat.sendMessageStream>>
+  let stream: Awaited<ReturnType<typeof groq.chat.completions.create>>
   try {
-    result = await chat.sendMessageStream(message)
+    stream = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages,
+      stream: true,
+      max_tokens: 400,
+      temperature: 0.7,
+    })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
-    const status = msg.includes('429') ? 503 : 500
-    const body = msg.includes('429')
-      ? 'The AI advisor is temporarily unavailable (quota limit). Please try again later.'
+    const status = msg.includes('429') || msg.includes('quota') ? 503 : 500
+    const body = status === 503
+      ? 'The AI advisor is temporarily unavailable. Please try again later.'
       : 'Something went wrong. Please try again.'
     return NextResponse.json({ error: body }, { status })
   }
 
-  // Stream the response back
   const encoder = new TextEncoder()
   const readable = new ReadableStream({
     async start(controller) {
       try {
-        for await (const chunk of result.stream) {
-          const text = chunk.text()
+        for await (const chunk of stream) {
+          const text = chunk.choices[0]?.delta?.content ?? ''
           if (text) controller.enqueue(encoder.encode(text))
         }
       } finally {
