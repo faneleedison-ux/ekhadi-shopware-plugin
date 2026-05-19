@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     select: { name: true, storeCredit: { select: { balance: true } } },
   }).catch(() => null)
 
-  const balance = user?.storeCredit?.balance ?? 0
+  const balance = Number(user?.storeCredit?.balance ?? 0)
   const firstName = user?.name?.split(' ')[0] ?? 'Member'
 
   // No API key — use rule-based fallback
