@@ -5,7 +5,7 @@ export default function DawnFoot() {
     <footer className="foot">
       <div className="colophon">
         <div>
-          <div className="colo-mark">e-Khadi</div>
+          <Link href="/" className="colo-mark" style={{ textDecoration: 'none' }}>e-Khadi</Link>
           <div className="colo-tag">
             Community-powered micro-credit for SASSA grant recipients across South Africa.
             Fair pricing. Local impact. Built on the spirit of Ubuntu.
@@ -14,6 +14,16 @@ export default function DawnFoot() {
             <span>WhatsApp Support</span>
             <span>→</span>
           </a>
+          <Link
+            href="/"
+            className="colo-back"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '12px',
+              fontFamily: 'var(--mono)', fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase',
+              color: 'var(--ink-3)', textDecoration: 'none', opacity: 0.7 }}
+          >
+            <span>←</span>
+            <span>Back to Home</span>
+          </Link>
         </div>
         <div className="colo-col">
           <h5>App</h5>
