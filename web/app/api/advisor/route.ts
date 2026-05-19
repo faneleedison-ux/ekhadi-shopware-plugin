@@ -53,7 +53,7 @@ export async function POST(req: Request) {
   const systemWithContext = `${SYSTEM_PROMPT}\n\n[User context: ${firstName}, store credit balance R${balance}]`
 
   const model = genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.0-flash-lite',
     systemInstruction: systemWithContext,
   })
 
@@ -67,7 +67,17 @@ export async function POST(req: Request) {
 
   const chat = model.startChat({ history: geminiHistory })
 
-  const result = await chat.sendMessageStream(message)
+  let result: Awaited<ReturnType<typeof chat.sendMessageStream>>
+  try {
+    result = await chat.sendMessageStream(message)
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    const status = msg.includes('429') ? 503 : 500
+    const body = msg.includes('429')
+      ? 'The AI advisor is temporarily unavailable (quota limit). Please try again later.'
+      : 'Something went wrong. Please try again.'
+    return NextResponse.json({ error: body }, { status })
+  }
 
   // Stream the response back
   const encoder = new TextEncoder()
