@@ -1,0 +1,25 @@
+name: Restart ECS Runner
+
+on:
+  workflow_dispatch:
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restart self-hosted runner on ECS
+        env:
+          SSH_KEY: ${{ secrets.ECS_SSH_KEY }}
+          HOST:    ${{ secrets.ECS_HOST }}
+          USER:    ${{ secrets.ECS_USER }}
+        run: |
+          echo "$SSH_KEY" > /tmp/ecs_key
+          chmod 600 /tmp/ecs_key
+          ssh -i /tmp/ecs_key -o StrictHostKeyChecking=no "$USER@$HOST" "
+            pkill -f 'run.sh' 2>/dev/null || true
+            sleep 2
+            cd /root/actions-runner
+            nohup ./run.sh > /tmp/runner.log 2>&1 &
+            sleep 3
+            echo 'Runner PID:' \$(pgrep -f 'run.sh')
+          "
