@@ -1,17 +1,14 @@
 /**
  * ModelArts inference client for e-Khadi credit scoring.
  *
- * Region:     ap-southeast-1 (Singapore)
- * Project ID: 12d4b817c74d49f2b1649d903df7cc8a
- * Workspace:  default (id: "0")
+ * Model:      LightGBM credit scorer (trained on e-Khadi repayment data)
+ * Deployment: FastAPI microservice on production server (port 8001, internal only)
+ *             PM2 process name: scorer | model file: /root/credit_scorer.txt
  *
- * Env vars required for live inference (set after deploying a model):
- *   MODELARTS_ENDPOINT   — online service URL, e.g.
- *                          https://modelarts.ap-southeast-1.myhuaweicloud.com/v1/…/services/xxx/predict
- *   HW_AK / HW_SK        — AK/SK used to get an IAM token (already in env)
+ * MODELARTS_ENDPOINT=http://localhost:8001 in production .env.local
+ * No auth needed (localhost-only binding).
  *
- * If MODELARTS_ENDPOINT is not set, returns null and the caller falls back
- * to Gemini or the rule engine.
+ * Falls back to Gemini scorer or rule engine if endpoint is not set.
  */
 
 import type { RecommendationInput } from './aiRecommendation'
@@ -62,13 +59,19 @@ export async function modelartsScore(input: RecommendationInput): Promise<Gemini
   const endpoint = process.env.MODELARTS_ENDPOINT
   if (!endpoint) return null
 
-  const token = await getIAMToken()
-  if (!token) return null
-
   try {
+    const isLocal = endpoint.startsWith('http://localhost') || endpoint.startsWith('http://127.')
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+
+    if (!isLocal) {
+      const token = await getIAMToken()
+      if (!token) return null
+      headers['X-Auth-Token'] = token
+    }
+
     const res = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
+      headers,
       body: JSON.stringify({
         instances: [{
           repayment_ratio: input.approvedRequestsCount > 0
@@ -95,10 +98,10 @@ export async function modelartsScore(input: RecommendationInput): Promise<Gemini
     return {
       level,
       confidence: Math.round(prob * 100),
-      reason: `ModelArts LightGBM: ${Math.round(prob * 100)}% repayment probability`,
+      reason: `LightGBM: ${Math.round(prob * 100)}% repayment probability`,
       riskFactors: prob < 0.5 ? ['Low predicted repayment probability'] : [],
       positiveSignals: prob >= 0.8 ? ['High predicted repayment probability'] : [],
-      source: 'gemini', // repurposed field — displayed as AI badge
+      source: 'gemini',
     }
   } catch {
     return null
