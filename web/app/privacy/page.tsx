@@ -75,7 +75,7 @@ export default function PrivacyPage() {
             <li>Object to the processing of your personal information</li>
             <li>Lodge a complaint with the Information Regulator of South Africa</li>
           </ul>
-          <p className="mt-3">To exercise any of these rights, email <a href="mailto:hello@e-khadi.co.za" className="text-[#E11D2A] underline">hello@e-khadi.co.za</a> with the subject line "POPIA Request".</p>
+          <p className="mt-3">To exercise any of these rights, email <a href="mailto:hello@e-khadi.co.za" className="text-[#E11D2A] underline">hello@e-khadi.co.za</a> with the subject line &ldquo;POPIA Request&rdquo;.</p>
         </Section>
 
         <Section title="7. Data Security">
