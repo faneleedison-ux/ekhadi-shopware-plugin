@@ -94,7 +94,7 @@ export default function TermsPage() {
         </Section>
 
         <Section title="8. Limitation of Liability">
-          <p>e-Khadi provides the platform on an &quot;as-is&quot; basis. We are not liable for:</p>
+          <p>e-Khadi provides the platform on an &ldquo;as-is&rdquo; basis. We are not liable for:</p>
           <ul className="mt-3">
             <li>Delays in SASSA grant payments that affect repayment schedules</li>
             <li>Actions or decisions made by stokvel group administrators</li>
