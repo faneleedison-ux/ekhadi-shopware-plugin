@@ -23,6 +23,7 @@ export async function uploadToOBS(
       Key: key,
       Body: body,
       ContentType: contentType,
+      ACL: 'public-read',
     })
   )
   return `https://${BUCKET}.obs.af-south-1.myhuaweicloud.com/${key}`
