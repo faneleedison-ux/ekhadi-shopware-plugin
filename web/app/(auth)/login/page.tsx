@@ -190,8 +190,8 @@ function LoginContent() {
   useEffect(() => {
     if (selected !== null && formRef.current) {
       gsap.fromTo(formRef.current,
-        { y: 32, opacity: 0 },
-        { y: 0,  opacity: 1, duration: 0.5, ease: 'back.out(1.4)' }
+        { y: 44, opacity: 0, scale: 0.96 },
+        { y: 0,  opacity: 1, scale: 1, duration: 0.52, ease: 'back.out(1.4)' }
       )
     }
   }, [selected])
@@ -201,19 +201,60 @@ function LoginContent() {
     setEmail(ROLES[idx].email)
     setPassword(ROLES[idx].password)
     setError(null)
+
+    requestAnimationFrame(() => {
+      const cards = Array.from(
+        cardsRef.current?.querySelectorAll<HTMLElement>('.login-role-card') ?? []
+      )
+      const isMobile = window.innerWidth < 800
+      cards.forEach((card, i) => {
+        if (i === idx) {
+          gsap.to(card, { scale: 1.03, duration: 0.15, ease: 'power2.out', yoyo: true, repeat: 1 })
+        } else {
+          const diff = i - idx
+          const x = isMobile ? 0 : (diff < 0 ? -60 : 60)
+          const y = isMobile ? (diff < 0 ? -36 : 36) : 14
+          gsap.to(card, {
+            opacity: 0, x, y, scale: 0.84,
+            duration: 0.32,
+            ease: 'power3.in',
+            delay: 0.05 * Math.abs(diff),
+          })
+        }
+      })
+    })
   }, [])
 
   const clearRole = useCallback(() => {
-    setSelected(null)
-    setEmail('')
-    setPassword('')
-    setError(null)
-    // Re-trigger CSS animation by toggling re-enter class
-    requestAnimationFrame(() => {
-      const cards = cardsRef.current?.querySelectorAll<HTMLElement>('.login-role-card')
-      if (!cards) return
-      cards.forEach(c => { c.classList.remove('re-enter'); void c.offsetWidth; c.classList.add('re-enter') })
-    })
+    if (formRef.current) {
+      gsap.to(formRef.current, {
+        y: -28, opacity: 0, scale: 0.96,
+        duration: 0.24, ease: 'power2.in',
+        onComplete: () => {
+          setSelected(null)
+          setEmail('')
+          setPassword('')
+          setError(null)
+          requestAnimationFrame(() => {
+            const cards = Array.from(
+              cardsRef.current?.querySelectorAll<HTMLElement>('.login-role-card') ?? []
+            )
+            gsap.set(cards, { x: 0, y: 28, scale: 0.9, opacity: 0 })
+            gsap.to(cards, {
+              opacity: 1, y: 0, scale: 1,
+              duration: 0.52,
+              ease: 'back.out(1.5)',
+              stagger: 0.1,
+            })
+          })
+        },
+      })
+    } else {
+      setSelected(null)
+      setEmail('')
+      setPassword('')
+      setError(null)
+    }
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
