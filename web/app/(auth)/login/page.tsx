@@ -267,47 +267,49 @@ function LoginContent() {
       </h1>
       <p className="login-sub">Choose your role to continue</p>
 
-      {/* ── 3 Role Cards ── */}
-      <div className="login-cards" ref={cardsRef}>
-        {ROLES.map((role, idx) => (
-          <div
-            key={role.id}
-            className={
-              'login-role-card' +
-              (selected === idx ? ' is-selected' : '') +
-              (selected !== null && selected !== idx ? ' is-dimmed' : '')
-            }
-            onClick={() => selectRole(idx)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={e => e.key === 'Enter' && selectRole(idx)}
-          >
-            <span className="lrc-corner">{role.corner}</span>
+      {/* ── Stage: cards + form side by side when selected ── */}
+      <div className={`login-stage${selected !== null ? ' has-selection' : ''}`}>
 
-            <div className="lrc-portrait">
-              <role.Portrait />
+        <div className="login-cards" ref={cardsRef}>
+          {ROLES.map((role, idx) => (
+            <div
+              key={role.id}
+              className={
+                'login-role-card' +
+                (selected === idx ? ' is-selected' : '') +
+                (selected !== null && selected !== idx ? ' is-dimmed' : '')
+              }
+              onClick={() => selectRole(idx)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={e => e.key === 'Enter' && selectRole(idx)}
+            >
+              <span className="lrc-corner">{role.corner}</span>
+
+              <div className="lrc-portrait">
+                <role.Portrait />
+              </div>
+
+              <div className="lrc-roman">{role.roman}</div>
+              <h3 className="lrc-title">{role.title}</h3>
+              <p className="lrc-body">{role.body}</p>
+
+              <div className="lrc-foot">
+                <span className="lrc-badge">{role.badge}</span>
+                <span className="lrc-select">
+                  {selected === idx ? 'Selected' : 'Select'}
+                  &nbsp;
+                  <span className="lrc-arr">{selected === idx ? '✓' : '→'}</span>
+                </span>
+              </div>
             </div>
+          ))}
+        </div>
 
-            <div className="lrc-roman">{role.roman}</div>
-            <h3 className="lrc-title">{role.title}</h3>
-            <p className="lrc-body">{role.body}</p>
-
-            <div className="lrc-foot">
-              <span className="lrc-badge">{role.badge}</span>
-              <span className="lrc-select">
-                {selected === idx ? 'Selected' : 'Select'}
-                &nbsp;
-                <span className="lrc-arr">{selected === idx ? '✓' : '→'}</span>
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Login Form (appears after card selection) ── */}
-      {selected !== null && (
-        <div className="login-form-zone" ref={formRef}>
-          <div className="login-form-card">
+        {/* ── Login Form (slides in beside selected card) ── */}
+        {selected !== null && (
+          <div className="login-form-zone" ref={formRef}>
+            <div className="login-form-card">
             <div className="login-form-header">
               <span className="login-form-title">Sign in</span>
               <span className="login-form-rolebadge">{ROLES[selected].corner}</span>
@@ -375,7 +377,9 @@ function LoginContent() {
             </p>
           </div>
         </div>
-      )}
+        )}
+
+      </div>{/* end .login-stage */}
     </>
   )
 }

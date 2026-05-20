@@ -1112,8 +1112,24 @@ footer.foot { background: var(--paper); color: var(--ink); padding: 60px 0 32px;
 .login-headline { font-family: var(--serif); font-style: italic; font-size: clamp(38px, 5vw, 58px); color: var(--night-text); text-align: center; margin-bottom: 6px; line-height: 1.05; letter-spacing: -.02em; }
 .login-sub { font-family: var(--mono); font-size: 10.5px; letter-spacing: .2em; color: var(--night-mute); text-transform: uppercase; text-align: center; margin-bottom: 52px; }
 
+/* ── Stage: wraps cards + form, switches to row when a card is selected ── */
+.login-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 980px;
+  gap: 0;
+}
+.login-stage.has-selection {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 28px;
+}
+
 /* ── Role card grid ── */
 .login-cards { display: flex; gap: 22px; align-items: flex-start; justify-content: center; max-width: 980px; width: 100%; }
+.login-stage.has-selection .login-cards { max-width: none; width: auto; flex-shrink: 0; }
 
 /* ── Individual role card ── */
 .login-role-card {
@@ -1134,7 +1150,7 @@ footer.foot { background: var(--paper); color: var(--ink); padding: 60px 0 32px;
 }
 .login-role-card:hover { transform: translateY(-5px); box-shadow: 0 4px 12px rgba(20,19,14,.08), 0 20px 56px rgba(20,19,14,.14), 0 36px 88px rgba(20,19,14,.1); }
 .login-role-card.is-selected {
-  flex: 0 1 360px; max-width: 360px; margin: 0 auto;
+  flex: 0 0 300px; max-width: 300px;
   border-color: var(--dawn); box-shadow: 0 0 0 1px var(--dawn), 0 4px 12px rgba(225,29,42,.14), 0 20px 56px rgba(225,29,42,.1);
 }
 .login-role-card.is-dimmed {
@@ -1158,7 +1174,7 @@ footer.foot { background: var(--paper); color: var(--ink); padding: 60px 0 32px;
 .login-role-card:hover:not(.is-selected) .lrc-arr { transform: translateX(4px); }
 
 /* ── Login form zone ── */
-.login-form-zone { width: 100%; max-width: 460px; margin-top: 44px; }
+.login-form-zone { flex: 1; min-width: 0; max-width: 480px; margin-top: 0; }
 .login-form-card { background: var(--paper-2); border: 1.5px solid var(--paper-line-2); border-radius: 20px; padding: 34px 38px 30px; box-shadow: 0 2px 6px rgba(20,19,14,.06), 0 10px 32px rgba(20,19,14,.1); }
 .login-form-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding-bottom: 18px; border-bottom: 1px solid var(--paper-line); }
 .login-form-title { font-family: var(--serif); font-style: italic; font-size: 22px; color: var(--ink); flex: 1; }
@@ -1198,6 +1214,8 @@ footer.foot { background: var(--paper); color: var(--ink); padding: 60px 0 32px;
 
 @media (max-width: 800px) {
   .login-cards { flex-direction: column; max-width: 420px; }
+  .login-stage.has-selection { flex-direction: column; align-items: center; gap: 24px; }
+  .login-role-card.is-selected { flex: 0 0 auto; max-width: 420px; width: 100%; }
   .auth-top { padding: 16px 20px; }
   .auth-body { padding: 40px 16px 60px; }
   .login-form-card { padding: 26px 22px 22px; }
